@@ -1,692 +1,178 @@
-import React, { useState, useEffect } from 'react';
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, setDoc } from "firebase/firestore";
-import { 
-    getAuth, 
-    onAuthStateChanged, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword,
-    signOut
-} from "firebase/auth";
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { useFirestoreCollections } from './hooks/useFirestore';
+import {
+    saveDocument,
+    saveOrder,
+    saveQuote,
+    convertQuoteToOrder,
+    markShipmentDelivered
+} from './services/firestoreService';
 
-//---------------------------------------------------
-// Firebase Yapılandırması ve Başlatma
-//---------------------------------------------------
-// KALICI VERİTABANI BAĞLANTISI
-const firebaseConfig = {
-  apiKey: "AIzaSyC4sX0QJpGgHqxQcTQYP3Jy4eMw9el4L0k",
-  authDomain: "takipcrm-c1d3f.firebaseapp.com",
-  projectId: "takipcrm-c1d3f",
-  storageBucket: "takipcrm-c1d3f.appspot.com",
-  messagingSenderId: "342863238377",
-  appId: "1:342863238377:web:bc010cc0233bf863c8cc78"
-};
+// Layout Components
+import Sidebar from './components/layout/Sidebar';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Page Components
+import LoginScreen from './components/pages/LoginScreen';
+import Dashboard from './components/pages/Dashboard';
+import Customers from './components/pages/Customers';
+import Products from './components/pages/Products';
+import Orders from './components/pages/Orders';
+import Quotes from './components/pages/Quotes';
+import Meetings from './components/pages/Meetings';
+import Shipments from './components/pages/Shipments';
 
-//---------------------------------------------------
-// KDV Bilgileri (Türkiye için güncel)
-//---------------------------------------------------
-const turkeyVATRates = [
-    { rate: 20, description: "Genel KDV oranı" },
-    { rate: 10, description: "Gıda, konaklama vb." },
-    { rate: 1, description: "Temel ihtiyaç kalemleri" },
-    { rate: 0, description: "KDV'den istisna" }
-];
-
-//---------------------------------------------------
-// Genel Bileşenler (Modal, İkonlar vb.)
-//---------------------------------------------------
-const Modal = ({ show, onClose, title, children }) => {
-    if (!show) return null;
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center" onClick={onClose}>
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center border-b pb-3">
-                    <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
-                </div>
-                <div className="mt-4 max-h-[70vh] overflow-y-auto pr-2">{children}</div>
-            </div>
+const LoadingScreen = () => (
+    <div className="flex h-screen items-center justify-center bg-gray-100">
+        <div className="flex items-center gap-3 text-lg text-gray-600">
+            <svg
+                className="animate-spin h-5 w-5 text-blue-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                ></circle>
+                <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+            </svg>
+            <span>Yükleniyor...</span>
         </div>
-    );
-};
+    </div>
+);
 
-const getStatusClass = (status) => {
-    switch (status) {
-        case 'Tamamlandı': case 'Teslim Edildi': case 'Onaylandı': return 'bg-green-100 text-green-800';
-        case 'Hazırlanıyor': case 'Yolda': case 'Gönderildi': return 'bg-yellow-100 text-yellow-800';
-        case 'Bekliyor': case 'Reddedildi': return 'bg-red-100 text-red-800';
-        case 'İlgileniyor': case 'Teklif Bekliyor': return 'bg-blue-100 text-blue-800';
-        default: return 'bg-gray-100 text-gray-800';
-    }
-};
+const CrmApp = () => {
+    const { user, loading } = useAuth();
+    const [activePage, setActivePage] = useState('Anasayfa');
 
-const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('tr-TR') : 'Belirtilmedi';
-const formatCurrency = (amount) => (amount || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+    // Fetch all collections
+    const { collections, connectionStatus } = useFirestoreCollections([
+        'customers',
+        'products',
+        'orders',
+        'shipments',
+        'teklifler',
+        'gorusmeler'
+    ]);
 
-// İkonlar
-const HomeIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>);
-const UsersIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.975 5.975 0 0112 13a5.975 5.975 0 013 5.197" /></svg>);
-const BoxIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 0v10l8 4m0-14L4 7m16 0L4 7" /></svg>);
-const TruckIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h2a1 1 0 001-1V7a1 1 0 00-1-1h-2" /></svg>);
-const ClipboardListIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>);
-const DocumentTextIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>);
-const CalendarIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>);
-const PlusIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>);
-const TrashIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>);
-const LogoutIcon = (props) => (<svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>);
+    const customers = collections.customers || [];
+    const products = collections.products || [];
+    const orders = collections.orders || [];
+    const shipments = collections.shipments || [];
+    const teklifler = collections.teklifler || [];
+    const gorusmeler = collections.gorusmeler || [];
 
+    // Handler functions
+    const handleCustomerSave = (data) => saveDocument(user.uid, 'customers', data);
+    const handleProductSave = (data) => saveDocument(user.uid, 'products', data);
+    const handleOrderSave = (data) => saveOrder(user.uid, data);
+    const handleQuoteSave = (data) => saveQuote(user.uid, data);
+    const handleMeetingSave = (data) => saveDocument(user.uid, 'gorusmeler', data);
 
-// --- Form Bileşenleri ---
-const FormInput = ({ label, ...props }) => (<div><label className="block text-sm font-medium text-gray-700">{label}</label><input {...props} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" /></div>);
-const FormTextarea = ({ label, ...props }) => (<div><label className="block text-sm font-medium text-gray-700">{label}</label><textarea {...props} rows="2" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" /></div>);
-const FormSelect = ({ label, children, ...props }) => (<div><label className="block text-sm font-medium text-gray-700">{label}</label><select {...props} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{children}</select></div>);
-
-const ConnectionStatusIndicator = ({ status }) => {
-    const getStatusStyles = () => {
-        switch (status) {
-            case 'Bağlandı':
-                return { dot: 'bg-green-500', text: 'text-gray-300' };
-            case 'Bağlanılıyor...':
-                return { dot: 'bg-yellow-500 animate-pulse', text: 'text-gray-400' };
-            case 'Bağlantı Hatası':
-                return { dot: 'bg-red-500', text: 'text-red-400' };
-            default:
-                return { dot: 'bg-gray-500', text: 'text-gray-400' };
-        }
-    };
-    const { dot, text } = getStatusStyles();
-    return (
-        <div className="mt-auto pt-4 border-t border-gray-700">
-            <div className="flex items-center justify-center gap-2">
-                <span className={`w-3 h-3 rounded-full ${dot}`}></span>
-                <span className={`text-sm ${text}`}>{status}</span>
-            </div>
-        </div>
-    );
-};
-
-const CustomerForm = ({ customer, onSave, onCancel }) => { 
-    const [formData, setFormData] = useState(customer || { name: '', contact_person: '', phone: '', email: '', address: '' }); 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value }); 
-    const handleSubmit = (e) => { e.preventDefault(); onSave(formData); }; 
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <FormInput label="Müşteri Adı" name="name" value={formData.name} onChange={handleChange} required />
-            <FormInput label="Yetkili Kişi" name="contact_person" value={formData.contact_person} onChange={handleChange} />
-            <FormInput label="Telefon" name="phone" value={formData.phone} onChange={handleChange} />
-            <FormInput label="E-posta" name="email" type="email" value={formData.email} onChange={handleChange} />
-            <FormInput label="Adres" name="address" value={formData.address} onChange={handleChange} />
-            <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">İptal</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Kaydet</button>
-            </div>
-        </form>
-    ); 
-};
-
-
-//---------------------------------------------------
-// GİRİŞ EKRANI BİLEŞENİ
-//---------------------------------------------------
-const LoginScreen = () => {
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-
-    const handleAuthAction = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-            if (isRegistering) {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } else {
-                await signInWithEmailAndPassword(auth, email, password);
-            }
-        } catch (err) {
-            setError('Bir hata oluştu. Lütfen bilgilerinizi kontrol edin.');
-            console.error(err);
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center text-gray-800">
-                    {isRegistering ? 'Yeni Hesap Oluştur' : 'Takip CRM\'e Hoş Geldiniz'}
-                </h2>
-                <form onSubmit={handleAuthAction} className="space-y-6">
-                    <FormInput label="E-posta Adresi" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                    <FormInput label="Şifre" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    <button type="submit" className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        {isRegistering ? 'Kayıt Ol' : 'Giriş Yap'}
-                    </button>
-                    <p className="text-sm text-center text-gray-600">
-                        {isRegistering ? 'Zaten bir hesabınız var mı?' : 'Hesabınız yok mu?'}
-                        <button type="button" onClick={() => { setIsRegistering(!isRegistering); setError(''); }} className="ml-1 font-medium text-blue-600 hover:underline">
-                            {isRegistering ? 'Giriş Yapın' : 'Kayıt Olun'}
-                        </button>
-                    </p>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-
-//---------------------------------------------------
-// SAYFA BİLEŞENLERİ
-//---------------------------------------------------
-const Anasayfa = ({ customers, orders, shipments, teklifler, gorusmeler }) => {
-    const openOrders = orders.filter(o => ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
-    const today = new Date().toISOString().slice(0, 10);
-    const upcomingActions = gorusmeler.filter(g => g.next_action_date >= today)
-        .sort((a,b) => new Date(a.next_action_date) - new Date(b.next_action_date))
-        .slice(0, 5);
-
-    return (
-        <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Hoş Geldiniz!</h1>
-            <p className="text-gray-600 mb-6">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><h3 className="text-lg font-semibold text-gray-600">Toplam Müşteri</h3><p className="text-3xl font-bold text-blue-600">{customers.length}</p></div><div className="bg-blue-100 p-3 rounded-full"><UsersIcon className="w-6 h-6 text-blue-600"/></div></div>
-                <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><h3 className="text-lg font-semibold text-gray-600">Açık Siparişler</h3><p className="text-3xl font-bold text-yellow-600">{openOrders.length}</p></div><div className="bg-yellow-100 p-3 rounded-full"><ClipboardListIcon className="w-6 h-6 text-yellow-600"/></div></div>
-                <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><h3 className="text-lg font-semibold text-gray-600">Bekleyen Teklifler</h3><p className="text-3xl font-bold text-indigo-600">{teklifler.filter(t => t.status !== 'Onaylandı').length}</p></div><div className="bg-indigo-100 p-3 rounded-full"><DocumentTextIcon className="w-6 h-6 text-indigo-600"/></div></div>
-                <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><h3 className="text-lg font-semibold text-gray-600">Planlanan Eylemler</h3><p className="text-3xl font-bold text-green-600">{upcomingActions.length}</p></div><div className="bg-green-100 p-3 rounded-full"><CalendarIcon className="w-6 h-6 text-green-600"/></div></div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                 <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-xl font-semibold text-gray-800 mb-4">Yaklaşan Eylemler & Görüşmeler</h3><div className="space-y-3">{upcomingActions.length > 0 ? upcomingActions.map(gorusme => { const customer = customers.find(c => c.id === gorusme.customerId); return (<div key={gorusme.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"><div><p className="font-semibold text-gray-700">{customer?.name || 'Bilinmeyen Müşteri'}</p><p className="text-sm text-gray-500">{gorusme.next_action_notes}</p></div><span className="text-sm font-medium text-gray-600">{formatDate(gorusme.next_action_date)}</span></div>); }) : <p className="text-gray-500">Yaklaşan bir eylem bulunmuyor.</p>}</div></div>
-                <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-xl font-semibold text-gray-800 mb-4">Son Bekleyen Siparişler</h3><div className="space-y-3">{openOrders.length > 0 ? openOrders.slice(0,5).map(order => { const customer = customers.find(c => c.id === order.customerId); return (<div key={order.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"><div><p className="font-semibold text-gray-700">{customer?.name || 'Bilinmeyen Müşteri'}</p><p className="text-sm text-gray-500">{formatDate(order.order_date)} - {formatCurrency(order.total_amount)}</p></div><span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}>{order.status}</span></div>); }) : <p className="text-gray-500">Bekleyen sipariş bulunmuyor.</p>}</div></div>
-            </div>
-        </div>
-    );
-};
-
-const Musteriler = ({ customers, onSave }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentCustomer, setCurrentCustomer] = useState(null);
-    const handleOpenModal = (customer = null) => { setCurrentCustomer(customer); setIsModalOpen(true); };
-    const handleSave = (customerData) => { onSave(customerData); setIsModalOpen(false); };
-    return (<div><div className="flex justify-between items-center mb-6"><h1 className="text-3xl font-bold text-gray-800">Müşteri Yönetimi</h1><button onClick={() => handleOpenModal()} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"><PlusIcon/>Yeni Müşteri</button></div><div className="overflow-auto rounded-lg shadow bg-white"><table className="w-full"><thead className="bg-gray-50 border-b-2 border-gray-200"><tr>{['Müşteri Adı', 'Yetkili Kişi', 'Telefon', 'E-posta', 'İşlemler'].map(head => <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left">{head}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{customers.map(customer => (<tr key={customer.id} className="hover:bg-gray-50"><td className="p-3 text-sm text-gray-700 font-bold">{customer.name}</td><td className="p-3 text-sm text-gray-700">{customer.contact_person}</td><td className="p-3 text-sm text-gray-700">{customer.phone}</td><td className="p-3 text-sm text-gray-700">{customer.email}</td><td className="p-3 text-sm text-gray-700"><button onClick={() => handleOpenModal(customer)} className="text-blue-500 hover:underline">Düzenle</button></td></tr>))}</tbody></table></div><Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}><CustomerForm customer={currentCustomer} onSave={handleSave} onCancel={() => setIsModalOpen(false)} /></Modal></div>);
-};
-
-const Urunler = ({ products, onSave }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false); 
-    const [currentProduct, setCurrentProduct] = useState(null); 
-    const handleOpenModal = (product = null) => { setCurrentProduct(product); setIsModalOpen(true); }; 
-    const handleSave = (productData) => { onSave(productData); setIsModalOpen(false); };
-    
-    const ProductForm = ({ product, onSave, onCancel }) => { 
-        const [formData, setFormData] = useState(product || { name: '', code: '', description: '', cost_price: '', selling_price: '' }); 
-        const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value }); 
-        const handleSubmit = (e) => { e.preventDefault(); onSave(formData); }; 
-        return (
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <FormInput label="Ürün Adı" name="name" value={formData.name} onChange={handleChange} required />
-                <FormInput label="Ürün Kodu" name="code" value={formData.code} onChange={handleChange} />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormInput label="Maliyet Fiyatı (TL)" name="cost_price" type="number" step="0.01" value={formData.cost_price} onChange={handleChange} required />
-                    <FormInput label="Satış Fiyatı (TL)" name="selling_price" type="number" step="0.01" value={formData.selling_price} onChange={handleChange} required />
-                </div>
-                <FormTextarea label="Açıklama" name="description" value={formData.description} onChange={handleChange} />
-                <div className="flex justify-end gap-3 pt-4">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">İptal</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Kaydet</button>
-                </div>
-            </form>
-        ); 
-    };
-    
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">Ürün Yönetimi</h1>
-                <button onClick={() => handleOpenModal()} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"><PlusIcon/>Yeni Ürün</button>
-            </div>
-            <div className="overflow-auto rounded-lg shadow bg-white">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b-2 border-gray-200">
-                        <tr>
-                            {['Ürün Adı', 'Ürün Kodu', 'Maliyet Fiyatı', 'Satış Fiyatı', 'İşlemler'].map(head => 
-                                <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left">{head}</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {products.map(product => (
-                            <tr key={product.id} className="hover:bg-gray-50">
-                                <td className="p-3 text-sm text-gray-700 font-bold">{product.name}</td>
-                                <td className="p-3 text-sm text-gray-700">{product.code}</td>
-                                <td className="p-3 text-sm text-gray-700">{formatCurrency(product.cost_price)}</td>
-                                <td className="p-3 text-sm text-gray-700">{formatCurrency(product.selling_price)}</td>
-                                <td className="p-3 text-sm text-gray-700"><button onClick={() => handleOpenModal(product)} className="text-blue-500 hover:underline">Düzenle</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentProduct ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}>
-                <ProductForm product={currentProduct} onSave={handleSave} onCancel={() => setIsModalOpen(false)} />
-            </Modal>
-        </div>
-    );
-};
-
-const ItemEditor = ({ items, setItems, products }) => {
-    const handleAddItem = () => { if (products.length > 0) { const firstProduct = products[0]; setItems([...items, { productId: firstProduct.id, quantity: 1, unit_price: firstProduct.selling_price }]); } };
-    const handleItemChange = (index, field, value) => { const newItems = [...items]; const currentItem = newItems[index]; currentItem[field] = value; if (field === 'productId') { const product = products.find(p => p.id === value); if (product) currentItem.unit_price = product.selling_price; } setItems(newItems); };
-    const handleRemoveItem = (index) => { setItems(items.filter((_, i) => i !== index)); };
-    return (<div className="space-y-4 p-4 border rounded-lg bg-gray-50"><h4 className="font-semibold text-gray-800">Ürünler</h4>{items.map((item, index) => (<div key={index} className="grid grid-cols-12 gap-3 items-center"><div className="col-span-5"><FormSelect value={item.productId} onChange={e => handleItemChange(index, 'productId', e.target.value)}>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</FormSelect></div><div className="col-span-2"><FormInput type="number" value={item.quantity} onChange={e => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)} min="1" /></div><div className="col-span-2"><FormInput type="number" value={item.unit_price} onChange={e => handleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)} step="0.01" /></div><div className="col-span-2 text-sm text-gray-700 text-right font-medium">{formatCurrency((item.quantity || 0) * (item.unit_price || 0))}</div><div className="col-span-1"><button type="button" onClick={() => handleRemoveItem(index)} className="text-red-500 hover:text-red-700 p-1"><TrashIcon className="w-5 h-5"/></button></div></div>))} <button type="button" onClick={handleAddItem} className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-md hover:bg-blue-200">+ Ürün Ekle</button></div>);
-};
-
-const Siparisler = ({ orders, onSave, customers, products }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false); const [currentOrder, setCurrentOrder] = useState(null); const handleOpenModal = (order = null) => { setCurrentOrder(order); setIsModalOpen(true); };
-    const handleSave = (orderData) => { onSave(orderData); setIsModalOpen(false); };
-    const OrderForm = ({ order, onSave, onCancel }) => { const [formData, setFormData] = useState(order || { customerId: customers[0]?.id || '', items: [], vatRate: 20 }); const [items, setItems] = useState(order?.items || []); 
-        const subtotal = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);
-        const vatAmount = subtotal * (formData.vatRate / 100);
-        const total = subtotal + vatAmount;
-
-        const handleSubmit = (e) => { e.preventDefault(); onSave({...formData, items, subtotal, vatAmount, total_amount: total}); }; 
-        
-        return (<form onSubmit={handleSubmit} className="space-y-4">
-            <FormSelect label="Müşteri" name="customerId" value={formData.customerId} onChange={e => setFormData({...formData, customerId: e.target.value})} required><option value="">Müşteri Seçin</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</FormSelect>
-            <ItemEditor items={items} setItems={setItems} products={products} />
-             <div className="grid grid-cols-2 gap-4 items-end">
-                <FormSelect label="KDV Oranı" name="vatRate" value={formData.vatRate} onChange={e => setFormData({...formData, vatRate: Number(e.target.value)})} >
-                    {turkeyVATRates.map(vat => <option key={vat.rate} value={vat.rate}>%{vat.rate} - {vat.description}</option>)}
-                </FormSelect>
-                <div className="space-y-2 text-right p-4 rounded-lg bg-gray-50">
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">Ara Toplam:</span><span className="font-medium">{formatCurrency(subtotal)}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%{formData.vatRate}):</span><span className="font-medium">{formatCurrency(vatAmount)}</span></div>
-                    <div className="flex justify-between text-lg font-bold"><span className="text-gray-800">Genel Toplam:</span><span className="text-blue-600">{formatCurrency(total)}</span></div>
-                </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4 border-t"><button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">İptal</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Siparişi Kaydet</button></div></form>); };
-    return (<div><div className="flex justify-between items-center mb-6"><h1 className="text-3xl font-bold text-gray-800">Sipariş Yönetimi</h1><button onClick={() => handleOpenModal()} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"><PlusIcon/>Yeni Sipariş</button></div><div className="overflow-auto rounded-lg shadow bg-white"><table className="w-full"><thead className="bg-gray-50 border-b-2 border-gray-200"><tr>{['Müşteri', 'Sipariş Tarihi', 'Toplam Tutar', 'Durum', 'İşlemler'].map(h => <th key={h} className="p-3 text-sm font-semibold tracking-wide text-left">{h}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{orders.map(order => (<tr key={order.id} className="hover:bg-gray-50"><td className="p-3 text-sm text-gray-700 font-bold">{customers.find(c => c.id === order.customerId)?.name || 'Bilinmiyor'}</td><td className="p-3 text-sm text-gray-700">{formatDate(order.order_date)}</td><td className="p-3 text-sm text-gray-700">{formatCurrency(order.total_amount)}</td><td className="p-3 text-sm"><span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}>{order.status}</span></td><td className="p-3 text-sm"><button onClick={() => handleOpenModal(order)} className="text-blue-500 hover:underline">Detay/Düzenle</button></td></tr>))}</tbody></table></div><Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentOrder ? 'Sipariş Detayı' : 'Yeni Sipariş Oluştur'}><OrderForm order={currentOrder} onSave={handleSave} onCancel={() => setIsModalOpen(false)} /></Modal></div>);
-};
-
-const Teklifler = ({ teklifler, onSave, onConvertToOrder, customers, products }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false); const [currentTeklif, setCurrentTeklif] = useState(null); const handleOpenModal = (teklif = null) => { setCurrentTeklif(teklif); setIsModalOpen(true); };
-    const handleSave = (teklifData) => { onSave(teklifData); setIsModalOpen(false); };
-    const TeklifForm = ({ teklif, onSave, onCancel }) => { 
-        const [formData, setFormData] = useState(teklif || { customerId: customers[0]?.id || '', items: [], gecerlilik_tarihi: '', vatRate: 20 }); 
-        const [items, setItems] = useState(teklif?.items || []);
-        
-        const subtotal = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);
-        const vatAmount = subtotal * (formData.vatRate / 100);
-        const total = subtotal + vatAmount;
-
-        const handleSubmit = (e) => { e.preventDefault(); onSave({...formData, items, subtotal, vatAmount, total_amount: total }); }; 
-
-        return (
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <FormSelect label="Müşteri" name="customerId" value={formData.customerId} onChange={e => setFormData({...formData, customerId: e.target.value})} required>
-                        <option value="">Müşteri Seçin</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </FormSelect>
-                    <FormInput label="Geçerlilik Tarihi" name="gecerlilik_tarihi" type="date" value={formData.gecerlilik_tarihi} onChange={e => setFormData({...formData, gecerlilik_tarihi: e.target.value})} />
-                </div>
-                <ItemEditor items={items} setItems={setItems} products={products} />
-                <div className="grid grid-cols-2 gap-4 items-end">
-                    <FormSelect label="KDV Oranı" name="vatRate" value={formData.vatRate} onChange={e => setFormData({...formData, vatRate: Number(e.target.value)})} >
-                        {turkeyVATRates.map(vat => <option key={vat.rate} value={vat.rate}>%{vat.rate} - {vat.description}</option>)}
-                    </FormSelect>
-                    <div className="space-y-2 text-right p-4 rounded-lg bg-gray-50">
-                        <div className="flex justify-between text-sm"><span className="text-gray-600">Ara Toplam:</span><span className="font-medium">{formatCurrency(subtotal)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%{formData.vatRate}):</span><span className="font-medium">{formatCurrency(vatAmount)}</span></div>
-                        <div className="flex justify-between text-lg font-bold"><span className="text-gray-800">Genel Toplam:</span><span className="text-blue-600">{formatCurrency(total)}</span></div>
-                    </div>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">İptal</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Teklifi Kaydet</button>
-                </div>
-            </form>
-        ); 
-    };
-    return (<div><div className="flex justify-between items-center mb-6"><h1 className="text-3xl font-bold text-gray-800">Teklif Yönetimi</h1><button onClick={() => handleOpenModal()} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"><PlusIcon/>Yeni Teklif</button></div><div className="overflow-auto rounded-lg shadow bg-white"><table className="w-full"><thead className="bg-gray-50 border-b-2 border-gray-200"><tr>{['Müşteri', 'Teklif Tarihi', 'Geçerlilik Tarihi', 'Tutar', 'Durum', 'İşlemler'].map(h => <th key={h} className="p-3 text-sm font-semibold tracking-wide text-left">{h}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{teklifler.map(teklif => (<tr key={teklif.id} className="hover:bg-gray-50"><td className="p-3 text-sm text-gray-700 font-bold">{customers.find(c => c.id === teklif.customerId)?.name || 'Bilinmiyor'}</td><td className="p-3 text-sm text-gray-700">{formatDate(teklif.teklif_tarihi)}</td><td className="p-3 text-sm text-gray-700">{formatDate(teklif.gecerlilik_tarihi)}</td><td className="p-3 text-sm text-gray-700">{formatCurrency(teklif.total_amount)}</td><td className="p-3 text-sm"><span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(teklif.status)}`}>{teklif.status}</span></td><td className="p-3 text-sm space-x-2"><button onClick={() => handleOpenModal(teklif)} className="text-blue-500 hover:underline">Detay</button>{teklif.status !== 'Onaylandı' && <button onClick={() => onConvertToOrder(teklif)} className="text-green-500 hover:underline">Siparişe Çevir</button>}</td></tr>))}</tbody></table></div><Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentTeklif ? 'Teklif Detayı' : 'Yeni Teklif Oluştur'}><TeklifForm teklif={currentTeklif} onSave={handleSave} onCancel={() => setIsModalOpen(false)} /></Modal></div>);
-};
-
-const Sevkiyat = ({ shipments, onDelivery }) => {
-    const handleDelivery = (shipmentId) => { onDelivery(shipmentId); };
-    return (<div><h1 className="text-3xl font-bold text-gray-800 mb-6">Sevkiyat Yönetimi</h1><div className="overflow-auto rounded-lg shadow bg-white"><table className="w-full"><thead className="bg-gray-50 border-b-2 border-gray-200"><tr>{['Sipariş ID', 'Sevk Tarihi', 'Nakliye Firması', 'Takip No', 'Teslim Tarihi', 'Durum', 'İşlem'].map(head => <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left">{head}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{shipments.map(shipment => (<tr key={shipment.id} className="hover:bg-gray-50"><td className="p-3 text-sm text-gray-700">#{shipment.orderId}</td><td className="p-3 text-sm text-gray-700">{formatDate(shipment.shipment_date)}</td><td className="p-3 text-sm text-gray-700">{shipment.transporter}</td><td className="p-3 text-sm text-gray-700">{shipment.tracking_number}</td><td className="p-3 text-sm text-gray-700">{formatDate(shipment.delivery_date)}</td><td className="p-3 text-sm"><span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>{shipment.status}</span></td><td className="p-3 text-sm">{shipment.status !== 'Teslim Edildi' && (<button onClick={() => handleDelivery(shipment.id)} className="bg-green-500 text-white px-3 py-1 text-xs rounded-md hover:bg-green-600">Teslim Edildi</button>)}</td></tr>))}</tbody></table></div></div>);
-};
-
-const GorusmeForm = ({ gorusme, onSave, onCancel, customers, onCustomerSave }) => {
-    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [formData, setFormData] = useState(gorusme || { 
-        customerId: customers[0]?.id || '', 
-        date: new Date().toISOString().slice(0, 10), 
-        notes: '', 
-        outcome: 'İlgileniyor', 
-        next_action_date: '', 
-        next_action_notes: '' 
-    });
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const handleNewCustomerSave = async (customerData) => {
-        const newCustomerId = await onCustomerSave(customerData);
-        if (newCustomerId) {
-            setFormData(prev => ({ ...prev, customerId: newCustomerId }));
-        }
-        setIsCustomerModalOpen(false);
-    };
-
-    const handleSubmit = (e) => { e.preventDefault(); onSave(formData); };
-
-    return (
-        <>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-end gap-2">
-                       <div className="flex-grow">
-                            <FormSelect label="Müşteri" name="customerId" value={formData.customerId} onChange={handleChange} required>
-                                <option value="">Müşteri Seçin</option>
-                                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </FormSelect>
-                       </div>
-                       <button 
-                           type="button" 
-                           title="Yeni Müşteri Ekle"
-                           onClick={() => setIsCustomerModalOpen(true)}
-                           className="p-2.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                       >
-                          <PlusIcon className="w-5 h-5 !mr-0" />
-                       </button>
-                   </div>
-                     <FormInput label="Görüşme Tarihi" name="date" type="date" value={formData.date} onChange={handleChange} required />
-                </div>
-                <FormTextarea label="Görüşme Notları" name="notes" value={formData.notes} onChange={handleChange} />
-                 <FormSelect label="Görüşme Sonucu" name="outcome" value={formData.outcome} onChange={handleChange}>
-                    <option>İlgileniyor</option>
-                    <option>Teklif Bekliyor</option>
-                    <option>Sonra Değerlendirecek</option>
-                    <option>İlgilenmiyor</option>
-                </FormSelect>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <FormInput label="Sonraki Eylem Tarihi" name="next_action_date" type="date" value={formData.next_action_date} onChange={handleChange} />
-                    <FormInput label="Sonraki Eylem Notu" name="next_action_notes" value={formData.next_action_notes} onChange={handleChange} placeholder="Örn: Teklifi hatırlat"/>
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">İptal</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Kaydet</button>
-                </div>
-            </form>
-            <Modal show={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Yeni Müşteri Ekle">
-                <CustomerForm onSave={handleNewCustomerSave} onCancel={() => setIsCustomerModalOpen(false)} />
-            </Modal>
-        </>
-    );
-};
-
-const Gorusmeler = ({ gorusmeler, customers, onSave, onCustomerSave }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentGorusme, setCurrentGorusme] = useState(null);
-    const handleOpenModal = (gorusme = null) => { setCurrentGorusme(gorusme); setIsModalOpen(true); };
-    const handleSave = (gorusmeData) => { onSave(gorusmeData); setIsModalOpen(false); };
-
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">Görüşme Takibi</h1>
-                <button onClick={() => handleOpenModal()} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                    <PlusIcon />Yeni Görüşme Kaydı
-                </button>
-            </div>
-            <div className="overflow-auto rounded-lg shadow bg-white">
-                <table className="w-full">
-                    <thead className="bg-gray-50 border-b-2 border-gray-200">
-                        <tr>
-                            {['Müşteri', 'Görüşme Tarihi', 'Sonuç', 'Sonraki Eylem', 'Eylem Tarihi', 'İşlemler'].map(head => 
-                                <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left">{head}</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {gorusmeler.map(gorusme => (
-                            <tr key={gorusme.id} className="hover:bg-gray-50">
-                                <td className="p-3 text-sm text-gray-700 font-bold">{customers.find(c => c.id === gorusme.customerId)?.name || 'Bilinmiyor'}</td>
-                                <td className="p-3 text-sm text-gray-700">{formatDate(gorusme.date)}</td>
-                                <td className="p-3 text-sm"><span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(gorusme.outcome)}`}>{gorusme.outcome}</span></td>
-                                <td className="p-3 text-sm text-gray-700">{gorusme.next_action_notes}</td>
-                                <td className="p-3 text-sm text-gray-700">{formatDate(gorusme.next_action_date)}</td>
-                                <td className="p-3 text-sm text-gray-700"><button onClick={() => handleOpenModal(gorusme)} className="text-blue-500 hover:underline">Düzenle</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} title={currentGorusme ? 'Görüşme Kaydını Düzenle' : 'Yeni Görüşme Kaydı Ekle'}>
-                <GorusmeForm 
-                    gorusme={currentGorusme} 
-                    onSave={handleSave} 
-                    onCancel={() => setIsModalOpen(false)} 
-                    customers={customers}
-                    onCustomerSave={onCustomerSave}
-                />
-            </Modal>
-        </div>
-    );
-};
-
-//---------------------------------------------------
-// Ana CRM Uygulama Bileşeni
-//---------------------------------------------------
-export default function CrmApp() {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [connectionStatus, setConnectionStatus] = useState('Bağlanılıyor...');
-    
-    // CRM Veri State'leri
-    const [customers, setCustomers] = useState([]);
-    const [products, setProducts] = useState([]);
-    const [orders, setOrders] = useState([]);
-    const [shipments, setShipments] = useState([]);
-    const [teklifler, setTeklifler] = useState([]);
-    const [gorusmeler, setGorusmeler] = useState([]);
-    const [activePage, setActivePage] = useState('Anasayfa'); 
-    
-    // Kimlik Durumunu Dinle
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    // Veri Çekme
-    useEffect(() => {
-        if (!user) {
-            // Kullanıcı yoksa, veri listelerini temizle
-            setCustomers([]);
-            setProducts([]);
-            setOrders([]);
-            setShipments([]);
-            setTeklifler([]);
-            setGorusmeler([]);
-            setConnectionStatus('Bağlantı Bekleniyor');
-            return;
-        }
-
-        const handleSnapshotError = (error) => {
-            console.error("Veritabanı bağlantı hatası: ", error);
-            setConnectionStatus('Bağlantı Hatası');
-        };
-
-        const userSpecificPath = (collectionName) => `users/${user.uid}/${collectionName}`;
-
-        const collectionsToSync = {
-            customers: collection(db, userSpecificPath('customers')),
-            products: collection(db, userSpecificPath('products')),
-            orders: collection(db, userSpecificPath('orders')),
-            shipments: collection(db, userSpecificPath('shipments')),
-            teklifler: collection(db, userSpecificPath('teklifler')),
-            gorusmeler: collection(db, userSpecificPath('gorusmeler')),
-        };
-
-        const unsubscribers = Object.keys(collectionsToSync).map(key => {
-            const stateSetter = {
-                customers: setCustomers,
-                products: setProducts,
-                orders: setOrders,
-                shipments: setShipments,
-                teklifler: setTeklifler,
-                gorusmeler: setGorusmeler,
-            }[key];
-            return onSnapshot(collectionsToSync[key], 
-                snapshot => stateSetter(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))), 
-                handleSnapshotError
-            );
-        });
-        
-        setConnectionStatus('Bağlandı');
-        return () => unsubscribers.forEach(unsub => unsub());
-
-    }, [user]);
-
-    // Veri Kaydetme/Güncelleme Fonksiyonları
-    const handleGenericSave = (collectionName) => async (data) => {
-        if (!user) return null;
-        const { id, ...dataToSave } = data;
-        if (collectionName === 'products') {
-            dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
-            dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
-        }
-        const collectionPath = `users/${user.uid}/${collectionName}`;
-        if (id) {
-            await updateDoc(doc(db, collectionPath, id), dataToSave);
-            return id;
-        } else {
-            const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
-            return newDocRef.id;
-        }
-    };
-
-    const handleOrderSave = async (data) => {
-        const finalData = { ...data };
-        if (!finalData.status) finalData.status = 'Bekliyor';
-        if (!finalData.order_date) finalData.order_date = new Date().toISOString().slice(0, 10);
-        await handleGenericSave('orders')(finalData);
-    };
-
-    const handleTeklifSave = async (data) => {
-        const finalData = { ...data };
-        if (!finalData.status) finalData.status = 'Hazırlandı';
-        if (!finalData.teklif_tarihi) finalData.teklif_tarihi = new Date().toISOString().slice(0, 10);
-        await handleGenericSave('teklifler')(finalData);
-    };
-
-    const handleConvertToOrder = async (teklif) => {
-        if (!user) return;
-        const newOrder = {
-            customerId: teklif.customerId,
-            items: teklif.items,
-            subtotal: teklif.subtotal,
-            vatRate: teklif.vatRate,
-            vatAmount: teklif.vatAmount,
-            total_amount: teklif.total_amount,
-            order_date: new Date().toISOString().slice(0, 10),
-            status: 'Bekliyor',
-            shipmentId: null
-        };
-        await addDoc(collection(db, `users/${user.uid}/orders`), newOrder);
-        await updateDoc(doc(db, `users/${user.uid}/teklifler`, teklif.id), { status: 'Onaylandı' });
+    const handleConvertToOrder = async (quote) => {
+        await convertQuoteToOrder(user.uid, quote);
     };
 
     const handleDelivery = async (shipmentId) => {
-        if (!user) return;
-        const shipmentRef = doc(db, `users/${user.uid}/shipments`, shipmentId);
         const shipment = shipments.find(s => s.id === shipmentId);
-        if(shipment) {
-            await updateDoc(shipmentRef, { status: 'Teslim Edildi', delivery_date: new Date().toISOString().slice(0, 10) });
-            const orderRef = doc(db, `users/${user.uid}/orders`, shipment.orderId);
-            await updateDoc(orderRef, { status: 'Tamamlandı' });
+        if (shipment) {
+            await markShipmentDelivered(user.uid, shipmentId, shipment.orderId);
         }
     };
 
-    const handleLogout = async () => {
-        await signOut(auth);
+    // Render page based on activePage state
+    const renderPage = () => {
+        switch (activePage) {
+            case 'Anasayfa':
+                return (
+                    <Dashboard
+                        customers={customers}
+                        orders={orders}
+                        teklifler={teklifler}
+                        gorusmeler={gorusmeler}
+                    />
+                );
+            case 'Müşteriler':
+                return <Customers customers={customers} onSave={handleCustomerSave} />;
+            case 'Ürünler':
+                return <Products products={products} onSave={handleProductSave} />;
+            case 'Teklifler':
+                return (
+                    <Quotes
+                        quotes={teklifler}
+                        onSave={handleQuoteSave}
+                        onConvertToOrder={handleConvertToOrder}
+                        customers={customers}
+                        products={products}
+                    />
+                );
+            case 'Siparişler':
+                return (
+                    <Orders
+                        orders={orders}
+                        onSave={handleOrderSave}
+                        customers={customers}
+                        products={products}
+                    />
+                );
+            case 'Görüşmeler':
+                return (
+                    <Meetings
+                        meetings={gorusmeler}
+                        customers={customers}
+                        onSave={handleMeetingSave}
+                        onCustomerSave={handleCustomerSave}
+                    />
+                );
+            case 'Sevkiyat':
+                return <Shipments shipments={shipments} onDelivery={handleDelivery} />;
+            default:
+                return (
+                    <Dashboard
+                        customers={customers}
+                        orders={orders}
+                        teklifler={teklifler}
+                        gorusmeler={gorusmeler}
+                    />
+                );
+        }
     };
-    
+
     if (loading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-gray-100">
-                <div className="flex items-center gap-3 text-lg text-gray-600">
-                     <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Yükleniyor...</span>
-                </div>
-            </div>
-        );
+        return <LoadingScreen />;
     }
-    
+
     if (!user) {
         return <LoginScreen />;
     }
 
-    const renderPage = () => {
-        switch (activePage) {
-            case 'Anasayfa': return <Anasayfa customers={customers} orders={orders} shipments={shipments} teklifler={teklifler} gorusmeler={gorusmeler} />;
-            case 'Müşteriler': return <Musteriler customers={customers} onSave={handleGenericSave('customers')} />;
-            case 'Ürünler': return <Urunler products={products} onSave={handleGenericSave('products')} />;
-            case 'Teklifler': return <Teklifler teklifler={teklifler} onSave={handleTeklifSave} onConvertToOrder={handleConvertToOrder} customers={customers} products={products} />;
-            case 'Siparişler': return <Siparisler orders={orders} onSave={handleOrderSave} customers={customers} products={products} />;
-            case 'Görüşmeler': return <Gorusmeler gorusmeler={gorusmeler} customers={customers} onSave={handleGenericSave('gorusmeler')} onCustomerSave={handleGenericSave('customers')} />;
-            case 'Sevkiyat': return <Sevkiyat shipments={shipments} onDelivery={handleDelivery} />;
-            default: return <Anasayfa />;
-        }
-    };
-
-    const NavLink = ({ page, children, Icon }) => (
-        <button onClick={() => setActivePage(page)} className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${ activePage === page ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }`}>
-            <Icon className="w-5 h-5" />
-            <span>{children}</span>
-        </button>
-    );
-    
     return (
         <div className="flex h-screen bg-gray-100 font-sans">
-            <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
-                <div className="flex flex-col flex-grow">
-                    <div className="mb-10 border-b border-gray-700 pb-4 flex justify-center items-center">
-                        {/* Yeni, modern logo */}
-                        <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <nav className="flex flex-col gap-3">
-                        <NavLink page="Anasayfa" Icon={HomeIcon}>Anasayfa</NavLink>
-                        <NavLink page="Müşteriler" Icon={UsersIcon}>Müşteriler</NavLink>
-                        <NavLink page="Ürünler" Icon={BoxIcon}>Ürünler</NavLink>
-                        <NavLink page="Teklifler" Icon={DocumentTextIcon}>Teklifler</NavLink>
-                        <NavLink page="Siparişler" Icon={ClipboardListIcon}>Siparişler</NavLink>
-                        <NavLink page="Görüşmeler" Icon={CalendarIcon}>Görüşmeler</NavLink>
-                        <NavLink page="Sevkiyat" Icon={TruckIcon}>Sevkiyat</NavLink>
-                    </nav>
-                </div>
-                 <div className="flex-shrink-0">
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white">
-                        <LogoutIcon className="w-5 h-5" />
-                        <span>Çıkış Yap</span>
-                    </button>
-                    <ConnectionStatusIndicator status={connectionStatus} />
-                 </div>
-            </aside>
+            <Sidebar
+                activePage={activePage}
+                setActivePage={setActivePage}
+                connectionStatus={connectionStatus}
+            />
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 {renderPage()}
             </main>
         </div>
     );
-}
+};
 
+export default function App() {
+    return (
+        <AuthProvider>
+            <CrmApp />
+        </AuthProvider>
+    );
+}
