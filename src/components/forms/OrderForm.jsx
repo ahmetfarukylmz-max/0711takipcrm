@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
+import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import ItemEditor from './ItemEditor';
-import { turkeyVATRates } from '../../constants';
+import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
 
 const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
     const [formData, setFormData] = useState(order || {
         customerId: customers[0]?.id || '',
         items: [],
-        vatRate: 20
+        delivery_date: '',
+        vatRate: 20,
+        paymentType: 'Peşin',
+        paymentTerm: '',
+        currency: DEFAULT_CURRENCY
     });
-    const [items, setItems] = useState(order?.items || []);
+    const [items, setItems] = useState(
+        (order?.items || []).map(item => ({
+            ...item,
+            unit: item.unit || 'Adet'
+        }))
+    );
 
     const subtotal = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);
     const vatAmount = subtotal * (formData.vatRate / 100);
@@ -29,20 +39,65 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <FormSelect
-                label="Müşteri"
-                name="customerId"
-                value={formData.customerId}
-                onChange={e => setFormData({ ...formData, customerId: e.target.value })}
-                required
-            >
-                <option value="">Müşteri Seçin</option>
-                {customers.map(c => (
-                    <option key={c.id} value={c.id}>
-                        {c.name}
-                    </option>
-                ))}
-            </FormSelect>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormSelect
+                    label="Müşteri"
+                    name="customerId"
+                    value={formData.customerId}
+                    onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                    required
+                >
+                    <option value="">Müşteri Seçin</option>
+                    {customers.map(c => (
+                        <option key={c.id} value={c.id}>
+                            {c.name}
+                        </option>
+                    ))}
+                </FormSelect>
+                <FormInput
+                    label="Teslim Tarihi"
+                    name="delivery_date"
+                    type="date"
+                    value={formData.delivery_date}
+                    onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormSelect
+                    label="Para Birimi"
+                    name="currency"
+                    value={formData.currency}
+                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                >
+                    {currencies.map(curr => (
+                        <option key={curr.code} value={curr.code}>
+                            {curr.symbol} {curr.name}
+                        </option>
+                    ))}
+                </FormSelect>
+                <FormSelect
+                    label="Ödeme Tipi"
+                    name="paymentType"
+                    value={formData.paymentType}
+                    onChange={e => setFormData({ ...formData, paymentType: e.target.value, paymentTerm: e.target.value === 'Peşin' ? '' : formData.paymentTerm })}
+                >
+                    <option value="Peşin">Peşin</option>
+                    <option value="Vadeli">Vadeli</option>
+                </FormSelect>
+                {formData.paymentType === 'Vadeli' && (
+                    <FormInput
+                        label="Vade Süresi (gün)"
+                        name="paymentTerm"
+                        type="number"
+                        min="1"
+                        placeholder="Örn: 30, 60, 90"
+                        value={formData.paymentTerm}
+                        onChange={e => setFormData({ ...formData, paymentTerm: e.target.value })}
+                        required
+                    />
+                )}
+            </div>
 
             <ItemEditor items={items} setItems={setItems} products={products} />
 
@@ -62,15 +117,15 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
                 <div className="space-y-2 text-right p-4 rounded-lg bg-gray-50">
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Ara Toplam:</span>
-                        <span className="font-medium">{formatCurrency(subtotal)}</span>
+                        <span className="font-medium">{formatCurrency(subtotal, formData.currency)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">KDV (%{formData.vatRate}):</span>
-                        <span className="font-medium">{formatCurrency(vatAmount)}</span>
+                        <span className="font-medium">{formatCurrency(vatAmount, formData.currency)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold">
                         <span className="text-gray-800">Genel Toplam:</span>
-                        <span className="text-blue-600">{formatCurrency(total)}</span>
+                        <span className="text-blue-600">{formatCurrency(total, formData.currency)}</span>
                     </div>
                 </div>
             </div>

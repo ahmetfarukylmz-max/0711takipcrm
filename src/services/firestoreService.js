@@ -102,3 +102,26 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId) => {
     const orderRef = doc(db, `users/${userId}/orders`, orderId);
     await updateDoc(orderRef, { status: 'Tamamlandı' });
 };
+
+/**
+ * Soft delete a document (marks as deleted instead of removing)
+ * @param {string} userId - User ID
+ * @param {string} collectionName - Collection name
+ * @param {string} docId - Document ID
+ * @returns {Promise<boolean>} Success status
+ */
+export const deleteDocument = async (userId, collectionName, docId) => {
+    if (!userId || !docId) return false;
+
+    try {
+        const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
+        await updateDoc(docRef, {
+            isDeleted: true,
+            deletedAt: new Date().toISOString()
+        });
+        return true;
+    } catch (error) {
+        console.error('Delete error:', error);
+        return false;
+    }
+};

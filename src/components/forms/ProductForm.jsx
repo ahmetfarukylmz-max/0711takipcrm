@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import FormInput from '../common/FormInput';
+import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
+import { currencies, DEFAULT_CURRENCY } from '../../constants';
 
 const ProductForm = ({ product, onSave, onCancel }) => {
     const [formData, setFormData] = useState(product || {
@@ -8,7 +10,8 @@ const ProductForm = ({ product, onSave, onCancel }) => {
         code: '',
         description: '',
         cost_price: '',
-        selling_price: ''
+        selling_price: '',
+        currency: DEFAULT_CURRENCY
     });
 
     const handleChange = (e) => {
@@ -35,9 +38,21 @@ const ProductForm = ({ product, onSave, onCancel }) => {
                 value={formData.code}
                 onChange={handleChange}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+                <FormSelect
+                    label="Para Birimi"
+                    name="currency"
+                    value={formData.currency}
+                    onChange={handleChange}
+                >
+                    {currencies.map(curr => (
+                        <option key={curr.code} value={curr.code}>
+                            {curr.symbol} {curr.name}
+                        </option>
+                    ))}
+                </FormSelect>
                 <FormInput
-                    label="Maliyet Fiyatı (TL)"
+                    label={`Maliyet Fiyatı (${formData.currency === 'USD' ? '$' : '₺'})`}
                     name="cost_price"
                     type="number"
                     step="0.01"
@@ -46,7 +61,7 @@ const ProductForm = ({ product, onSave, onCancel }) => {
                     required
                 />
                 <FormInput
-                    label="Satış Fiyatı (TL)"
+                    label={`Satış Fiyatı (${formData.currency === 'USD' ? '$' : '₺'})`}
                     name="selling_price"
                     type="number"
                     step="0.01"

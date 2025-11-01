@@ -13,6 +13,12 @@ import {
     LogoutIcon
 } from '../icons';
 
+const ChartBarIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+);
+
 const NavLink = ({ page, children, Icon, activePage, setActivePage }) => (
     <button
         onClick={() => setActivePage(page)}
@@ -33,7 +39,7 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus }) => {
     };
 
     return (
-        <aside className="w-64 bg-gray-800 text-white flex flex-col p-4">
+        <aside className="w-64 bg-gray-800 dark:bg-gray-900 text-white flex flex-col p-4">
             <div className="flex flex-col flex-grow">
                 <div className="mb-10 border-b border-gray-700 pb-4 flex justify-center items-center">
                     <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center">
@@ -75,12 +81,15 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus }) => {
                     <NavLink page="Sevkiyat" Icon={TruckIcon} activePage={activePage} setActivePage={setActivePage}>
                         Sevkiyat
                     </NavLink>
+                    <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} setActivePage={setActivePage}>
+                        Raporlar
+                    </NavLink>
                 </nav>
             </div>
             <div className="flex-shrink-0">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white"
+                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white"
                 >
                     <LogoutIcon className="w-5 h-5" />
                     <span>Çıkış Yap</span>
