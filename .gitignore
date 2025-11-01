@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+
+# Claude Code
+.claude/
+
+# Temp directories
+takip-crm-new/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

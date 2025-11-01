@@ -8,12 +8,50 @@ export const formatDate = (dateString) => {
 };
 
 /**
- * Format a number as Turkish Lira currency
+ * Format a number as currency (TRY or USD)
  * @param {number} amount - Amount to format
+ * @param {string} currency - Currency code ('TRY' or 'USD'), defaults to 'TRY'
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount) => {
-    return (amount || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+export const formatCurrency = (amount, currency = 'TRY') => {
+    const locale = currency === 'USD' ? 'en-US' : 'tr-TR';
+    return (amount || 0).toLocaleString(locale, { style: 'currency', currency });
+};
+
+/**
+ * Get currency symbol from currency code
+ * @param {string} currency - Currency code ('TRY' or 'USD')
+ * @returns {string} Currency symbol
+ */
+export const getCurrencySymbol = (currency) => {
+    return currency === 'USD' ? '$' : '₺';
+};
+
+/**
+ * Format phone number for WhatsApp (Turkish format)
+ * Converts phone numbers to international format for WhatsApp links
+ * @param {string} phone - Phone number to format
+ * @returns {string|null} Formatted phone number or null
+ * @example
+ * formatPhoneNumberForWhatsApp('0532 123 45 67') // returns '905321234567'
+ * formatPhoneNumberForWhatsApp('532 123 45 67') // returns '905321234567'
+ */
+export const formatPhoneNumberForWhatsApp = (phone) => {
+    if (!phone) return null;
+
+    // Remove all spaces, dashes, parentheses
+    let formattedPhone = phone.replace(/[\s\(\)-]/g, '');
+
+    // If starts with 0, replace with 90 (Turkey country code)
+    if (formattedPhone.startsWith('0')) {
+        formattedPhone = '90' + formattedPhone.substring(1);
+    }
+    // If doesn't start with 90, add it
+    else if (!formattedPhone.startsWith('90')) {
+        formattedPhone = '90' + formattedPhone;
+    }
+
+    return formattedPhone;
 };
 
 /**
@@ -23,21 +61,31 @@ export const formatCurrency = (amount) => {
  */
 export const getStatusClass = (status) => {
     switch (status) {
+        // Customer Status
+        case 'Aktif Müşteri':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        case 'Potansiyel Müşteri':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+
+        // Order/Quote Status
         case 'Tamamlandı':
         case 'Teslim Edildi':
         case 'Onaylandı':
-            return 'bg-green-100 text-green-800';
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
         case 'Hazırlanıyor':
         case 'Yolda':
         case 'Gönderildi':
-            return 'bg-yellow-100 text-yellow-800';
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
         case 'Bekliyor':
         case 'Reddedildi':
-            return 'bg-red-100 text-red-800';
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+
+        // Meeting Status
         case 'İlgileniyor':
         case 'Teklif Bekliyor':
-            return 'bg-blue-100 text-blue-800';
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+
         default:
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
 };

@@ -8,7 +8,8 @@ import {
     saveOrder,
     saveQuote,
     convertQuoteToOrder,
-    markShipmentDelivered
+    markShipmentDelivered,
+    deleteDocument
 } from './services/firestoreService';
 
 // Layout Components
@@ -81,6 +82,41 @@ const CrmApp = () => {
     const handleQuoteSave = (data) => saveQuote(user.uid, data);
     const handleMeetingSave = (data) => saveDocument(user.uid, 'gorusmeler', data);
 
+    // Shipment handler
+    const handleShipmentSave = async (shipmentData) => {
+        try {
+            // Save shipment to firestore
+            await saveDocument(user.uid, 'shipments', shipmentData);
+
+            // Update order status if needed
+            // You can implement logic here to check if order is fully shipped
+            // and update order status to 'Tamamlandı' or keep it as is
+
+            alert('Sevkiyat başarıyla kaydedildi!');
+        } catch (error) {
+            console.error('Sevkiyat kaydedilemedi:', error);
+            alert('Sevkiyat kaydedilemedi!');
+        }
+    };
+
+    const handleShipmentUpdate = async (shipmentData) => {
+        try {
+            await saveDocument(user.uid, 'shipments', shipmentData);
+            alert('Sevkiyat başarıyla güncellendi!');
+        } catch (error) {
+            console.error('Sevkiyat güncellenemedi:', error);
+            alert('Sevkiyat güncellenemedi!');
+        }
+    };
+
+    // Delete handler functions
+    const handleCustomerDelete = (id) => deleteDocument(user.uid, 'customers', id);
+    const handleProductDelete = (id) => deleteDocument(user.uid, 'products', id);
+    const handleOrderDelete = (id) => deleteDocument(user.uid, 'orders', id);
+    const handleQuoteDelete = (id) => deleteDocument(user.uid, 'teklifler', id);
+    const handleMeetingDelete = (id) => deleteDocument(user.uid, 'gorusmeler', id);
+    const handleShipmentDelete = (id) => deleteDocument(user.uid, 'shipments', id);
+
     const handleConvertToOrder = async (quote) => {
         await convertQuoteToOrder(user.uid, quote);
     };
@@ -105,14 +141,28 @@ const CrmApp = () => {
                     />
                 );
             case 'Müşteriler':
-                return <Customers customers={customers} onSave={handleCustomerSave} />;
+                return (
+                    <Customers
+                        customers={customers}
+                        onSave={handleCustomerSave}
+                        onDelete={handleCustomerDelete}
+                        orders={orders}
+                        quotes={teklifler}
+                        meetings={gorusmeler}
+                        shipments={shipments}
+                        products={products}
+                        onQuoteSave={handleQuoteSave}
+                        onOrderSave={handleOrderSave}
+                    />
+                );
             case 'Ürünler':
-                return <Products products={products} onSave={handleProductSave} />;
+                return <Products products={products} onSave={handleProductSave} onDelete={handleProductDelete} />;
             case 'Teklifler':
                 return (
                     <Quotes
                         quotes={teklifler}
                         onSave={handleQuoteSave}
+                        onDelete={handleQuoteDelete}
                         onConvertToOrder={handleConvertToOrder}
                         customers={customers}
                         products={products}
@@ -123,6 +173,8 @@ const CrmApp = () => {
                     <Orders
                         orders={orders}
                         onSave={handleOrderSave}
+                        onDelete={handleOrderDelete}
+                        onShipment={handleShipmentSave}
                         customers={customers}
                         products={products}
                     />
@@ -133,11 +185,12 @@ const CrmApp = () => {
                         meetings={gorusmeler}
                         customers={customers}
                         onSave={handleMeetingSave}
+                        onDelete={handleMeetingDelete}
                         onCustomerSave={handleCustomerSave}
                     />
                 );
             case 'Sevkiyat':
-                return <Shipments shipments={shipments} onDelivery={handleDelivery} />;
+                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} />;
             case 'Raporlar':
                 return (
                     <Reports

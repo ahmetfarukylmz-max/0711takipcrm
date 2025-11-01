@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon } from '../icons';
-import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppIcon } from '../icons';
+import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import SalesChart from '../charts/SalesChart';
 import OrderStatusChart from '../charts/OrderStatusChart';
 
@@ -116,13 +116,29 @@ const Dashboard = ({ customers, orders, teklifler, gorusmeler }) => {
                                         key={gorusme.id}
                                         className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     >
-                                        <div>
+                                        <div className="flex-1">
                                             <p className="font-semibold text-gray-700 dark:text-gray-300">
                                                 {customer?.name || 'Bilinmeyen Müşteri'}
                                             </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">{gorusme.next_action_notes}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {customer?.phone || 'Telefon yok'}
+                                                </p>
+                                                {customer?.phone && (
+                                                    <a
+                                                        href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                                                        title="WhatsApp ile mesaj gönder"
+                                                    >
+                                                        <WhatsAppIcon className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{gorusme.next_action_notes}</p>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-4 flex-shrink-0">
                                             {formatDate(gorusme.next_action_date)}
                                         </span>
                                     </div>
