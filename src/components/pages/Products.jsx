@@ -128,7 +128,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
 
             <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left">
                                 <input
@@ -145,32 +145,58 @@ const Products = memo(({ products, onSave, onDelete }) => {
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y md:divide-none divide-gray-100 dark:divide-gray-700">
                         {filteredProducts.length > 0 ? filteredProducts.map(product => (
-                            <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="p-3 text-sm">
+                            <tr key={product.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Seç:{' '}
+                                    </span>
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.has(product.id)}
                                         onChange={() => handleSelectItem(product.id)}
-                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-bold">{product.name}</td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
-                                    <div className="flex gap-3">
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Ürün Adı:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300 font-bold">{product.name}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Ürün Kodu:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300">{product.code}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Maliyet:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Satış:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        İşlemler:{' '}
+                                    </span>
+                                    <div className="flex gap-3 justify-end md:justify-start">
                                         <button
                                             onClick={() => handleOpenModal(product)}
-                                            className="text-blue-500 hover:underline dark:text-blue-400"
+                                            className="text-blue-500 hover:underline dark:text-blue-400 min-h-[44px] px-2"
                                         >
                                             Düzenle
                                         </button>
                                         <button
                                             onClick={() => handleDelete(product)}
-                                            className="text-red-500 hover:underline dark:text-red-400"
+                                            className="text-red-500 hover:underline dark:text-red-400 min-h-[44px] px-2"
                                         >
                                             Sil
                                         </button>
