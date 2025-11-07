@@ -106,6 +106,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
                     )}
                     <button
                         onClick={() => handleOpenModal()}
+                        data-action="add-product"
                         className="flex items-center flex-1 sm:flex-none bg-blue-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-blue-600"
                     >
                         <PlusIcon />

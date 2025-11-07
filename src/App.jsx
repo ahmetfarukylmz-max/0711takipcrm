@@ -19,6 +19,9 @@ import Sidebar from './components/layout/Sidebar';
 import Modal from './components/common/Modal';
 import Guide from './components/common/Guide';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import BottomNav from './components/common/BottomNav';
+import FAB from './components/common/FAB';
+import PullToRefresh from './components/common/PullToRefresh';
 
 
 // Page Components - Lazy Loaded for better performance
@@ -68,9 +71,37 @@ const CrmApp = () => {
     const [showGuide, setShowGuide] = useState(false);
     const [overdueItems, setOverdueItems] = useState([]);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleToggleGuide = () => {
         setShowGuide(!showGuide);
+    };
+
+    // Handle pull to refresh
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        // Wait a bit to simulate refresh (Firestore already updates in real-time)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setRefreshing(false);
+        toast.success('Veriler güncellendi');
+    };
+
+    // Handle FAB actions
+    const handleFABAction = (action) => {
+        // Trigger the appropriate action based on the current page
+        // This will be handled by each page component through their existing "Add" buttons
+        const addButtons = {
+            'addCustomer': () => document.querySelector('[data-action="add-customer"]')?.click(),
+            'addProduct': () => document.querySelector('[data-action="add-product"]')?.click(),
+            'addQuote': () => document.querySelector('[data-action="add-quote"]')?.click(),
+            'addOrder': () => document.querySelector('[data-action="add-order"]')?.click(),
+            'addMeeting': () => document.querySelector('[data-action="add-meeting"]')?.click(),
+            'addShipment': () => document.querySelector('[data-action="add-shipment"]')?.click(),
+        };
+
+        if (addButtons[action]) {
+            addButtons[action]();
+        }
     };
 
     // Fetch all collections
@@ -399,37 +430,43 @@ const CrmApp = () => {
                 isOpen={isMobileMenuOpen}
                 onClose={() => setIsMobileMenuOpen(false)}
             />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0">
-                <Suspense fallback={
-                    <div className="flex items-center justify-center h-full">
-                        <div className="flex items-center gap-3 text-lg text-gray-600 dark:text-gray-400">
-                            <svg
-                                className="animate-spin h-5 w-5 text-blue-500"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                ></circle>
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                            </svg>
-                            <span>Yükleniyor...</span>
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0 pb-20 md:pb-4">
+                <PullToRefresh onRefresh={handleRefresh}>
+                    <Suspense fallback={
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex items-center gap-3 text-lg text-gray-600 dark:text-gray-400">
+                                <svg
+                                    className="animate-spin h-5 w-5 text-blue-500"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                </svg>
+                                <span>Yükleniyor...</span>
+                            </div>
                         </div>
-                    </div>
-                }>
-                    {renderPage()}
-                </Suspense>
+                    }>
+                        {renderPage()}
+                    </Suspense>
+                </PullToRefresh>
             </main>
+
+            {/* Mobile Navigation Components */}
+            <BottomNav activePage={activePage} setActivePage={setActivePage} />
+            <FAB activePage={activePage} onAction={handleFABAction} />
             {showGuide && (
                 <Modal show={showGuide} onClose={handleToggleGuide} title="Kullanıcı Rehberi">
                     <Guide />
