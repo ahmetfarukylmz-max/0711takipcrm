@@ -274,6 +274,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
                     )}
                     <button
                         onClick={() => handleOpenModal()}
+                        data-action="add-quote"
                         className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
                     >
                         <PlusIcon />
