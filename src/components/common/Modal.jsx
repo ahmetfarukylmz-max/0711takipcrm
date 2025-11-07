@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
+const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max-w-2xl' }) => {
     // Prevent body scroll when modal is open
     useEffect(() => {
         if (show) {
@@ -32,13 +32,13 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
             onClick={onClose}
         >
             <div
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full ${maxWidth} max-h-[95vh] flex flex-col animate-slideUp`}
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full mx-2 sm:mx-0 ${maxWidth} max-h-[95vh] flex flex-col animate-slideUp`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header - only show if title exists */}
                 {title && (
-                    <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6 flex-shrink-0">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+                    <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-3 sm:p-6 flex-shrink-0">
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
                         <button
                             onClick={onClose}
                             className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -63,7 +63,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
                 )}
 
                 {/* Content */}
-                <div className="overflow-y-auto flex-1 p-4 sm:p-6">
+                <div className="overflow-y-auto flex-1 p-3 sm:p-6">
                     {children}
                 </div>
             </div>

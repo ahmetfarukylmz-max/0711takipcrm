@@ -65,7 +65,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
                 />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <FormSelect
                     label="Para Birimi"
                     name="currency"
@@ -112,7 +112,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
                 rows={3}
             />
 
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-end">
                 <FormSelect
                     label="KDV Oranı"
                     name="vatRate"

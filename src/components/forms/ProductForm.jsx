@@ -38,7 +38,7 @@ const ProductForm = ({ product, onSave, onCancel }) => {
                 value={formData.code}
                 onChange={handleChange}
             />
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormSelect
                     label="Para Birimi"
                     name="currency"

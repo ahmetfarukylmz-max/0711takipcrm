@@ -41,7 +41,7 @@ const MeetingForm = ({ meeting, onSave, onCancel, customers, onCustomerSave, rea
     return (
         <>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex items-end gap-2">
                         <div className="flex-grow">
                             <FormSelect
@@ -80,7 +80,7 @@ const MeetingForm = ({ meeting, onSave, onCancel, customers, onCustomerSave, rea
                         disabled={readOnly}
                     />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormSelect
                         label="Görüşme Durumu"
                         name="status"
