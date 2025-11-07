@@ -336,7 +336,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
 
             <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                 <input
@@ -353,7 +353,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y md:divide-none divide-gray-100 dark:divide-gray-700">
                         {filteredOrders.length > 0 ? filteredOrders.map(order => {
                             const orderActions = [
                                 { label: 'Detay', onClick: () => handleOpenDetailModal(order) },
@@ -369,29 +369,53 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                             orderActions.push({ label: 'Sil', onClick: () => handleDelete(order), destructive: true });
 
                             return (
-                            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="p-3 text-sm">
+                            <tr key={order.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Seç:{' '}
+                                    </span>
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.has(order.id)}
                                         onChange={() => handleSelectItem(order.id)}
-                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-bold">
-                                    {customers.find(c => c.id === order.customerId)?.name || 'Bilinmiyor'}
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Müşteri:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300 font-bold">
+                                        {customers.find(c => c.id === order.customerId)?.name || 'Bilinmiyor'}
+                                    </span>
                                 </td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(order.order_date)}</td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(order.total_amount, order.currency || 'TRY')}</td>
-                                <td className="p-3 text-sm">
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Sipariş Tarihi:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300">{formatDate(order.order_date)}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Toplam:{' '}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.total_amount, order.currency || 'TRY')}</span>
+                                </td>
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        Durum:{' '}
+                                    </span>
                                     <span
                                         className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
                                     >
                                         {order.status}
                                     </span>
                                 </td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 text-right">
-                                    <div className="flex justify-end">
+                                <td className="p-3 text-sm block md:table-cell text-right md:text-left">
+                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
+                                        İşlemler:{' '}
+                                    </span>
+                                    <div className="flex justify-end md:justify-end min-h-[44px] items-center">
                                         <ActionsDropdown actions={orderActions} />
                                     </div>
                                 </td>

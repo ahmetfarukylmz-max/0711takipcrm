@@ -20,10 +20,10 @@ const ChartBarIcon = (props) => (
     </svg>
 );
 
-const NavLink = ({ page, children, Icon, activePage, setActivePage }) => (
+const NavLink = ({ page, children, Icon, activePage, onNavigate }) => (
     <button
-        onClick={() => setActivePage(page)}
-        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
+        onClick={() => onNavigate(page)}
+        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] ${
             activePage === page
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -34,40 +34,63 @@ const NavLink = ({ page, children, Icon, activePage, setActivePage }) => (
     </button>
 );
 
-const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, overdueItems }) => {
+const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, overdueItems, isOpen, onClose }) => {
     const handleLogout = async () => {
         await signOut(auth);
     };
 
+    const handleNavClick = (page) => {
+        setActivePage(page);
+        // Mobilde menüyü kapat
+        if (onClose && window.innerWidth < 768) {
+            onClose();
+        }
+    };
+
     return (
-        <aside className="w-64 bg-gray-800 dark:bg-gray-900 text-white flex flex-col p-4">
+        <aside className={`
+            w-64 bg-gray-800 dark:bg-gray-900 text-white flex flex-col p-4
+            fixed md:relative h-full z-50
+            transform transition-transform duration-300 ease-in-out
+            ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
             <div className="flex flex-col flex-grow">
                 <div className="mb-10 border-b border-gray-700 pb-4 flex justify-between items-center">
                     <h1 className="text-2xl font-semibold text-white">Takip CRM</h1>
+                    {/* Mobilde kapat butonu */}
+                    <button
+                        onClick={onClose}
+                        className="md:hidden text-gray-300 hover:text-white"
+                        aria-label="Menüyü Kapat"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
                 <nav className="flex flex-col gap-3">
-                    <NavLink page="Anasayfa" Icon={HomeIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Anasayfa" Icon={HomeIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Anasayfa
                     </NavLink>
-                    <NavLink page="Müşteriler" Icon={UsersIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Müşteriler" Icon={UsersIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Müşteriler
                     </NavLink>
-                    <NavLink page="Ürünler" Icon={BoxIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Ürünler" Icon={BoxIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Ürünler
                     </NavLink>
-                    <NavLink page="Teklifler" Icon={DocumentTextIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Teklifler" Icon={DocumentTextIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Teklifler
                     </NavLink>
-                    <NavLink page="Siparişler" Icon={ClipboardListIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Siparişler" Icon={ClipboardListIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Siparişler
                     </NavLink>
-                    <NavLink page="Görüşmeler" Icon={CalendarIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Görüşmeler" Icon={CalendarIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Görüşmeler
                     </NavLink>
-                    <NavLink page="Sevkiyat" Icon={TruckIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Sevkiyat" Icon={TruckIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Sevkiyat
                     </NavLink>
-                    <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} setActivePage={setActivePage}>
+                    <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Raporlar
                     </NavLink>
                     <button

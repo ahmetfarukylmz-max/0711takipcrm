@@ -303,7 +303,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
 
                     <div className="overflow-auto rounded-lg shadow bg-white">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b-2 border-gray-200">
+                            <thead className="bg-gray-50 border-b-2 border-gray-200 hidden md:table-header-group">
                                 <tr>
                                     <th className="p-3 text-sm font-semibold tracking-wide text-left">
                                         <input
@@ -320,7 +320,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y md:divide-none divide-gray-100">
                                 {filteredAndSortedMeetings.map(meeting => {
                                     const customer = customers.find(c => c.id === meeting.customerId);
                                     const meetingActions = [
@@ -330,18 +330,24 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                                     ];
 
                                     return (
-                                        <tr key={meeting.id} className="hover:bg-gray-50">
-                                            <td className="p-3 text-sm">
+                                        <tr key={meeting.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50">
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Seç:{' '}
+                                                </span>
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedItems.has(meeting.id)}
                                                     onChange={() => handleSelectItem(meeting.id)}
-                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                    className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
                                                 />
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700 font-bold">
-                                                <div>
-                                                    <div>{customer?.name || 'Bilinmiyor'}</div>
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Müşteri:{' '}
+                                                </span>
+                                                <div className="inline-block md:block text-left md:text-left">
+                                                    <div className="text-gray-700 font-bold">{customer?.name || 'Bilinmiyor'}</div>
                                                     {customer?.phone && (
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <span className="text-xs text-gray-500 font-normal">{customer.phone}</span>
@@ -358,37 +364,64 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700">{formatDate(meeting.date)}</td>
-                                            <td className="p-3 text-sm">
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Görüşme Tarihi:{' '}
+                                                </span>
+                                                <span className="text-gray-700">{formatDate(meeting.date)}</span>
+                                            </td>
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Durum:{' '}
+                                                </span>
                                                 <span
                                                     className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.status || 'Planlandı')}`}
                                                 >
                                                     {meeting.status || 'Planlandı'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700">
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Tür:{' '}
+                                                </span>
                                                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                                     {meeting.meetingType || 'İlk Temas'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-sm">
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Sonuç:{' '}
+                                                </span>
                                                 <span
                                                     className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.outcome)}`}
                                                 >
                                                     {meeting.outcome}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700">{meeting.next_action_notes}</td>
-                                            <td className="p-3 text-sm text-gray-700">{formatDate(meeting.next_action_date)}</td>
-                                            <td className="p-3 text-sm text-gray-700">
-                                                <div className="flex items-center justify-end gap-2">
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Sonraki Eylem:{' '}
+                                                </span>
+                                                <span className="text-gray-700">{meeting.next_action_notes}</span>
+                                            </td>
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    Eylem Tarihi:{' '}
+                                                </span>
+                                                <span className="text-gray-700">{formatDate(meeting.next_action_date)}</span>
+                                            </td>
+                                            <td className="p-3 text-sm block md:table-cell text-right md:text-left">
+                                                <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
+                                                    İşlemler:{' '}
+                                                </span>
+                                                <div className="flex items-center justify-end md:justify-end gap-2 min-h-[44px]">
                                                     <button
                                                         onClick={() => handleQuickComplete(meeting)}
-                                                        className={`p-1 rounded-full ${meeting.status === 'Tamamlandı' ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-100 hover:bg-green-200'}`}
+                                                        className={`p-2 rounded-full min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1 ${meeting.status === 'Tamamlandı' ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-100 hover:bg-green-200'}`}
                                                         title="Tamamla"
                                                         disabled={meeting.status === 'Tamamlandı'}
                                                     >
-                                                        <svg className="w-4 h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                        <svg className="w-5 h-5 md:w-4 md:h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                                     </button>
                                                     <ActionsDropdown actions={meetingActions} />
                                                 </div>

@@ -18,6 +18,7 @@ import {
 import Sidebar from './components/layout/Sidebar';
 import Modal from './components/common/Modal';
 import Guide from './components/common/Guide';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 
 // Page Components - Lazy Loaded for better performance
@@ -66,6 +67,7 @@ const CrmApp = () => {
     const [editingDocument, setEditingDocument] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
     const [overdueItems, setOverdueItems] = useState([]);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleToggleGuide = () => {
         setShowGuide(!showGuide);
@@ -362,15 +364,42 @@ const CrmApp = () => {
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-sans">
             <Toaster position="top-right" />
-            
+
+            {/* Hamburger Menü Butonu - Sadece Mobilde */}
+            <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden fixed top-4 left-4 z-[60] bg-gray-800 dark:bg-gray-900 text-white p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors"
+                aria-label="Menüyü Aç"
+            >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+                    />
+                </svg>
+            </button>
+
+            {/* Overlay - Mobilde Sidebar açıkken arka planı karart */}
+            {isMobileMenuOpen && (
+                <div
+                    className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    aria-label="Menüyü Kapat"
+                />
+            )}
+
             <Sidebar
                 activePage={activePage}
                 setActivePage={setActivePage}
                 connectionStatus={connectionStatus}
                 onToggleGuide={handleToggleGuide}
                 overdueItems={overdueItems}
+                isOpen={isMobileMenuOpen}
+                onClose={() => setIsMobileMenuOpen(false)}
             />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0">
                 <Suspense fallback={
                     <div className="flex items-center justify-center h-full">
                         <div className="flex items-center gap-3 text-lg text-gray-600 dark:text-gray-400">
@@ -412,10 +441,12 @@ const CrmApp = () => {
 
 export default function App() {
     return (
-        <ThemeProvider>
-            <AuthProvider>
-                <CrmApp />
-            </AuthProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+            <ThemeProvider>
+                <AuthProvider>
+                    <CrmApp />
+                </AuthProvider>
+            </ThemeProvider>
+        </ErrorBoundary>
     );
 }
