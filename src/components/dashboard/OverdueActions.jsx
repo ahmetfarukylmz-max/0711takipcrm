@@ -88,18 +88,18 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
 
     return (
         <>
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+            <div className="bg-white dark:bg-gray-600 shadow-md rounded-lg p-6">
                 <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Gecikmiş Eylemler</h2>
                 <div className="max-h-96 overflow-y-auto">
                     {overdueItems.length > 0 ? (
                         Object.keys(groupedItems).map(group => (
                             <div key={group} className="mb-4">
-                                <h3 className="p-2 bg-gray-100 dark:bg-gray-700 font-bold text-md text-gray-700 dark:text-gray-300 rounded-t-lg">{group}</h3>
-                                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                                <h3 className="p-2 bg-gray-100 dark:bg-gray-600 font-bold text-md text-gray-700 dark:text-gray-300 rounded-t-lg">{group}</h3>
+                                <ul className="divide-y divide-gray-200 dark:divide-gray-500">
                                     {groupedItems[group].map(item => (
                                         <li
                                             key={item.id}
-                                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${isOverdueByWeek(item.next_action_date) ? 'bg-red-50 dark:bg-red-900' : ''}`}
+                                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-500 cursor-pointer ${isOverdueByWeek(item.next_action_date) ? 'bg-red-50 dark:bg-red-900' : ''}`}
                                             onClick={() => handleItemClick(group)}
                                         >
                                             <div className="flex items-start">
@@ -153,7 +153,7 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
                         <button
                             type="button"
                             onClick={() => setIsRescheduleModalOpen(false)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-500 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-500"
                         >
                             İptal
                         </button>
