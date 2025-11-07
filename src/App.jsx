@@ -18,6 +18,7 @@ import {
 import Sidebar from './components/layout/Sidebar';
 import Modal from './components/common/Modal';
 import Guide from './components/common/Guide';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 
 // Page Components - Lazy Loaded for better performance
@@ -440,10 +441,12 @@ const CrmApp = () => {
 
 export default function App() {
     return (
-        <ThemeProvider>
-            <AuthProvider>
-                <CrmApp />
-            </AuthProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+            <ThemeProvider>
+                <AuthProvider>
+                    <CrmApp />
+                </AuthProvider>
+            </ThemeProvider>
+        </ErrorBoundary>
     );
 }
