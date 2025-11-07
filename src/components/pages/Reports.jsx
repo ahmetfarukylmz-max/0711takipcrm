@@ -5,7 +5,7 @@ import CustomerAnalyticsChart from '../charts/CustomerAnalyticsChart';
 import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDetails';
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
-import { CalendarIcon, ChartBarIcon } from '../icons';
+import { ChartBarIcon } from '../icons';
 
 const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, products }) => {
     const [dateRange, setDateRange] = useState('30'); // days
@@ -117,28 +117,17 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Raporlar ve Analizler</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">İşletmenizin performansını ve günlük aktivitelerinizi izleyin.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    {/* Günlük Performans Raporu Butonu */}
-                    <button
-                        onClick={() => setShowDailyReportModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                    >
-                        <CalendarIcon className="w-5 h-5" />
-                        <span>Günlük Performans Raporu</span>
-                    </button>
-
-                    {/* Tarih Aralığı Seçici */}
-                    <select
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value)}
-                        className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                        <option value="7">Son 7 Gün</option>
-                        <option value="30">Son 30 Gün</option>
-                        <option value="90">Son 90 Gün</option>
-                        <option value="365">Son 1 Yıl</option>
-                    </select>
-                </div>
+                {/* Tarih Aralığı Seçici */}
+                <select
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                >
+                    <option value="7">Son 7 Gün</option>
+                    <option value="30">Son 30 Gün</option>
+                    <option value="90">Son 90 Gün</option>
+                    <option value="365">Son 1 Yıl</option>
+                </select>
             </div>
 
             {/* Modal: Günlük Performans Raporu */}

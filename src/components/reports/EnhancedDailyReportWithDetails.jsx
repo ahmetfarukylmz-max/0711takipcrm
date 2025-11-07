@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { generateModernPDF } from './pdfExportFunction';
+import autoTable from 'jspdf-autotable';
 import {
     CalendarIcon,
     TrendingUpIcon,
@@ -296,6 +295,19 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             const pageHeight = pdf.internal.pageSize.getHeight();
             const margin = 20;
             let yPosition = margin;
+            let pageNumber = 1;
+
+            const checkPageBreak = (requiredSpace) => {
+                if (yPosition + requiredSpace > pageHeight - margin) {
+                    pdf.addPage();
+                    pageNumber++;
+                    yPosition = margin;
+                    // Yeni sayfada sayfa numarasını ekle
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text(`Sayfa ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                }
+            };
 
             // ============================================
             // HEADER - Modern Gradient Header
@@ -323,541 +335,269 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             pdf.setFont('helvetica', 'normal');
             pdf.text(formatDate(selectedDate), pageWidth - 15, 23, { align: 'right' });
 
+            // İlk sayfa numarası
+            pdf.setFontSize(8);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text(`Sayfa 1`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
             yPosition = headerHeight + 15;
 
-            // Özet Metrikler - Modern Grid Layout
+            // Özet Metrikler - AutoTable ile
             pdf.setFontSize(16);
             pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(30, 64, 175); // blue-800
             pdf.text('PERFORMANS METRIKLERI', margin, yPosition);
-            yPosition += 12;
+            yPosition += 3;
 
-            const metrics = [
-                {
-                    label: 'Musteri Gorusmeleri',
-                    value: todayData.stats.newMeetings,
-                    prev: yesterdayData.stats.newMeetings,
-                    color: [59, 130, 246] // blue
-                },
-                {
-                    label: 'Olusturulan Teklifler',
-                    value: todayData.stats.newQuotes,
-                    prev: yesterdayData.stats.newQuotes,
-                    amount: todayData.stats.newQuotesValue,
-                    color: [168, 85, 247] // purple
-                },
-                {
-                    label: 'Onaylanan Siparisler',
-                    value: todayData.stats.convertedOrders,
-                    prev: yesterdayData.stats.convertedOrders,
-                    amount: todayData.stats.convertedOrdersValue,
-                    color: [34, 197, 94] // green
-                },
-                {
-                    label: 'Donusum Orani',
-                    value: conversionRate,
-                    prev: yesterdayConversionRate,
-                    isPercent: true,
-                    color: [249, 115, 22] // orange
-                }
+            const metricsBody = [
+                [
+                    { content: `Müşteri Görüşmeleri\n${todayData.stats.newMeetings} adet`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
+                    { content: `Oluşturulan Teklifler\n${todayData.stats.newQuotes} adet\n${formatCurrency(todayData.stats.newQuotesValue)}`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
+                ],
+                [
+                    { content: `Onaylanan Siparişler\n${todayData.stats.convertedOrders} adet\n${formatCurrency(todayData.stats.convertedOrdersValue)}`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
+                    { content: `Dönüşüm Oranı\n${conversionRate}%`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
+                ]
             ];
 
-            // 2x2 Grid
-            const cardWidth = (pageWidth - (margin * 2) - 8) / 2;
-            const cardHeight = 32;
-            let gridX = margin;
-            let gridY = yPosition;
-
-            metrics.forEach((metric, idx) => {
-                // Yeni satır kontrolü
-                if (idx === 2) {
-                    gridY += cardHeight + 4;
-                    gridX = margin;
-                }
-
-                // Kart arka planı - Gölge efekti için çoklu katman
-                pdf.setDrawColor(220, 220, 220);
-                pdf.setLineWidth(0.1);
-                pdf.setFillColor(255, 255, 255);
-                pdf.roundedRect(gridX, gridY, cardWidth, cardHeight, 3, 3, 'FD');
-
-                // Renkli üst çubuk
-                pdf.setFillColor(metric.color[0], metric.color[1], metric.color[2]);
-                pdf.roundedRect(gridX, gridY, cardWidth, 4, 3, 3, 'F');
-                pdf.rect(gridX, gridY + 2, cardWidth, 2, 'F'); // Alt kısmı düzleştir
-
-                // Label
-                pdf.setTextColor(71, 85, 105); // slate-600
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text(metric.label.toUpperCase(), gridX + 4, gridY + 11);
-
-                // Ana değer
-                pdf.setTextColor(15, 23, 42); // slate-900
-                pdf.setFontSize(20);
-                pdf.setFont('helvetica', 'bold');
-                const displayValue = metric.isPercent ? `${metric.value}%` : `${metric.value}`;
-                pdf.text(displayValue, gridX + 4, gridY + 22);
-
-                // Tutar (varsa)
-                if (metric.amount) {
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(100, 116, 139); // slate-500
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.text(formatCurrency(metric.amount), gridX + 4, gridY + 28);
-                }
-
-                // Önceki gün karşılaştırması
-                const change = metric.prev ? ((metric.value - metric.prev) / Math.abs(metric.prev || 1) * 100).toFixed(0) : 0;
-                const isPositive = change >= 0;
-
-                pdf.setFontSize(7);
-                pdf.setFont('helvetica', 'normal');
-                if (metric.isPercent) {
-                    pdf.setTextColor(100, 116, 139);
-                    const prevText = `Dun: ${metric.prev}%`;
-                    const prevWidth = pdf.getTextWidth(prevText);
-                    pdf.text(prevText, gridX + cardWidth - 4 - prevWidth, gridY + 28);
-                } else {
-                    const changeColor = isPositive ? [34, 197, 94] : [239, 68, 68]; // green or red
-                    pdf.setTextColor(changeColor[0], changeColor[1], changeColor[2]);
-                    const arrow = isPositive ? '▲' : '▼';
-                    const changeText = `${arrow} ${Math.abs(change)}% (Dun: ${metric.prev})`;
-                    const changeWidth = pdf.getTextWidth(changeText);
-                    pdf.text(changeText, gridX + cardWidth - 4 - changeWidth, gridY + 28);
-                }
-
-                gridX += cardWidth + 4;
+            autoTable(pdf, {
+                startY: yPosition,
+                body: metricsBody,
+                theme: 'grid',
+                styles: {
+                    cellPadding: 8,
+                    lineWidth: 0.1,
+                    lineColor: [203, 213, 225],
+                },
+                didDrawCell: (data) => {
+                    if (data.section === 'body') {
+                        pdf.setDrawColor(203, 213, 225);
+                        pdf.setLineWidth(0.1);
+                        pdf.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+                    }
+                },
+                margin: { left: margin, right: margin },
             });
 
-            yPosition = gridY + cardHeight + 15;
+            yPosition = pdf.lastAutoTable.finalY + 15;
 
-            // Müşteri Görüşmeleri Detayı - Tablo Formatı
+            // Müşteri Görüşmeleri Detayı - AutoTable ile
             if (todayData.meetings && todayData.meetings.length > 0) {
                 checkPageBreak(50);
 
-                // Başlık
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(30, 64, 175);
-                pdf.text(`MUSTERI GORUSMELERI (${todayData.meetings.length})`, margin, yPosition);
+                pdf.text(`MÜŞTERİ GÖRÜŞMELERİ (${todayData.meetings.length})`, margin, yPosition);
                 yPosition += 10;
 
-                // Tablo başlık satırı
-                const tableStartY = yPosition;
-                pdf.setFillColor(59, 130, 246);
-                pdf.rect(margin, tableStartY, pageWidth - (margin * 2), 8, 'F');
+                const meetingsBody = todayData.meetings.map(meeting => ([
+                    getCustomerName(meeting.customerId),
+                    formatDate(meeting.date),
+                    meeting.notes || meeting.outcome || '-'
+                ]));
 
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                const headerY = tableStartY + 5.5;
-                pdf.text('Musteri Adi', margin + 3, headerY);
-                pdf.text('Tarih', margin + 70, headerY);
-                pdf.text('Notlar / Sonuc', margin + 105, headerY);
-
-                yPosition = tableStartY + 8;
-
-                // Tablo satırları
-                pdf.setTextColor(0, 0, 0);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-
-                todayData.meetings.forEach((meeting, idx) => {
-                    checkPageBreak(10);
-
-                    const rowY = yPosition;
-                    const textY = rowY + 6;
-
-                    // Alternatif satır rengi
-                    if (idx % 2 === 0) {
-                        pdf.setFillColor(249, 250, 251);
-                        pdf.rect(margin, rowY, pageWidth - (margin * 2), 9, 'F');
-                    }
-
-                    // Çerçeve
-                    pdf.setDrawColor(226, 232, 240);
-                    pdf.setLineWidth(0.1);
-                    pdf.line(margin, rowY + 9, pageWidth - margin, rowY + 9);
-
-                    pdf.setFont('helvetica', 'bold');
-                    const customerName = getCustomerName(meeting.customerId);
-                    const displayCustomer = customerName.length > 25 ? customerName.substring(0, 25) : customerName;
-                    pdf.text(displayCustomer, margin + 3, textY);
-
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.text(formatDate(meeting.date), margin + 70, textY);
-
-                    const notes = meeting.notes || meeting.outcome || '-';
-                    const notesText = notes.length > 35 ? notes.substring(0, 35) + '...' : notes;
-                    pdf.text(notesText, margin + 105, textY);
-
-                    yPosition = rowY + 9;
+                autoTable(pdf, {
+                    startY: yPosition,
+                    head: [['Müşteri Adı', 'Tarih', 'Notlar / Sonuç']],
+                    body: meetingsBody,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [59, 130, 246],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 9,
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 60 },
+                        1: { cellWidth: 30 },
+                        2: { cellWidth: 'auto' },
+                    },
+                    margin: { left: margin, right: margin },
                 });
 
-                yPosition += 10;
+                yPosition = pdf.lastAutoTable.finalY + 15;
             }
 
-            // Oluşturulan Teklifler Detayı - Kart Formatı
+            // Oluşturulan Teklifler Detayı - AutoTable ile
             if (todayData.quotes && todayData.quotes.length > 0) {
                 checkPageBreak(50);
 
-                // Başlık
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(30, 64, 175);
-                pdf.text(`OLUSTURULAN TEKLIFLER (${todayData.quotes.length})`, margin, yPosition);
-                yPosition += 12;
+                pdf.text(`OLUŞTURULAN TEKLİFLER (${todayData.quotes.length})`, margin, yPosition);
+                yPosition += 10;
 
-                todayData.quotes.forEach((quote, idx) => {
-                    const itemsHeight = quote.items ? Math.min(quote.items.length * 6, 35) : 0;
-                    checkPageBreak(28 + itemsHeight);
+                const quotesBody = todayData.quotes.map(quote => ([
+                    `#${quote.id.substring(0, 5)}`,
+                    getCustomerName(quote.customerId),
+                    formatDate(quote.teklif_tarihi),
+                    quote.status || 'Bekliyor',
+                    formatCurrency(quote.total_amount)
+                ]));
 
-                    const startY = yPosition;
-                    const cardHeight = 25 + itemsHeight;
-
-                    // Kart arka planı
-                    pdf.setDrawColor(226, 232, 240);
-                    pdf.setLineWidth(0.2);
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.roundedRect(margin, startY, pageWidth - (margin * 2), cardHeight, 2, 2, 'FD');
-
-                    // Sol mor çizgi (accent)
-                    pdf.setFillColor(168, 85, 247);
-                    pdf.rect(margin, startY, 3, cardHeight, 'F');
-
-                    // Başlık satırı
-                    pdf.setFontSize(10);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(15, 23, 42);
-                    pdf.text(`Teklif #${idx + 1}`, margin + 6, startY + 6);
-
-                    pdf.setFontSize(11);
-                    pdf.text(getCustomerName(quote.customerId), margin + 6, startY + 12);
-
-                    // Tutar (sağda büyük)
-                    pdf.setFontSize(13);
-                    pdf.setTextColor(168, 85, 247);
-                    pdf.text(formatCurrency(quote.total_amount), pageWidth - margin - 3, startY + 10, { align: 'right' });
-
-                    // Tarih ve durum
-                    pdf.setFontSize(8);
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(100, 116, 139);
-                    pdf.text(formatDate(quote.teklif_tarihi), margin + 6, startY + 17);
-
-                    const statusColor = quote.status === 'Onaylandi' ? [34, 197, 94] : [251, 146, 60];
-                    pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-                    pdf.text(quote.status || 'Bekliyor', margin + 40, startY + 17);
-
-                    // Ürün listesi
-                    if (quote.items && quote.items.length > 0) {
-                        yPosition = startY + 22;
-
-                        // Ürün tablosu başlığı
-                        const productHeaderY = yPosition;
-                        pdf.setFillColor(248, 250, 252);
-                        pdf.rect(margin + 6, productHeaderY, pageWidth - (margin * 2) - 12, 5, 'F');
-
-                        pdf.setFontSize(7);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.setTextColor(71, 85, 105);
-                        const prodHeaderTextY = productHeaderY + 3.5;
-                        pdf.text('Urun', margin + 8, prodHeaderTextY);
-                        pdf.text('Miktar', margin + 90, prodHeaderTextY);
-
-                        const amountLabel = 'Tutar';
-                        const amountWidth = pdf.getTextWidth(amountLabel);
-                        pdf.text(amountLabel, pageWidth - margin - 8 - amountWidth, prodHeaderTextY);
-
-                        yPosition = productHeaderY + 5;
-
-                        pdf.setFontSize(7);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(0, 0, 0);
-
-                        quote.items.slice(0, 5).forEach((item) => {
-                            const productName = getProductName(item.productId);
-                            const displayName = productName.length > 32 ? productName.substring(0, 32) + '...' : productName;
-                            const itemY = yPosition + 4;
-                            pdf.text(displayName, margin + 8, itemY);
-                            pdf.text(`${item.quantity} ${item.unit || 'Kg'}`, margin + 90, itemY);
-
-                            const itemTotal = formatCurrency(item.quantity * item.unit_price);
-                            const itemTotalWidth = pdf.getTextWidth(itemTotal);
-                            pdf.text(itemTotal, pageWidth - margin - 8 - itemTotalWidth, itemY);
-                            yPosition += 6;
-                        });
-
-                        if (quote.items.length > 5) {
-                            pdf.setTextColor(100, 116, 139);
-                            pdf.setFontStyle('italic');
-                            pdf.text(`+ ${quote.items.length - 5} urun daha`, margin + 8, yPosition + 3);
-                        }
-                    }
-
-                    yPosition = startY + cardHeight + 6;
+                autoTable(pdf, {
+                    startY: yPosition,
+                    head: [['#', 'Müşteri', 'Tarih', 'Durum', 'Tutar']],
+                    body: quotesBody,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [168, 85, 247],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 9,
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 20 },
+                        1: { cellWidth: 50 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 30 },
+                        4: { cellWidth: 'auto', halign: 'right' },
+                    },
+                    margin: { left: margin, right: margin },
                 });
 
-                yPosition += 5;
+                yPosition = pdf.lastAutoTable.finalY + 15;
             }
 
-            // Onaylanan Siparişler Detayı - Kart Formatı (Yeşil Tema)
+            // Onaylanan Siparişler Detayı - AutoTable ile
             if (todayData.allOrders && todayData.allOrders.length > 0) {
                 checkPageBreak(50);
 
-                // Başlık
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(30, 64, 175);
-                pdf.text(`ONAYLANAN SIPARISLER (${todayData.allOrders.length})`, margin, yPosition);
-                yPosition += 12;
+                pdf.text(`ONAYLANAN SİPARİŞLER (${todayData.allOrders.length})`, margin, yPosition);
+                yPosition += 10;
 
-                todayData.allOrders.forEach((order, idx) => {
-                    const itemsHeight = order.items ? Math.min(order.items.length * 6, 35) : 0;
-                    checkPageBreak(28 + itemsHeight);
+                const ordersBody = todayData.allOrders.map(order => ([
+                    `#${order.id.substring(0, 5)}`,
+                    getCustomerName(order.customerId),
+                    formatDate(order.order_date),
+                    order.quoteId ? '✓ Tekliften' : (order.status || 'Bekliyor'),
+                    formatCurrency(order.total_amount)
+                ]));
 
-                    const startY = yPosition;
-                    const cardHeight = 25 + itemsHeight;
-
-                    // Kart arka planı
-                    pdf.setDrawColor(226, 232, 240);
-                    pdf.setLineWidth(0.2);
-                    pdf.setFillColor(255, 255, 255);
-                    pdf.roundedRect(margin, startY, pageWidth - (margin * 2), cardHeight, 2, 2, 'FD');
-
-                    // Sol yeşil çizgi (accent)
-                    pdf.setFillColor(34, 197, 94);
-                    pdf.rect(margin, startY, 3, cardHeight, 'F');
-
-                    // Başlık satırı
-                    pdf.setFontSize(10);
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setTextColor(15, 23, 42);
-                    pdf.text(`Siparis #${idx + 1}`, margin + 6, startY + 6);
-
-                    pdf.setFontSize(11);
-                    pdf.text(getCustomerName(order.customerId), margin + 6, startY + 12);
-
-                    // Tutar (sağda büyük)
-                    pdf.setFontSize(13);
-                    pdf.setTextColor(34, 197, 94);
-                    pdf.text(formatCurrency(order.total_amount), pageWidth - margin - 3, startY + 10, { align: 'right' });
-
-                    // Tarih ve durum
-                    pdf.setFontSize(8);
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(100, 116, 139);
-                    pdf.text(formatDate(order.order_date), margin + 6, startY + 17);
-
-                    if (order.quoteId) {
-                        pdf.setTextColor(34, 197, 94);
-                        pdf.text('✓ Tekliften Donusturuldu', margin + 40, startY + 17);
-                    } else {
-                        pdf.setTextColor(100, 116, 139);
-                        pdf.text(order.status || 'Bekliyor', margin + 40, startY + 17);
-                    }
-
-                    // Ürün listesi
-                    if (order.items && order.items.length > 0) {
-                        yPosition = startY + 22;
-
-                        // Ürün tablosu başlığı
-                        const productHeaderY = yPosition;
-                        pdf.setFillColor(248, 250, 252);
-                        pdf.rect(margin + 6, productHeaderY, pageWidth - (margin * 2) - 12, 5, 'F');
-
-                        pdf.setFontSize(7);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.setTextColor(71, 85, 105);
-                        const prodHeaderTextY = productHeaderY + 3.5;
-                        pdf.text('Urun', margin + 8, prodHeaderTextY);
-                        pdf.text('Miktar', margin + 90, prodHeaderTextY);
-
-                        const amountLabel = 'Tutar';
-                        const amountWidth = pdf.getTextWidth(amountLabel);
-                        pdf.text(amountLabel, pageWidth - margin - 8 - amountWidth, prodHeaderTextY);
-
-                        yPosition = productHeaderY + 5;
-
-                        pdf.setFontSize(7);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(0, 0, 0);
-
-                        order.items.slice(0, 5).forEach((item) => {
-                            const productName = getProductName(item.productId);
-                            const displayName = productName.length > 32 ? productName.substring(0, 32) + '...' : productName;
-                            const itemY = yPosition + 4;
-                            pdf.text(displayName, margin + 8, itemY);
-                            pdf.text(`${item.quantity} ${item.unit || 'Kg'}`, margin + 90, itemY);
-
-                            const itemTotal = formatCurrency(item.quantity * item.unit_price);
-                            const itemTotalWidth = pdf.getTextWidth(itemTotal);
-                            pdf.text(itemTotal, pageWidth - margin - 8 - itemTotalWidth, itemY);
-                            yPosition += 6;
-                        });
-
-                        if (order.items.length > 5) {
-                            pdf.setTextColor(100, 116, 139);
-                            pdf.setFontStyle('italic');
-                            pdf.text(`+ ${order.items.length - 5} urun daha`, margin + 8, yPosition + 3);
-                        }
-                    }
-
-                    yPosition = startY + cardHeight + 6;
+                autoTable(pdf, {
+                    startY: yPosition,
+                    head: [['#', 'Müşteri', 'Tarih', 'Durum', 'Tutar']],
+                    body: ordersBody,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [34, 197, 94],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 9,
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 20 },
+                        1: { cellWidth: 50 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 30 },
+                        4: { cellWidth: 'auto', halign: 'right' },
+                    },
+                    margin: { left: margin, right: margin },
                 });
 
-                yPosition += 5;
+                yPosition = pdf.lastAutoTable.finalY + 15;
             }
 
-            // Sevkiyatlar - Kompakt Tablo
+            // Sevkiyatlar - AutoTable ile
             if (todayData.shipments && todayData.shipments.length > 0) {
                 checkPageBreak(50);
 
-                // Başlık
                 pdf.setFontSize(14);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(30, 64, 175);
-                pdf.text(`OLUSTURULAN SEVKIYATLAR (${todayData.shipments.length})`, margin, yPosition);
+                pdf.text(`OLUŞTURULAN SEVKİYATLAR (${todayData.shipments.length})`, margin, yPosition);
                 yPosition += 10;
 
-                // Tablo başlık satırı
-                const shipTableY = yPosition;
-                pdf.setFillColor(251, 146, 60); // orange
-                pdf.rect(margin, shipTableY, pageWidth - (margin * 2), 8, 'F');
-
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                const shipHeaderY = shipTableY + 5.5;
-                pdf.text('Musteri', margin + 3, shipHeaderY);
-                pdf.text('Sevkiyat Tarihi', margin + 70, shipHeaderY);
-                pdf.text('Durum', margin + 115, shipHeaderY);
-
-                const deliveryLabel = 'Teslimat';
-                const deliveryWidth = pdf.getTextWidth(deliveryLabel);
-                pdf.text(deliveryLabel, pageWidth - margin - deliveryWidth - 3, shipHeaderY);
-
-                yPosition = shipTableY + 8;
-
-                // Tablo satırları
-                pdf.setTextColor(0, 0, 0);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'normal');
-
-                todayData.shipments.forEach((shipment, idx) => {
-                    checkPageBreak(10);
-
-                    const rowY = yPosition;
-                    const textY = rowY + 6;
-
+                const shipmentsBody = todayData.shipments.map(shipment => {
                     const relatedOrder = orders.find(o => o.id === shipment.orderId);
                     const customerName = relatedOrder ? getCustomerName(relatedOrder.customerId) : 'Bilinmiyor';
-
-                    // Alternatif satır rengi
-                    if (idx % 2 === 0) {
-                        pdf.setFillColor(249, 250, 251);
-                        pdf.rect(margin, rowY, pageWidth - (margin * 2), 9, 'F');
-                    }
-
-                    // Çerçeve
-                    pdf.setDrawColor(226, 232, 240);
-                    pdf.setLineWidth(0.1);
-                    pdf.line(margin, rowY + 9, pageWidth - margin, rowY + 9);
-
-                    const displayCustomer = customerName.length > 22 ? customerName.substring(0, 22) : customerName;
-                    pdf.text(displayCustomer, margin + 3, textY);
-                    pdf.text(formatDate(shipment.shipment_date), margin + 70, textY);
-                    pdf.text(shipment.status, margin + 115, textY);
-
-                    if (shipment.delivery_date) {
-                        const delDate = formatDate(shipment.delivery_date);
-                        const delWidth = pdf.getTextWidth(delDate);
-                        pdf.text(delDate, pageWidth - margin - delWidth - 3, textY);
-                    } else {
-                        pdf.text('-', pageWidth - margin - 6, textY);
-                    }
-
-                    yPosition = rowY + 9;
+                    return [
+                        customerName,
+                        formatDate(shipment.shipment_date),
+                        shipment.status,
+                        shipment.delivery_date ? formatDate(shipment.delivery_date) : '-'
+                    ];
                 });
 
-                yPosition += 10;
+                autoTable(pdf, {
+                    startY: yPosition,
+                    head: [['Müşteri', 'Sevkiyat Tarihi', 'Durum', 'Teslimat']],
+                    body: shipmentsBody,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [251, 146, 60],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 9,
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 60 },
+                        1: { cellWidth: 35 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 'auto' },
+                    },
+                    margin: { left: margin, right: margin },
+                });
+
+                yPosition = pdf.lastAutoTable.finalY + 15;
             }
 
-            // Modern Footer - Özet Kutusu
+            // Modern Footer - AutoTable ile
             checkPageBreak(55);
 
-            // Footer başlık
-            pdf.setFillColor(37, 99, 235);
-            pdf.roundedRect(margin, yPosition, pageWidth - (margin * 2), 10, 2, 2, 'F');
-
-            pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('GUNLUK PERFORMANS OZETI', pageWidth / 2, yPosition + 7, { align: 'center' });
+            pdf.setTextColor(30, 64, 175);
+            pdf.text('GÜNLÜK PERFORMANS ÖZETİ', margin, yPosition);
+            yPosition += 10;
 
-            yPosition += 15;
-
-            // Özet kartları (3 kolon)
-            const summaryCardWidth = (pageWidth - (margin * 2) - 8) / 3;
-            let summaryX = margin;
-
-            const summaries = [
-                {
-                    label: 'Gelir Potansiyeli',
-                    value: formatCurrency(todayData.stats.newQuotesValue),
-                    detail: `${todayData.stats.newQuotes} Teklif`,
-                    color: [168, 85, 247]
-                },
-                {
-                    label: 'Gerceklesen Gelir',
-                    value: formatCurrency(todayData.stats.allOrdersValue),
-                    detail: `${todayData.stats.allOrders} Siparis`,
-                    color: [34, 197, 94]
-                },
-                {
-                    label: 'Basari Orani',
-                    value: `${conversionRate}%`,
-                    detail: `${todayData.stats.convertedOrders}/${todayData.stats.newQuotes} Onaylandi`,
-                    color: [249, 115, 22]
-                }
+            const summaryBody = [
+                [
+                    { content: `Gelir Potansiyeli\n${formatCurrency(todayData.stats.newQuotesValue)}\n${todayData.stats.newQuotes} Teklif`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
+                    { content: `Gerçekleşen Gelir\n${formatCurrency(todayData.stats.allOrdersValue)}\n${todayData.stats.allOrders} Sipariş`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
+                    { content: `Başarı Oranı\n${conversionRate}%\n${todayData.stats.convertedOrders}/${todayData.stats.newQuotes} Onaylandı`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
+                ]
             ];
 
-            summaries.forEach((summary, idx) => {
-                // Kart arka planı
-                pdf.setDrawColor(226, 232, 240);
-                pdf.setFillColor(255, 255, 255);
-                pdf.roundedRect(summaryX, yPosition, summaryCardWidth, 28, 2, 2, 'FD');
-
-                // Renkli üst çubuk
-                pdf.setFillColor(summary.color[0], summary.color[1], summary.color[2]);
-                pdf.rect(summaryX, yPosition, summaryCardWidth, 3, 'F');
-
-                // Label
-                pdf.setTextColor(71, 85, 105);
-                pdf.setFontSize(8);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text(summary.label.toUpperCase(), summaryX + summaryCardWidth / 2, yPosition + 10, { align: 'center' });
-
-                // Değer
-                pdf.setTextColor(15, 23, 42);
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text(summary.value, summaryX + summaryCardWidth / 2, yPosition + 18, { align: 'center' });
-
-                // Detay
-                pdf.setTextColor(100, 116, 139);
-                pdf.setFontSize(7);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text(summary.detail, summaryX + summaryCardWidth / 2, yPosition + 24, { align: 'center' });
-
-                summaryX += summaryCardWidth + 4;
+            autoTable(pdf, {
+                startY: yPosition,
+                body: summaryBody,
+                theme: 'grid',
+                styles: {
+                    cellPadding: 8,
+                    lineWidth: 0.1,
+                    lineColor: [203, 213, 225],
+                },
+                didDrawCell: (data) => {
+                    if (data.section === 'body') {
+                        pdf.setDrawColor(203, 213, 225);
+                        pdf.setLineWidth(0.1);
+                        pdf.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+                    }
+                },
+                margin: { left: margin, right: margin },
             });
 
-            // Son sayfa numarası
-            pdf.setFontSize(8);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text(`Sayfa ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            yPosition = pdf.lastAutoTable.finalY + 15;
+
+
 
             pdf.save(`gunluk_performans_raporu_${selectedDate}.pdf`);
         } catch (error) {
