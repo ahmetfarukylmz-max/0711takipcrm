@@ -88,7 +88,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
                             onChange={handleChange}
                             placeholder="Örn: MNG Kargo, Aras Kargo"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                         />
                     </div>
 
@@ -102,7 +102,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
                             value={formData.shipment_date}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                         />
                     </div>
 
@@ -116,7 +116,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
                             onChange={handleChange}
                             rows={3}
                             placeholder="Sevkiyat ile ilgili özel notlar ekleyebilirsiniz..."
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                         />
                     </div>
                 </div>

@@ -49,7 +49,7 @@ const ItemEditor = ({ items, setItems, products }) => {
             <h4 className="font-semibold text-gray-800 dark:text-gray-200">Ürünler</h4>
             <div className="space-y-3">
                 {items.map((item, index) => (
-                    <div key={index} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 sm:border-0 sm:bg-transparent sm:p-0 sm:rounded-none">
+                    <div key={index} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 sm:border-0 sm:bg-transparent sm:p-0 sm:rounded-none">
                         {/* Ürün Seçimi - Mobilde tam genişlik */}
                         <div className="flex-1 sm:min-w-[200px]">
                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 sm:hidden">
