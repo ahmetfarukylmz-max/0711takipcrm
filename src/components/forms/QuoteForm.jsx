@@ -180,7 +180,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
                         </option>
                     ))}
                 </FormSelect>
-                <div className="space-y-2 text-right p-4 rounded-lg bg-gray-100 dark:bg-gray-700">
+                <div className="space-y-2 text-right p-4 rounded-lg bg-gray-100 dark:bg-gray-600">
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-300">Ara Toplam:</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(subtotal, formData.currency)}</span>

@@ -45,7 +45,7 @@ const ItemEditor = ({ items, setItems, products }) => {
     };
 
     return (
-        <div className="space-y-4 p-3 sm:p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700">
+        <div className="space-y-4 p-3 sm:p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600">
             <h4 className="font-semibold text-gray-800 dark:text-gray-200">Ürünler</h4>
             <div className="space-y-3">
                 {items.map((item, index) => (
