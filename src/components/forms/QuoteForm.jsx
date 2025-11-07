@@ -120,7 +120,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <FormSelect
                     label="Para Birimi"
                     name="currency"
@@ -167,7 +167,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
                 rows={3}
             />
 
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-end">
                 <FormSelect
                     label="KDV Oranı"
                     name="vatRate"
