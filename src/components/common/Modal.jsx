@@ -4,6 +4,8 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
     // Prevent body scroll when modal is open
     useEffect(() => {
         if (show) {
+            // Scroll to top when modal opens
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
