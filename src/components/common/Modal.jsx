@@ -32,7 +32,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
             onClick={onClose}
         >
             <div
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full mx-2 sm:mx-0 ${maxWidth} max-h-[95vh] flex flex-col animate-slideUp`}
+                className={`bg-white dark:bg-gray-700 rounded-lg shadow-2xl w-full mx-2 sm:mx-0 ${maxWidth} max-h-[95vh] flex flex-col animate-slideUp`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header - only show if title exists */}
@@ -53,7 +53,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
                 {!title && (
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-white dark:bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+                        className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 bg-white dark:bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
                         aria-label="Kapat"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
