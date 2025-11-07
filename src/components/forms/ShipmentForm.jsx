@@ -73,7 +73,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* Shipment Info */}
-            <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Sevkiyat Bilgileri</h3>
 
                 <div className="space-y-4">
@@ -123,12 +123,12 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
             </div>
 
             {/* Items to Ship */}
-            <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Sevk Edilecek Ürünler</h3>
 
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-100 dark:bg-gray-700">
+                        <thead className="bg-gray-100 dark:bg-gray-600">
                             <tr>
                                 <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Ürün</th>
                                 <th className="px-3 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Sipariş Miktarı</th>
