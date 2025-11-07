@@ -28,7 +28,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
 
     return (
         <div
-            className="fixed inset-0 bg-gray-900 bg-opacity-30 backdrop-blur-sm z-50 flex justify-center items-center p-2 sm:p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-md z-50 flex justify-center items-center p-2 sm:p-4 animate-fadeIn"
             onClick={onClose}
         >
             <div
