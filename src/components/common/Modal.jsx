@@ -28,11 +28,11 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
 
     return (
         <div
-            className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-md z-50 flex justify-center items-center p-2 sm:p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-md z-50 flex justify-center items-center p-4 animate-fadeIn overflow-y-auto"
             onClick={onClose}
         >
             <div
-                className={`bg-white dark:bg-gray-600 rounded-lg shadow-2xl w-full mx-2 sm:mx-0 ${maxWidth} max-h-[95vh] flex flex-col animate-slideUp`}
+                className={`bg-white dark:bg-gray-600 rounded-lg shadow-2xl w-full ${maxWidth} max-h-[90vh] my-auto mx-auto flex flex-col animate-slideUp min-h-0`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header - only show if title exists */}
@@ -63,7 +63,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
                 )}
 
                 {/* Content */}
-                <div className="overflow-y-auto flex-1 p-3 sm:p-6 bg-white dark:bg-gray-600">
+                <div className="overflow-y-auto flex-1 p-3 sm:p-6 bg-white dark:bg-gray-600 min-h-0">
                     {children}
                 </div>
             </div>
