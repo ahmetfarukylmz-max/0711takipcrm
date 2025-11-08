@@ -12,7 +12,7 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-60 z-50 flex justify-center items-start pt-8"
+            className="fixed inset-0 z-50 flex justify-center items-start pt-8"
             onClick={onClose}
         >
             <div
