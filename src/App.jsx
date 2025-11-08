@@ -70,7 +70,6 @@ const CrmApp = () => {
     const [editingDocument, setEditingDocument] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
     const [overdueItems, setOverdueItems] = useState([]);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
     const handleToggleGuide = () => {
@@ -88,19 +87,46 @@ const CrmApp = () => {
 
     // Handle FAB actions
     const handleFABAction = (action) => {
-        // Trigger the appropriate action based on the current page
-        // This will be handled by each page component through their existing "Add" buttons
-        const addButtons = {
-            'addCustomer': () => document.querySelector('[data-action="add-customer"]')?.click(),
-            'addProduct': () => document.querySelector('[data-action="add-product"]')?.click(),
-            'addQuote': () => document.querySelector('[data-action="add-quote"]')?.click(),
-            'addOrder': () => document.querySelector('[data-action="add-order"]')?.click(),
-            'addMeeting': () => document.querySelector('[data-action="add-meeting"]')?.click(),
-            'addShipment': () => document.querySelector('[data-action="add-shipment"]')?.click(),
+        const actionMap = {
+            'addCustomer': {
+                page: 'Müşteriler',
+                selector: '[data-action="add-customer"]'
+            },
+            'addProduct': {
+                page: 'Ürünler',
+                selector: '[data-action="add-product"]'
+            },
+            'addQuote': {
+                page: 'Teklifler',
+                selector: '[data-action="add-quote"]'
+            },
+            'addOrder': {
+                page: 'Siparişler',
+                selector: '[data-action="add-order"]'
+            },
+            'addMeeting': {
+                page: 'Görüşmeler',
+                selector: '[data-action="add-meeting"]'
+            },
+            'addShipment': {
+                page: 'Sevkiyat',
+                selector: '[data-action="add-shipment"]'
+            }
         };
 
-        if (addButtons[action]) {
-            addButtons[action]();
+        const actionConfig = actionMap[action];
+        if (!actionConfig) return;
+
+        // If we're on the Dashboard, navigate to the appropriate page first
+        if (activePage === 'Anasayfa') {
+            setActivePage(actionConfig.page);
+            // Wait for page to render, then trigger the add button
+            setTimeout(() => {
+                document.querySelector(actionConfig.selector)?.click();
+            }, 300);
+        } else {
+            // If already on the page, just trigger the button
+            document.querySelector(actionConfig.selector)?.click();
         }
     };
 
@@ -396,40 +422,18 @@ const CrmApp = () => {
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-sans">
             <Toaster position="top-right" />
 
-            {/* Hamburger Menü Butonu - Sadece Mobilde */}
-            <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden fixed top-4 left-4 z-[60] bg-gray-800 dark:bg-gray-900 text-white p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors"
-                aria-label="Menüyü Aç"
-            >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                    />
-                </svg>
-            </button>
-
-            {/* Overlay - Mobilde Sidebar açıkken arka planı karart */}
-            {isMobileMenuOpen && (
-                <div
-                    className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    aria-label="Menüyü Kapat"
+            {/* Sidebar - Sadece Desktop'ta Görünür */}
+            <div className="hidden md:block">
+                <Sidebar
+                    activePage={activePage}
+                    setActivePage={setActivePage}
+                    connectionStatus={connectionStatus}
+                    onToggleGuide={handleToggleGuide}
+                    overdueItems={overdueItems}
+                    isOpen={true}
+                    onClose={() => {}}
                 />
-            )}
-
-            <Sidebar
-                activePage={activePage}
-                setActivePage={setActivePage}
-                connectionStatus={connectionStatus}
-                onToggleGuide={handleToggleGuide}
-                overdueItems={overdueItems}
-                isOpen={isMobileMenuOpen}
-                onClose={() => setIsMobileMenuOpen(false)}
-            />
+            </div>
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0 pb-20 md:pb-4">
                 <PullToRefresh onRefresh={handleRefresh}>
                     <Suspense fallback={
@@ -465,7 +469,7 @@ const CrmApp = () => {
             </main>
 
             {/* Mobile Navigation Components */}
-            <BottomNav activePage={activePage} setActivePage={setActivePage} />
+            <BottomNav activePage={activePage} setActivePage={setActivePage} onToggleGuide={handleToggleGuide} />
             <FAB activePage={activePage} onAction={handleFABAction} />
             {showGuide && (
                 <Modal show={showGuide} onClose={handleToggleGuide} title="Kullanıcı Rehberi">
