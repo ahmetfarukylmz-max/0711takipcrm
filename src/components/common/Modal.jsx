@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
 
 const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max-w-2xl' }) => {
-    // Prevent body scroll when modal is open
+    // Prevent body scroll and scroll to top when modal opens
     useEffect(() => {
         if (show) {
+            // Scroll to top instantly when modal opens
+            window.scrollTo(0, 0);
+            // Prevent body scroll
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
