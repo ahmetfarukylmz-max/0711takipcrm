@@ -3,15 +3,98 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User-specific data - kullanıcılar yalnızca kendi verilerine erişebilir
-    match /users/{userId}/{document=**} {
-      // Kimlik doğrulaması yapılmış ve kendi verisine erişiyor mu?
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper fonksiyon: Kullanıcı admin mi?
+    function isAdmin() {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Diğer tüm erişimleri reddet
+    // Helper fonksiyon: Kullanıcı giriş yapmış mı?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper fonksiyon: Kendi verisi mi?
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users koleksiyonu
+    match /users/{userId} {
+      // Herkes kendi verisini okuyabilir
+      // Admin tüm kullanıcıları okuyabilir
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Yeni kullanıcı kaydı (ilk giriş)
+      allow create: if isOwner(userId);
+
+      // Sadece admin kullanıcı rollerini güncelleyebilir
+      allow update: if isAdmin();
+
+      // Sadece admin kullanıcı silebilir
+      allow delete: if isAdmin();
+    }
+
+    // Customers koleksiyonu
+    match /customers/{customerId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Products koleksiyonu
+    match /products/{productId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Orders koleksiyonu
+    match /orders/{orderId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Quotes koleksiyonu
+    match /quotes/{quoteId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Meetings koleksiyonu
+    match /meetings/{meetingId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Shipments koleksiyonu
+    match /shipments/{shipmentId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Reports koleksiyonu
+    match /reports/{reportId} {
+      // Giriş yapmış herkes okuyabilir
+      // Sadece admin yazabilir
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Diğer tüm koleksiyonlar
     match /{document=**} {
-      allow read, write: if false;
+      // Sadece admin erişebilir
+      allow read, write: if isAdmin();
     }
   }
 }
