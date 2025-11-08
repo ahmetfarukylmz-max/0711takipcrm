@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
+    // Scroll to top when modal opens
+    useEffect(() => {
+        if (show) {
+            window.scrollTo(0, 0);
+        }
+    }, [show]);
+
     if (!show) return null;
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-60 z-50 flex justify-center items-center"
+            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-60 z-50 flex justify-center items-start pt-8"
             onClick={onClose}
         >
             <div
