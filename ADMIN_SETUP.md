@@ -12,54 +12,24 @@ Projenizde artık Firestore tabanlı bir role sistemi var. Her kullanıcı `admi
 
 ## 🔧 İlk Admin Kullanıcıyı Oluşturma
 
-### Yöntem 1: Otomatik Script ile (EN KOLAY - ÖNERİLEN) 🚀
+### Firebase Console'dan (ÖNERİLEN - GÜVENLİ) 🔐
 
-1. Uygulamaya **giriş yapın** (admin yapmak istediğiniz hesapla)
-2. Tarayıcıda **F12** tuşuna basın (Developer Tools)
-3. **Console** tab'ına gidin
-4. Şu komutu yazın:
+1. **Admin yapmak istediğiniz hesapla uygulamaya giriş yapın**
+2. **Kullanıcı UID'sini not alın:**
+   - Tarayıcıda F12 → Console
+   - Bu komutu çalıştırın: `firebase.auth().currentUser.uid`
+   - UID'yi kopyalayın
 
-```javascript
-createAdmin()
-```
+3. **Firebase Console'a gidin:** https://console.firebase.google.com/
+4. **Projenizi seçin:** `takipcrm-c1d3f`
+5. **Firestore Database** → **Data** sekmesine gidin
+6. **users** koleksiyonunu bulun
+7. Kopyaladığınız **UID** ile kullanıcı document'ini açın
+8. **role** field'ını `admin` olarak değiştirin
+9. **Save** edin
+10. Uygulamada sayfayı yenileyin
 
-5. ✅ Başarılı mesajı gördükten sonra **sayfayı yenileyin**
-6. Artık admin olarak giriş yaptınız!
-
-**Diğer Yararlı Komutlar:**
-```javascript
-// Kendi rolünüzü kontrol etme
-checkMyRole()
-
-// Belirli bir UID ile admin oluşturma
-createAdminByUID('USER_UID_BURAYA', 'email@example.com')
-
-// Tüm kullanıcıları listeleme (sadece admin)
-listAllUsers()
-```
-
-### Yöntem 2: Firebase Console'dan (Manuel)
-
-1. **Firebase Console'a** gidin: https://console.firebase.google.com/
-2. **Projenizi** seçin: `takipcrm-c1d3f`
-3. **Firestore Database** > **Data** sekmesine gidin
-4. **users** koleksiyonunu bulun
-5. Admin yapmak istediğiniz kullanıcının **UID**'sini bulun
-6. O kullanıcının document'ini açın
-7. **role** field'ını bulun ve `admin` olarak değiştirin
-8. **Save** edin
-9. Sayfayı yenileyin
-
-### Yöntem 3: Kod ile (İlk Kurulum)
-
-`src/services/userService.js` dosyasını kullanarak:
-
-```javascript
-import { createInitialAdmin } from './services/userService';
-
-// İlk admin oluştur
-await createInitialAdmin('USER_UID_BURAYA', 'admin@example.com');
-```
+> **⚠️ Güvenlik Notu:** Admin oluşturma işlemi sadece Firebase Console üzerinden yapılmalıdır. Tarayıcı console üzerinden yapılan işlemler güvenlik açığı oluşturur.
 
 ## 📊 Firestore Yapısı
 
