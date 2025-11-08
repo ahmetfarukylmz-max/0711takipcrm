@@ -1,10 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
-    // Scroll to top when modal opens
+    const modalRef = useRef(null);
+
+    // Scroll to top when modal opens and focus modal
     useEffect(() => {
         if (show) {
             window.scrollTo(0, 0);
+            // Focus modal container after a short delay
+            setTimeout(() => {
+                if (modalRef.current) {
+                    modalRef.current.focus();
+                }
+            }, 100);
         }
     }, [show]);
 
@@ -12,11 +20,13 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex justify-center items-start pt-8"
+            className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-start pt-8"
             onClick={onClose}
         >
             <div
-                className={`bg-white dark:bg-gray-700 rounded-lg shadow-xl p-6 w-full ${maxWidth}`}
+                ref={modalRef}
+                tabIndex={-1}
+                className={`bg-white dark:bg-gray-700 rounded-lg shadow-xl p-6 w-full ${maxWidth} outline-none`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-3">
