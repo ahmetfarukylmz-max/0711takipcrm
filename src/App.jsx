@@ -14,6 +14,9 @@ import {
     logActivity
 } from './services/firestoreService';
 
+// Admin yönetim script'ini yükle (tarayıcı console'dan kullanılabilir)
+import './scripts/createAdmin';
+
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
 import Modal from './components/common/Modal';
