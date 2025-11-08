@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
 
 const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max-w-2xl' }) => {
-    // Prevent body scroll when modal is open
+    // Prevent body scroll and scroll to top when modal opens
     useEffect(() => {
         if (show) {
+            // Scroll to top of page when modal opens
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Prevent body scroll
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
@@ -28,11 +31,11 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-[95vw] sm:max
 
     return (
         <div
-            className="fixed inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-md z-50 flex justify-center items-center p-4 animate-fadeIn"
+            className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex justify-center items-start p-4 sm:pt-8 md:pt-12 animate-fadeIn overflow-y-auto"
             onClick={onClose}
         >
             <div
-                className={`bg-white dark:bg-gray-600 rounded-lg shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col animate-slideUp`}
+                className={`bg-white dark:bg-gray-600 rounded-lg shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col animate-slideUp my-auto`}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header - only show if title exists */}
