@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useRef, ChangeEvent } from 'react';
+import React, { useState, useMemo, memo, useRef, ChangeEvent, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -79,27 +79,27 @@ const Customers = memo<CustomersProps>(({
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleOpenModal = (customer: Customer | null = null) => {
+    const handleOpenModal = useCallback((customer: Customer | null = null) => {
         setCurrentCustomer(customer);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const handleOpenDetailModal = (customer: Customer) => {
+    const handleOpenDetailModal = useCallback((customer: Customer) => {
         setCurrentCustomer(customer);
         setIsDetailModalOpen(true);
-    };
+    }, []);
 
-    const handleEditFromDetail = () => {
+    const handleEditFromDetail = useCallback(() => {
         setIsDetailModalOpen(false);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const handleDeleteFromDetail = () => {
+    const handleDeleteFromDetail = useCallback(() => {
         setIsDetailModalOpen(false);
         if (currentCustomer) {
             handleDelete(currentCustomer);
         }
-    };
+    }, [currentCustomer]);
 
     const handleSave = (customerData: Partial<Customer>) => {
         onSave(customerData);
