@@ -143,7 +143,15 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, o
         const eventsByDay: Record<string, Meeting[]> = {};
 
         activeMeetings.forEach(meeting => {
-            const date = new Date(meeting.next_action_date || meeting.meeting_date).toISOString().split('T')[0];
+            // Validate date before using it
+            const dateValue = meeting.next_action_date || meeting.meeting_date;
+            if (!dateValue) return; // Skip if no date
+
+            const dateObj = new Date(dateValue);
+            // Check if date is valid
+            if (isNaN(dateObj.getTime())) return; // Skip invalid dates
+
+            const date = dateObj.toISOString().split('T')[0];
             if (!eventsByDay[date]) {
                 eventsByDay[date] = [];
             }
@@ -154,7 +162,12 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, o
         Object.values(eventsByDay).forEach(dayMeetings => {
             dayMeetings.forEach((meeting, index) => {
                 const customer = customers.find(c => c.id === meeting.customerId);
-                const start = new Date(meeting.next_action_date || meeting.meeting_date);
+                const dateValue = meeting.next_action_date || meeting.meeting_date;
+                if (!dateValue) return; // Skip if no date
+
+                const start = new Date(dateValue);
+                if (isNaN(start.getTime())) return; // Skip invalid dates
+
                 start.setHours(9 + index, 0, 0, 0); // Stagger events by an hour
 
                 const end = new Date(start);
