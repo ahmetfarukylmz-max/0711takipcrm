@@ -198,9 +198,9 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                 position: absolute;
                 left: -9999px;
                 top: 0;
-                width: 210mm;
+                width: 794px;
                 background: white;
-                padding: 20mm;
+                padding: 40px;
                 font-family: Arial, sans-serif;
             `;
 
@@ -272,55 +272,83 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     ${todayData.quotes && todayData.quotes.length > 0 ? `
                     <!-- Oluşturulan Teklifler -->
                     <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">📄 OLUŞTURULAN TEKLİFLER (${todayData.quotes.length})</h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                        <thead>
-                            <tr style="background: #a855f7; color: white;">
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">#</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Müşteri</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Tarih</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Durum</th>
-                                <th style="padding: 12px; text-align: right; font-size: 13px; border: 1px solid #9333ea;">Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${todayData.quotes.map((quote, idx) => `
-                                <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">#${quote.id.substring(0, 5)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(quote.customerId)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(quote.teklif_tarihi)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${quote.status || 'Bekliyor'}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px; text-align: right;">${formatCurrency(quote.total_amount)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                    ${todayData.quotes.map((quote, quoteIdx) => `
+                        <div style="margin-bottom: 20px; border: 2px solid #a855f7; border-radius: 8px; overflow: hidden;">
+                            <div style="background: #a855f7; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="font-size: 14px;">#${quote.id.substring(0, 8).toUpperCase()}</strong>
+                                    <span style="margin-left: 12px; font-size: 13px;">${getCustomerName(quote.customerId)}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 16px; font-weight: bold;">${formatCurrency(quote.total_amount)}</div>
+                                    <div style="font-size: 11px; opacity: 0.9;">${formatDate(quote.teklif_tarihi)} | ${quote.status || 'Bekliyor'}</div>
+                                </div>
+                            </div>
+                            ${quote.items && quote.items.length > 0 ? `
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: #faf5ff;">
+                                            <th style="padding: 8px; text-align: left; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #6b21a8;">Ürün</th>
+                                            <th style="padding: 8px; text-align: center; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #6b21a8;">Miktar</th>
+                                            <th style="padding: 8px; text-align: right; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #6b21a8;">Birim Fiyat</th>
+                                            <th style="padding: 8px; text-align: right; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #6b21a8;">Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${quote.items.map((item, itemIdx) => `
+                                            <tr style="background: ${itemIdx % 2 === 0 ? '#ffffff' : '#fafafa'};">
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px;">${getProductName(item.productId)}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: center;">${item.quantity} ${item.unit || 'Kg'}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: right; font-weight: bold;">${formatCurrency((item.quantity || 0) * (item.unit_price || 0))}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            ` : '<div style="padding: 12px; color: #64748b; font-size: 11px; font-style: italic;">Ürün detayı bulunmuyor</div>'}
+                        </div>
+                    `).join('')}
                     ` : ''}
 
                     ${todayData.allOrders && todayData.allOrders.length > 0 ? `
                     <!-- Onaylanan Siparişler -->
                     <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">✅ ONAYLANAN SİPARİŞLER (${todayData.allOrders.length})</h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                        <thead>
-                            <tr style="background: #22c55e; color: white;">
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">#</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Müşteri</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Tarih</th>
-                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Durum</th>
-                                <th style="padding: 12px; text-align: right; font-size: 13px; border: 1px solid #16a34a;">Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${todayData.allOrders.map((order, idx) => `
-                                <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">#${order.id.substring(0, 5)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(order.customerId)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(order.order_date)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${order.quoteId ? '✓ Tekliften' : (order.status || 'Bekliyor')}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px; text-align: right;">${formatCurrency(order.total_amount)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                    ${todayData.allOrders.map((order, orderIdx) => `
+                        <div style="margin-bottom: 20px; border: 2px solid #22c55e; border-radius: 8px; overflow: hidden;">
+                            <div style="background: #22c55e; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="font-size: 14px;">#${order.id.substring(0, 8).toUpperCase()}</strong>
+                                    <span style="margin-left: 12px; font-size: 13px;">${getCustomerName(order.customerId)}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 16px; font-weight: bold;">${formatCurrency(order.total_amount)}</div>
+                                    <div style="font-size: 11px; opacity: 0.9;">${formatDate(order.order_date)} | ${order.quoteId ? '✓ Tekliften' : (order.status || 'Bekliyor')}</div>
+                                </div>
+                            </div>
+                            ${order.items && order.items.length > 0 ? `
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: #f0fdf4;">
+                                            <th style="padding: 8px; text-align: left; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #15803d;">Ürün</th>
+                                            <th style="padding: 8px; text-align: center; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #15803d;">Miktar</th>
+                                            <th style="padding: 8px; text-align: right; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #15803d;">Birim Fiyat</th>
+                                            <th style="padding: 8px; text-align: right; font-size: 11px; border-bottom: 1px solid #e2e8f0; color: #15803d;">Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${order.items.map((item, itemIdx) => `
+                                            <tr style="background: ${itemIdx % 2 === 0 ? '#ffffff' : '#fafafa'};">
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px;">${getProductName(item.productId)}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: center;">${item.quantity} ${item.unit || 'Kg'}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: right;">${formatCurrency(item.unit_price || 0)}</td>
+                                                <td style="padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-align: right; font-weight: bold;">${formatCurrency((item.quantity || 0) * (item.unit_price || 0))}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            ` : '<div style="padding: 12px; color: #64748b; font-size: 11px; font-style: italic;">Ürün detayı bulunmuyor</div>'}
+                        </div>
+                    `).join('')}
                     ` : ''}
 
                     ${todayData.shipments && todayData.shipments.length > 0 ? `
@@ -390,41 +418,41 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                windowWidth: 794, // A4 width in pixels at 96 DPI
+                windowWidth: 794,
+                windowHeight: pdfContainer.scrollHeight,
             });
 
             document.body.removeChild(pdfContainer);
 
             // PDF oluştur
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/png', 1.0);
             const pdf = new jsPDF({
                 orientation: 'portrait',
-                unit: 'mm',
+                unit: 'px',
                 format: 'a4',
+                hotfixes: ['px_scaling']
             });
 
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = 0;
-            const imgY = 0;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
 
-            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio * 25.4 / 96, imgHeight * ratio * 25.4 / 96);
+            // Canvas'ı PDF sayfasına sığacak şekilde ölçeklendir
+            const imgWidth = pageWidth;
+            const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-            // Eğer içerik bir sayfadan uzunsa, otomatik olarak sayfa ekle
-            const contentHeight = imgHeight * ratio * 25.4 / 96;
-            if (contentHeight > pdfHeight) {
-                let remainingHeight = contentHeight - pdfHeight;
-                let currentY = -pdfHeight;
+            // İlk sayfayı ekle
+            let heightLeft = imgHeight;
+            let position = 0;
 
-                while (remainingHeight > 0) {
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', imgX, currentY, imgWidth * ratio * 25.4 / 96, imgHeight * ratio * 25.4 / 96);
-                    currentY -= pdfHeight;
-                    remainingHeight -= pdfHeight;
-                }
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+            heightLeft -= pageHeight;
+
+            // Eğer içerik bir sayfadan uzunsa, yeni sayfalar ekle
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+                heightLeft -= pageHeight;
             }
 
             pdf.save(`gunluk_performans_raporu_${selectedDate}.pdf`);
@@ -434,7 +462,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         } finally {
             setIsGeneratingPdf(false);
         }
-    }, [selectedDate, todayData, conversionRate, orders, getCustomerName]);
+    }, [selectedDate, todayData, conversionRate, orders, getCustomerName, getProductName]);
 
     // CSV Export fonksiyonu
     const handleExportCsv = useCallback(() => {
