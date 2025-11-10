@@ -9,6 +9,7 @@ import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
 
 const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,6 +51,33 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                 onDelete(deleteConfirm.item.id);
                 setDeleteConfirm({ isOpen: false, item: null });
             }
+        }
+    };
+
+    // Excel Export handler
+    const handleExport = () => {
+        try {
+            exportOrders(orders, customers, {
+                filename: `siparisler-${new Date().toISOString().split('T')[0]}.xlsx`,
+                includeDeleted: false
+            });
+            toast.success('Siparişler Excel dosyasına aktarıldı');
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Export işlemi başarısız');
+        }
+    };
+
+    const handleExportDetailed = () => {
+        try {
+            exportOrdersDetailed(orders, customers, products, {
+                filename: `siparis-detayli-${new Date().toISOString().split('T')[0]}.xlsx`,
+                includeDeleted: false
+            });
+            toast.success('Detaylı sipariş raporu Excel\'e aktarıldı');
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Export işlemi başarısız');
         }
     };
 
@@ -301,6 +329,24 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                             <span className="sm:hidden">Sil ({selectedItems.size})</span>
                         </button>
                     )}
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center flex-1 sm:flex-none bg-green-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-green-600"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="hidden md:inline">Excel</span>
+                    </button>
+                    <button
+                        onClick={handleExportDetailed}
+                        className="flex items-center flex-1 sm:flex-none bg-teal-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-teal-600"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="hidden md:inline">Detaylı</span>
+                    </button>
                     <button
                         onClick={() => handleOpenModal()}
                         data-action="add-order"
