@@ -17,6 +17,7 @@ interface DetailAccordionProps {
 
 /**
  * DetailAccordion - Reusable collapsible section for report details
+ * Supports print mode - collapses on screen but always visible when printed
  */
 export const DetailAccordion = memo<DetailAccordionProps>(({
   title,
@@ -58,11 +59,18 @@ export const DetailAccordion = memo<DetailAccordionProps>(({
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="p-5 pt-0 border-t border-gray-100 dark:border-gray-700">
-          {children}
+      {/* Print başlığı (sadece yazdırma sırasında) */}
+      <div className="hidden print:block p-5 pb-2 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <Icon className="w-5 h-5 text-blue-600" />
+          <h3 className="font-bold text-gray-900">{title} ({count})</h3>
         </div>
-      )}
+      </div>
+
+      {/* İçerik - Ekranda accordion, yazdırmada her zaman görünür */}
+      <div className={`${isOpen ? 'block' : 'hidden'} print:block p-5 pt-0 space-y-3 print:max-h-none ${isOpen ? 'max-h-96 overflow-y-auto' : ''}`}>
+        {children}
+      </div>
     </div>
   );
 });
