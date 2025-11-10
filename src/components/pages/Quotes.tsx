@@ -275,7 +275,7 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
     const activeQuotes = quotes.filter(item => !item.isDeleted);
 
     // Apply search and status filter
-    const filteredQuotes = activeQuotes.filter(quote => {
+    let filteredQuotes = activeQuotes.filter(quote => {
         const customer = customers.find(c => c.id === quote.customerId);
         const customerName = customer?.name || '';
         const amount = (quote.total_amount || 0).toString();
@@ -289,6 +289,23 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
         const matchesStatus = statusFilter === 'Tümü' || quote.status === statusFilter;
 
         return matchesSearch && matchesStatus;
+    });
+
+    // Sort by quote date (most recent first)
+    filteredQuotes = filteredQuotes.sort((a, b) => {
+        const dateA = new Date(a.teklif_tarihi);
+        const dateB = new Date(b.teklif_tarihi);
+
+        // Handle invalid dates - push them to the end
+        const isValidA = !isNaN(dateA.getTime());
+        const isValidB = !isNaN(dateB.getTime());
+
+        if (!isValidA && !isValidB) return 0;
+        if (!isValidA) return 1; // Invalid dates go to the end
+        if (!isValidB) return -1;
+
+        // Sort by most recent date first (descending)
+        return dateB.getTime() - dateA.getTime();
     });
 
     const statuses = ['Tümü', 'Hazırlandı', 'Onaylandı', 'Reddedildi'];
