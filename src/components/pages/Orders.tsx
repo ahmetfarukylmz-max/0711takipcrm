@@ -335,6 +335,23 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
             });
         }
 
+        // Sort by delivery date (nearest first)
+        filtered.sort((a, b) => {
+            const dateA = new Date(a.delivery_date);
+            const dateB = new Date(b.delivery_date);
+
+            // Handle invalid dates - push them to the end
+            const isValidA = !isNaN(dateA.getTime());
+            const isValidB = !isNaN(dateB.getTime());
+
+            if (!isValidA && !isValidB) return 0;
+            if (!isValidA) return 1; // Invalid dates go to the end
+            if (!isValidB) return -1;
+
+            // Sort by nearest date first
+            return dateA.getTime() - dateB.getTime();
+        });
+
         return filtered;
     }, [orders, searchQuery, statusFilter, customers]);
 
