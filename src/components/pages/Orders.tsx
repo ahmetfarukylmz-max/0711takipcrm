@@ -1,5 +1,4 @@
 import React, { useState, useMemo, memo } from 'react';
-import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -11,36 +10,62 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
+import type { Order, Customer, Product, Shipment } from '../../types';
 
-const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf }) => {
+interface DeleteConfirmState {
+    isOpen: boolean;
+    item: (Order & { count?: number }) | null;
+}
+
+interface OrdersProps {
+    /** List of orders */
+    orders: Order[];
+    /** Callback when order is saved */
+    onSave: (order: Partial<Order>) => void;
+    /** Callback when order is deleted */
+    onDelete: (id: string) => void;
+    /** Callback when shipment is created */
+    onShipment: (shipment: Partial<Shipment>) => void;
+    /** List of customers */
+    customers: Customer[];
+    /** List of products */
+    products: Product[];
+    /** Callback to generate custom PDF */
+    onGeneratePdf: (order: Order) => void;
+}
+
+/**
+ * Orders component - Order management page
+ */
+const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    const [currentOrder, setCurrentOrder] = useState(null);
+    const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Tümü');
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null });
-    const [selectedItems, setSelectedItems] = useState(new Set());
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
-    const [orderToShip, setOrderToShip] = useState(null);
+    const [orderToShip, setOrderToShip] = useState<Order | null>(null);
 
-    const handleOpenModal = (order = null) => {
+    const handleOpenModal = (order: Order | null = null) => {
         setCurrentOrder(order);
         setIsModalOpen(true);
         setIsDetailModalOpen(false);
     };
 
-    const handleOpenDetailModal = (order) => {
+    const handleOpenDetailModal = (order: Order) => {
         setCurrentOrder(order);
         setIsDetailModalOpen(true);
         setIsModalOpen(false);
     };
 
-    const handleSave = (orderData) => {
+    const handleSave = (orderData: Partial<Order>) => {
         onSave(orderData);
         setIsModalOpen(false);
     };
 
-    const handleDelete = (item) => {
+    const handleDelete = (item: Order) => {
         setDeleteConfirm({ isOpen: true, item });
     };
 
@@ -83,7 +108,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -104,7 +129,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            item: { id: 'batch', count: selectedItems.size }
+            item: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -115,18 +140,18 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
     };
 
     // Shipment functions
-    const handleOpenShipmentModal = (order) => {
+    const handleOpenShipmentModal = (order: Order) => {
         setOrderToShip(order);
         setIsShipmentModalOpen(true);
     };
 
-    const handleShipmentSave = (shipmentData) => {
+    const handleShipmentSave = (shipmentData: Partial<Shipment>) => {
         onShipment(shipmentData);
         setIsShipmentModalOpen(false);
         setOrderToShip(null);
     };
 
-    const handlePrint = (order) => {
+    const handlePrint = (order: Order) => {
         const customer = customers.find(c => c.id === order.customerId);
         if (!customer) {
             toast.error('Müşteri bilgileri bulunamadı!');
@@ -148,7 +173,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
             return `
                 <tr class="border-b border-gray-200 ${isEven ? 'bg-gray-50' : 'bg-white'}">
                     <td class="py-2 px-3 text-center text-gray-500 text-xs">${index + 1}</td>
-                    <td class="py-2 px-3 text-sm text-gray-900">${product?.name || item.product_name || 'Bilinmeyen Ürün'}</td>
+                    <td class="py-2 px-3 text-sm text-gray-900">${product?.name || 'Bilinmeyen Ürün'}</td>
                     <td class="py-2 px-3 text-center text-sm text-gray-700">${item.quantity || 0} Kg</td>
                     <td class="py-2 px-3 text-right text-sm text-gray-700">${formatCurrency(item.unit_price || 0, order.currency || 'TRY')}</td>
                     <td class="py-2 px-3 text-right text-sm font-semibold text-gray-900">${formatCurrency((item.quantity || 0) * (item.unit_price || 0), order.currency || 'TRY')}</td>
@@ -196,7 +221,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                         <h3 class="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">Müşteri Bilgileri</h3>
                         <div class="border border-gray-300 p-3 text-xs">
                             <p class="font-bold text-gray-900">${customer.name}</p>
-                            <p class="text-gray-600">${customer.address || ''}, ${customer.sehir || ''}</p>
+                            <p class="text-gray-600">${customer.address || ''}, ${customer.city || ''}</p>
                             <p class="text-gray-600">${customer.phone || ''}</p>
                             <p class="text-gray-600">${customer.email || ''}</p>
                         </div>
@@ -282,8 +307,10 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
         `;
 
         const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
-        printWindow.document.close();
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        }
     };
 
     // Filter orders based on search query and status
@@ -472,7 +499,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                             </tr>
                         )}) : (
                             <tr>
-                                <td colSpan="6" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : 'Henüz sipariş eklenmemiş.'}
                                 </td>
                             </tr>
@@ -487,7 +514,7 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
                 maxWidth="max-w-4xl"
             >
                 <OrderForm
-                    order={currentOrder}
+                    order={currentOrder || undefined}
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                     customers={customers}
@@ -537,25 +564,6 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
         </div>
     );
 });
-
-Orders.propTypes = {
-    orders: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        customerId: PropTypes.string.isRequired,
-        items: PropTypes.array,
-        total_amount: PropTypes.number,
-        order_date: PropTypes.string,
-        delivery_date: PropTypes.string,
-        status: PropTypes.string,
-        isDeleted: PropTypes.bool,
-    })).isRequired,
-    onSave: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    onShipment: PropTypes.func.isRequired,
-    customers: PropTypes.array.isRequired,
-    products: PropTypes.array.isRequired,
-    onGeneratePdf: PropTypes.func.isRequired,
-};
 
 Orders.displayName = 'Orders';
 

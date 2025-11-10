@@ -1,5 +1,4 @@
-import React, { useState, useMemo, memo, useRef } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useMemo, memo, useRef, ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -14,8 +13,42 @@ import { PlusIcon, WhatsAppIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
+import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
 
-const Customers = memo(({
+interface DeleteConfirmState {
+    isOpen: boolean;
+    customer: (Customer & { count?: number }) | null;
+}
+
+interface CustomersProps {
+    /** List of customers */
+    customers: Customer[];
+    /** Callback when customer is saved */
+    onSave: (customer: Partial<Customer>) => Promise<void> | void;
+    /** Callback when customer is deleted */
+    onDelete: (id: string) => void;
+    /** List of orders */
+    orders?: Order[];
+    /** List of quotes */
+    quotes?: Quote[];
+    /** List of meetings */
+    meetings?: Meeting[];
+    /** List of shipments */
+    shipments?: Shipment[];
+    /** List of products */
+    products?: Product[];
+    /** Callback when quote is saved */
+    onQuoteSave?: (quote: Partial<Quote>) => void;
+    /** Callback when order is saved */
+    onOrderSave?: (order: Partial<Order>) => void;
+    /** Callback when shipment is updated */
+    onShipmentUpdate?: (shipment: Partial<Shipment>) => void;
+}
+
+/**
+ * Customers component - Customer management page
+ */
+const Customers = memo<CustomersProps>(({
     customers,
     onSave,
     onDelete,
@@ -30,29 +63,28 @@ const Customers = memo(({
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
     const [isQuoteViewModalOpen, setIsQuoteViewModalOpen] = useState(false);
     const [isOrderViewModalOpen, setIsOrderViewModalOpen] = useState(false);
-    const [currentCustomer, setCurrentCustomer] = useState(null);
-    const [currentQuote, setCurrentQuote] = useState(null);
-    const [currentOrder, setCurrentOrder] = useState(null);
-    const [currentShipment, setCurrentShipment] = useState(null);
+    const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+    const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
+    const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+    const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [isShipmentViewModalOpen, setIsShipmentViewModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Tümü');
     const [cityFilter, setCityFilter] = useState('Tümü');
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, customer: null });
-    const [selectedItems, setSelectedItems] = useState(new Set());
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, customer: null });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleOpenModal = (customer = null) => {
+    const handleOpenModal = (customer: Customer | null = null) => {
         setCurrentCustomer(customer);
         setIsModalOpen(true);
     };
 
-    const handleOpenDetailModal = (customer) => {
+    const handleOpenDetailModal = (customer: Customer) => {
         setCurrentCustomer(customer);
         setIsDetailModalOpen(true);
     };
@@ -64,25 +96,23 @@ const Customers = memo(({
 
     const handleDeleteFromDetail = () => {
         setIsDetailModalOpen(false);
-        handleDelete(currentCustomer);
+        if (currentCustomer) {
+            handleDelete(currentCustomer);
+        }
     };
 
-
-
-    const handleSave = (customerData) => {
+    const handleSave = (customerData: Partial<Customer>) => {
         onSave(customerData);
         setIsModalOpen(false);
     };
 
-
-
-    const handleViewOrder = (order) => {
+    const handleViewOrder = (order: Order) => {
         setCurrentOrder(order);
         setIsDetailModalOpen(false);
         setIsOrderViewModalOpen(true);
     };
 
-    const handleViewQuote = (quote) => {
+    const handleViewQuote = (quote: Quote) => {
         setCurrentQuote(quote);
         setIsDetailModalOpen(false);
         setIsQuoteViewModalOpen(true);
@@ -98,7 +128,7 @@ const Customers = memo(({
         setIsDetailModalOpen(true);
     };
 
-    const handleViewShipment = (shipment) => {
+    const handleViewShipment = (shipment: Shipment) => {
         setCurrentShipment(shipment);
         setIsDetailModalOpen(false);
         setIsShipmentViewModalOpen(true);
@@ -109,7 +139,7 @@ const Customers = memo(({
         setIsDetailModalOpen(true);
     };
 
-    const handleDelete = (customer) => {
+    const handleDelete = (customer: Customer) => {
         setDeleteConfirm({ isOpen: true, customer });
     };
 
@@ -152,7 +182,7 @@ const Customers = memo(({
         setIsImportModalOpen(true);
     };
 
-    const handleFileSelect = async (event) => {
+    const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -196,7 +226,7 @@ const Customers = memo(({
             }
         } catch (error) {
             console.error('Import error:', error);
-            toast.error('Import işlemi başarısız: ' + error.message);
+            toast.error('Import işlemi başarısız: ' + (error as Error).message);
         } finally {
             setIsImporting(false);
             if (fileInputRef.current) {
@@ -206,7 +236,7 @@ const Customers = memo(({
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -227,7 +257,7 @@ const Customers = memo(({
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            customer: { id: 'batch', count: selectedItems.size }
+            customer: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -238,7 +268,7 @@ const Customers = memo(({
     };
 
     // Determine customer status based on activity
-    const getCustomerStatus = (customerId) => {
+    const getCustomerStatus = (customerId: string): string => {
         const hasActivity = orders.some(o => o.customerId === customerId && !o.isDeleted) ||
                             shipments.some(s => {
                                 const order = orders.find(o => o.id === s.orderId);
@@ -269,7 +299,7 @@ const Customers = memo(({
 
             return matchesSearch && matchesStatus && matchesCity;
         });
-    }, [customers, searchQuery, statusFilter, cityFilter, orders, quotes, meetings, shipments, getCustomerStatus]);
+    }, [customers, searchQuery, statusFilter, cityFilter, orders, shipments]);
 
     return (
         <div>
@@ -454,7 +484,7 @@ const Customers = memo(({
                             })
                         ) : (
                             <tr>
-                                <td colSpan="7" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={7} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
                                         ? 'Arama kriterlerine uygun müşteri bulunamadı.'
                                         : 'Henüz müşteri eklenmemiş.'}
@@ -470,7 +500,7 @@ const Customers = memo(({
                 title={currentCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
             >
                 <CustomerForm
-                    customer={currentCustomer}
+                    customer={currentCustomer || undefined}
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                 />
@@ -502,8 +532,6 @@ const Customers = memo(({
                 )}
             </Modal>
 
-
-
             <Modal
                 show={isOrderViewModalOpen}
                 onClose={handleCloseOrderView}
@@ -514,7 +542,9 @@ const Customers = memo(({
                     <OrderForm
                         order={currentOrder}
                         onSave={(orderData) => {
-                            onOrderSave(orderData);
+                            if (onOrderSave) {
+                                onOrderSave(orderData);
+                            }
                             handleCloseOrderView();
                         }}
                         onCancel={handleCloseOrderView}
@@ -534,7 +564,9 @@ const Customers = memo(({
                     <QuoteForm
                         quote={currentQuote}
                         onSave={(quoteData) => {
-                            onQuoteSave(quoteData);
+                            if (onQuoteSave) {
+                                onQuoteSave(quoteData);
+                            }
                             handleCloseQuoteView();
                         }}
                         onCancel={handleCloseQuoteView}
@@ -644,29 +676,6 @@ const Customers = memo(({
         </div>
     );
 });
-
-Customers.propTypes = {
-    customers: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        contact_person: PropTypes.string,
-        phone: PropTypes.string,
-        email: PropTypes.string,
-        address: PropTypes.string,
-        city: PropTypes.string,
-        isDeleted: PropTypes.bool,
-    })).isRequired,
-    onSave: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    orders: PropTypes.array,
-    quotes: PropTypes.array,
-    meetings: PropTypes.array,
-    shipments: PropTypes.array,
-    products: PropTypes.array,
-    onQuoteSave: PropTypes.func,
-    onOrderSave: PropTypes.func,
-    onShipmentUpdate: PropTypes.func,
-};
 
 Customers.displayName = 'Customers';
 

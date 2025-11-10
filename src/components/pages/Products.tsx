@@ -1,5 +1,4 @@
-import React, { useState, useMemo, memo, useRef } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useMemo, memo, useRef, ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -9,28 +8,46 @@ import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
+import type { Product } from '../../types';
 
-const Products = memo(({ products, onSave, onDelete }) => {
+interface DeleteConfirmState {
+    isOpen: boolean;
+    product: (Product & { count?: number }) | null;
+}
+
+interface ProductsProps {
+    /** List of products */
+    products: Product[];
+    /** Callback when product is saved */
+    onSave: (product: Partial<Product>) => Promise<void> | void;
+    /** Callback when product is deleted */
+    onDelete: (id: string) => void;
+}
+
+/**
+ * Products component - Product management page
+ */
+const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentProduct, setCurrentProduct] = useState(null);
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, product: null });
-    const [selectedItems, setSelectedItems] = useState(new Set());
+    const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, product: null });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleOpenModal = (product = null) => {
+    const handleOpenModal = (product: Product | null = null) => {
         setCurrentProduct(product);
         setIsModalOpen(true);
     };
 
-    const handleSave = (productData) => {
+    const handleSave = (productData: Partial<Product>) => {
         onSave(productData);
         setIsModalOpen(false);
     };
 
-    const handleDelete = (product) => {
+    const handleDelete = (product: Product) => {
         setDeleteConfirm({ isOpen: true, product });
     };
 
@@ -73,7 +90,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
         setIsImportModalOpen(true);
     };
 
-    const handleFileSelect = async (event) => {
+    const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -111,7 +128,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
             }
         } catch (error) {
             console.error('Import error:', error);
-            toast.error('Import işlemi başarısız: ' + error.message);
+            toast.error('Import işlemi başarısız: ' + (error as Error).message);
         } finally {
             setIsImporting(false);
             if (fileInputRef.current) {
@@ -121,7 +138,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -142,7 +159,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            product: { id: 'batch', count: selectedItems.size }
+            product: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -308,7 +325,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan="6" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery ? 'Arama kriterine uygun ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
                                 </td>
                             </tr>
@@ -322,7 +339,7 @@ const Products = memo(({ products, onSave, onDelete }) => {
                 title={currentProduct ? 'Ürün Düzenle' : 'Yeni Ürün Ekle'}
             >
                 <ProductForm
-                    product={currentProduct}
+                    product={currentProduct || undefined}
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                 />
@@ -409,19 +426,6 @@ const Products = memo(({ products, onSave, onDelete }) => {
         </div>
     );
 });
-
-Products.propTypes = {
-    products: PropTypes.arrayOf(PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        cost_price: PropTypes.number,
-        selling_price: PropTypes.number,
-        unit: PropTypes.string,
-        isDeleted: PropTypes.bool,
-    })).isRequired,
-    onSave: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-};
 
 Products.displayName = 'Products';
 
