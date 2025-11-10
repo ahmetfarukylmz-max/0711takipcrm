@@ -7,45 +7,82 @@ import MeetingDetail from './MeetingDetail';
 import ActionsDropdown from '../common/ActionsDropdown';
 import { PlusIcon, WhatsAppIcon } from '../icons';
 import { formatDate, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
+import type { Meeting, Customer } from '../../types';
 
 const localizer = momentLocalizer(moment);
 
-const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }) => {
+interface CalendarEvent {
+    id: string;
+    title: string;
+    start: Date;
+    end: Date;
+    allDay: boolean;
+    resource: Meeting;
+}
+
+interface MeetingFilters {
+    status: string;
+    meetingType: string;
+    dateRange: string;
+}
+
+interface DeleteConfirmState {
+    isOpen: boolean;
+    item: (Meeting & { count?: number }) | null;
+}
+
+interface MeetingsProps {
+    /** List of meetings */
+    meetings: Meeting[];
+    /** List of customers */
+    customers: Customer[];
+    /** Callback when meeting is saved */
+    onSave: (meeting: Partial<Meeting>) => void;
+    /** Callback when meeting is deleted */
+    onDelete: (id: string) => void;
+    /** Callback when customer is saved */
+    onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+}
+
+/**
+ * Meetings component - Meeting management page with calendar view
+ */
+const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, onCustomerSave }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    const [currentMeeting, setCurrentMeeting] = useState(null);
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null });
-    const [selectedItems, setSelectedItems] = useState(new Set());
-    const [viewMode, setViewMode] = useState('list');
-    const [calendarView, setCalendarView] = useState('month');
-    const [filters, setFilters] = useState({
+    const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+    const [calendarView, setCalendarView] = useState<View>('month');
+    const [filters, setFilters] = useState<MeetingFilters>({
         status: 'Tümü',
         meetingType: 'Tümü',
         dateRange: 'Tümü'
     });
-    const [sortBy, setSortBy] = useState('date');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortBy, setSortBy] = useState<'date' | 'next_action_date' | 'status' | 'customer'>('date');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-    const handleOpenModal = (meeting = null) => {
+    const handleOpenModal = (meeting: Meeting | null = null) => {
         setCurrentMeeting(meeting);
         setIsModalOpen(true);
         setIsDetailModalOpen(false);
     };
 
-    const handleOpenDetailModal = (meeting) => {
+    const handleOpenDetailModal = (meeting: Meeting) => {
         setCurrentMeeting(meeting);
         setIsDetailModalOpen(true);
         setIsModalOpen(false);
     };
 
-    const handleSave = (meetingData) => {
+    const handleSave = (meetingData: Partial<Meeting>) => {
         onSave(meetingData);
         setIsModalOpen(false);
     };
 
-    const handleDelete = (item) => {
+    const handleDelete = (item: Meeting) => {
         setDeleteConfirm({ isOpen: true, item });
     };
 
@@ -61,7 +98,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -83,7 +120,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            item: { id: 'batch', count: selectedItems.size }
+            item: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -94,7 +131,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
     };
 
     // Quick action handlers
-    const handleQuickComplete = (meeting) => {
+    const handleQuickComplete = (meeting: Meeting) => {
         onSave({ ...meeting, status: 'Tamamlandı' });
         toast.success('Görüşme tamamlandı olarak işaretlendi!');
     };
@@ -102,22 +139,22 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
     // Filter out deleted meetings
     const activeMeetings = meetings.filter(item => !item.isDeleted);
 
-    const calendarEvents = useMemo(() => {
-        const eventsByDay = {};
+    const calendarEvents = useMemo<CalendarEvent[]>(() => {
+        const eventsByDay: Record<string, Meeting[]> = {};
 
         activeMeetings.forEach(meeting => {
-            const date = new Date(meeting.next_action_date || meeting.date).toISOString().split('T')[0];
+            const date = new Date(meeting.next_action_date || meeting.meeting_date).toISOString().split('T')[0];
             if (!eventsByDay[date]) {
                 eventsByDay[date] = [];
             }
             eventsByDay[date].push(meeting);
         });
 
-        const allEvents = [];
+        const allEvents: CalendarEvent[] = [];
         Object.values(eventsByDay).forEach(dayMeetings => {
             dayMeetings.forEach((meeting, index) => {
                 const customer = customers.find(c => c.id === meeting.customerId);
-                const start = new Date(meeting.next_action_date || meeting.date);
+                const start = new Date(meeting.next_action_date || meeting.meeting_date);
                 start.setHours(9 + index, 0, 0, 0); // Stagger events by an hour
 
                 const end = new Date(start);
@@ -138,59 +175,61 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
     }, [activeMeetings, customers]);
 
     // Apply filters and sorting
-    const filteredAndSortedMeetings = activeMeetings.filter(meeting => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    const filteredAndSortedMeetings = useMemo(() => {
+        return activeMeetings.filter(meeting => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-        // Status filter
-        if (filters.status !== 'Tümü' && meeting.status !== filters.status) {
-            return false;
-        }
+            // Status filter
+            if (filters.status !== 'Tümü' && meeting.status !== filters.status) {
+                return false;
+            }
 
-        // Meeting type filter
-        if (filters.meetingType !== 'Tümü' && meeting.meetingType !== filters.meetingType) {
-            return false;
-        }
+            // Meeting type filter
+            if (filters.meetingType !== 'Tümü' && meeting.meetingType !== filters.meetingType) {
+                return false;
+            }
 
-        // Date range filter
-        if (filters.dateRange !== 'Tümü') {
-            const meetingDate = new Date(meeting.date);
-            meetingDate.setHours(0, 0, 0, 0);
+            // Date range filter
+            if (filters.dateRange !== 'Tümü') {
+                const meetingDate = new Date(meeting.meeting_date);
+                meetingDate.setHours(0, 0, 0, 0);
 
-            if (filters.dateRange === 'Bugün') {
-                if (meetingDate.getTime() !== today.getTime()) return false;
-            } else if (filters.dateRange === 'Bu Hafta') {
-                const weekAgo = new Date(today);
-                weekAgo.setDate(today.getDate() - 7);
-                if (meetingDate < weekAgo || meetingDate > today) return false;
-            } else if (filters.dateRange === 'Gecikmiş') {
-                const nextActionDate = meeting.next_action_date ? new Date(meeting.next_action_date) : null;
-                if (!nextActionDate || nextActionDate >= today || meeting.status === 'Tamamlandı' || meeting.status === 'İptal Edildi') {
-                    return false;
+                if (filters.dateRange === 'Bugün') {
+                    if (meetingDate.getTime() !== today.getTime()) return false;
+                } else if (filters.dateRange === 'Bu Hafta') {
+                    const weekAgo = new Date(today);
+                    weekAgo.setDate(today.getDate() - 7);
+                    if (meetingDate < weekAgo || meetingDate > today) return false;
+                } else if (filters.dateRange === 'Gecikmiş') {
+                    const nextActionDate = meeting.next_action_date ? new Date(meeting.next_action_date) : null;
+                    if (!nextActionDate || nextActionDate >= today || meeting.status === 'Tamamlandı' || meeting.status === 'İptal Edildi') {
+                        return false;
+                    }
                 }
             }
-        }
 
-        return true;
-    }).sort((a, b) => {
-        let comparison = 0;
+            return true;
+        }).sort((a, b) => {
+            let comparison = 0;
 
-        if (sortBy === 'date') {
-            comparison = new Date(a.date) - new Date(b.date);
-        } else if (sortBy === 'next_action_date') {
-            const dateA = a.next_action_date ? new Date(a.next_action_date) : new Date('9999-12-31');
-            const dateB = b.next_action_date ? new Date(b.next_action_date) : new Date('9999-12-31');
-            comparison = dateA - dateB;
-        } else if (sortBy === 'status') {
-            comparison = (a.status || '').localeCompare(b.status || '');
-        } else if (sortBy === 'customer') {
-            const customerA = customers.find(c => c.id === a.customerId)?.name || '';
-            const customerB = customers.find(c => c.id === b.customerId)?.name || '';
-            comparison = customerA.localeCompare(customerB);
-        }
+            if (sortBy === 'date') {
+                comparison = new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime();
+            } else if (sortBy === 'next_action_date') {
+                const dateA = a.next_action_date ? new Date(a.next_action_date) : new Date('9999-12-31');
+                const dateB = b.next_action_date ? new Date(b.next_action_date) : new Date('9999-12-31');
+                comparison = dateA.getTime() - dateB.getTime();
+            } else if (sortBy === 'status') {
+                comparison = (a.status || '').localeCompare(b.status || '');
+            } else if (sortBy === 'customer') {
+                const customerA = customers.find(c => c.id === a.customerId)?.name || '';
+                const customerB = customers.find(c => c.id === b.customerId)?.name || '';
+                comparison = customerA.localeCompare(customerB);
+            }
 
-        return sortOrder === 'asc' ? comparison : -comparison;
-    });
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    }, [activeMeetings, filters, sortBy, sortOrder, customers]);
 
     return (
         <div>
@@ -280,7 +319,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                                 <div className="flex gap-2">
                                     <select
                                         value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
+                                        onChange={(e) => setSortBy(e.target.value as any)}
                                         className="flex-1 p-2 border border-gray-300 rounded-md text-sm"
                                     >
                                         <option value="date">Görüşme Tarihi</option>
@@ -371,7 +410,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                                                 <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
                                                     Görüşme Tarihi:{' '}
                                                 </span>
-                                                <span className="text-gray-700">{formatDate(meeting.date)}</span>
+                                                <span className="text-gray-700">{formatDate(meeting.meeting_date)}</span>
                                             </td>
                                             <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
                                                 <span className="float-left font-semibold text-gray-500 md:hidden uppercase tracking-wider text-xs">
@@ -468,7 +507,7 @@ const Meetings = memo(({ meetings, customers, onSave, onDelete, onCustomerSave }
                 title={currentMeeting ? 'Görüşme Kaydını Düzenle' : 'Yeni Görüşme Kaydı Ekle'}
             >
                 <MeetingForm
-                    meeting={currentMeeting}
+                    meeting={currentMeeting || undefined}
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                     customers={customers}
