@@ -65,7 +65,7 @@ export default defineConfig({
           }
 
           // Charts library - heavy, keep separate
-          if (id.includes('recharts')) {
+          if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
             return 'charts';
           }
 
