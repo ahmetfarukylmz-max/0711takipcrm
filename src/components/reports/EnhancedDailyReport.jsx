@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useCallback, memo } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import {
     CalendarIcon,
@@ -12,67 +12,10 @@ import {
     PrinterIcon,
     DownloadIcon
 } from '../icons';
-
-// Metrik Kartı Bileşeni
-const MetricCard = ({ title, value, previousValue, prefix = '', suffix = '', icon: Icon, color, trend, details }) => {
-    const change = previousValue ? ((value - previousValue) / previousValue * 100).toFixed(1) : 0;
-    const isPositive = change >= 0;
-
-    return (
-        <div className={`relative overflow-hidden bg-gradient-to-br ${color} p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group`}>
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 opacity-10">
-                <Icon className="w-32 h-32 -mr-8 -mt-8" />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                        <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    {previousValue !== undefined && (
-                        <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                            {isPositive ? (
-                                <TrendingUpIcon className="w-4 h-4 text-white" />
-                            ) : (
-                                <TrendingDownIcon className="w-4 h-4 text-white" />
-                            )}
-                            <span className="text-xs font-semibold text-white">
-                                {Math.abs(change)}%
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="text-white">
-                    <p className="text-sm font-medium opacity-90 mb-1">{title}</p>
-                    <div className="flex items-baseline gap-2">
-                        <h3 className="text-3xl font-bold">
-                            {prefix}{value}{suffix}
-                        </h3>
-                    </div>
-
-                    {details && (
-                        <p className="text-xs opacity-75 mt-2">{details}</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Hover Details */}
-            {previousValue !== undefined && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/20 backdrop-blur-sm p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <p className="text-xs text-white/90">
-                        Dün: {prefix}{previousValue}{suffix}
-                    </p>
-                </div>
-            )}
-        </div>
-    );
-};
+import { MetricCard } from './shared';
 
 // Özet Satır Bileşeni
-const SummaryRow = ({ label, value, subvalue, change, icon: Icon }) => {
+const SummaryRow = memo(({ label, value, subvalue, change, icon: Icon }) => {
     const isPositive = change >= 0;
 
     return (
@@ -109,7 +52,7 @@ const SummaryRow = ({ label, value, subvalue, change, icon: Icon }) => {
             </div>
         </div>
     );
-};
+});
 
 const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
     const reportRef = useRef();
@@ -161,7 +104,7 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
         : 0;
 
     // Tarih değiştirme
-    const handleDateRangeChange = (range) => {
+    const handleDateRangeChange = useCallback((range) => {
         setDateRange(range);
         const today = new Date();
 
@@ -179,15 +122,15 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
             default:
                 setSelectedDate(today.toISOString().slice(0, 10));
         }
-    };
+    }, []);
 
     // Yazdırma fonksiyonu
-    const handlePrint = () => {
+    const handlePrint = useCallback(() => {
         window.print();
-    };
+    }, []);
 
     // Export fonksiyonu (basit CSV)
-    const handleExport = () => {
+    const handleExport = useCallback(() => {
         const data = [
             ['Metrik', 'Değer', 'Önceki Gün', 'Değişim %'],
             ['Yeni Görüşmeler', todayData.newMeetings, yesterdayData.newMeetings,
@@ -208,7 +151,7 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
         link.href = URL.createObjectURL(blob);
         link.download = `gunluk_rapor_${selectedDate}.csv`;
         link.click();
-    };
+    }, [selectedDate, todayData, yesterdayData, conversionRate, yesterdayConversionRate]);
 
     return (
         <div ref={reportRef} className="space-y-6">
