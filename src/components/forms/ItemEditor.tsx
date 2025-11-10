@@ -3,8 +3,21 @@ import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import { TrashIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
+import type { Product, OrderItem } from '../../types';
 
-const ItemEditor = ({ items, setItems, products }) => {
+interface ItemEditorProps {
+    /** Array of order items */
+    items: OrderItem[];
+    /** Callback to update items */
+    setItems: (items: OrderItem[]) => void;
+    /** List of available products */
+    products: Product[];
+}
+
+/**
+ * ItemEditor component - Editor for order items
+ */
+const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products }) => {
     const handleAddItem = () => {
         if (products.length > 0) {
             const firstProduct = products[0];
@@ -20,7 +33,7 @@ const ItemEditor = ({ items, setItems, products }) => {
         }
     };
 
-    const handleItemChange = (index, field, value) => {
+    const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
         const newItems = [...items];
 
         // Create a new object for the item to ensure React detects the change
@@ -40,7 +53,7 @@ const ItemEditor = ({ items, setItems, products }) => {
         setItems(newItems);
     };
 
-    const handleRemoveItem = (index) => {
+    const handleRemoveItem = (index: number) => {
         setItems(items.filter((_, i) => i !== index));
     };
 
