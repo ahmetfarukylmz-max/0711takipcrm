@@ -1,23 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
+import type { Customer } from '../../types';
 
-const CustomerForm = ({ customer, onSave, onCancel }) => {
-    const [formData, setFormData] = useState(customer || {
-        name: '',
-        contact_person: '',
-        phone: '',
-        email: '',
-        address: '',
-        city: ''
+interface CustomerFormProps {
+    /** Existing customer to edit (undefined for new customer) */
+    customer?: Partial<Customer>;
+    /** Callback when form is submitted */
+    onSave: (customer: Partial<Customer>) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+}
+
+interface CustomerFormData {
+    name: string;
+    contact_person: string;
+    phone: string;
+    email: string;
+    address: string;
+    city: string;
+}
+
+/**
+ * CustomerForm component - Form for creating/editing customers
+ */
+const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSave, onCancel }) => {
+    const [formData, setFormData] = useState<CustomerFormData>({
+        name: customer?.name || '',
+        contact_person: customer?.contact_person || '',
+        phone: customer?.phone || '',
+        email: customer?.email || '',
+        address: customer?.address || '',
+        city: customer?.city || ''
     });
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave(formData);
+        onSave({ ...customer, ...formData });
     };
 
     return (

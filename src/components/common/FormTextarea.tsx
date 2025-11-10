@@ -1,6 +1,14 @@
-import React from 'react';
+import React, { TextareaHTMLAttributes } from 'react';
 
-const FormTextarea = ({ label, ...props }) => {
+interface FormTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+    /** Textarea field label */
+    label?: string;
+}
+
+/**
+ * FormTextarea component - Styled textarea field
+ */
+const FormTextarea: React.FC<FormTextareaProps> = ({ label, ...props }) => {
     return (
         <div>
             {label && (

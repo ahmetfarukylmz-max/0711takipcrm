@@ -1,6 +1,16 @@
-import React from 'react';
+import React, { SelectHTMLAttributes } from 'react';
 
-const FormSelect = ({ label, children, ...props }) => {
+interface FormSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+    /** Select field label */
+    label?: string;
+    /** Select options */
+    children: React.ReactNode;
+}
+
+/**
+ * FormSelect component - Styled select dropdown
+ */
+const FormSelect: React.FC<FormSelectProps> = ({ label, children, ...props }) => {
     return (
         <div>
             {label && (
