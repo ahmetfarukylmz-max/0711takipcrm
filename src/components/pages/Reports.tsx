@@ -1,4 +1,4 @@
-import React, { useMemo, useState, memo } from 'react';
+import React, { useMemo, useState, memo, ChangeEvent } from 'react';
 import SalesChart from '../charts/SalesChart';
 import OrderStatusChart from '../charts/OrderStatusChart';
 import CustomerAnalyticsChart from '../charts/CustomerAnalyticsChart';
@@ -6,12 +6,55 @@ import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDe
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { ChartBarIcon } from '../icons';
+import type { Order, Customer, Quote, Meeting, Shipment, Product } from '../../types';
 
-const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, products }) => {
-    const [dateRange, setDateRange] = useState('30'); // days
-    const [showDailyReportModal, setShowDailyReportModal] = useState(false);
+interface CustomerStats {
+    name: string;
+    total: number;
+    count: number;
+}
 
-    const salesTrendData = useMemo(() => {
+interface ChartDataPoint {
+    date?: string;
+    sales?: number;
+    name?: string;
+    value?: number;
+}
+
+interface Stats {
+    totalRevenue: number;
+    avgOrderValue: number;
+    totalCustomers: number;
+    activeCustomers: number;
+    conversionRate: number;
+    totalOrders: number;
+    totalQuotes: number;
+    totalMeetings: number;
+}
+
+interface ReportsProps {
+    /** List of orders */
+    orders: Order[];
+    /** List of customers */
+    customers: Customer[];
+    /** List of quotes (teklifler) */
+    teklifler: Quote[];
+    /** List of meetings (gorusmeler) */
+    gorusmeler: Meeting[];
+    /** List of shipments */
+    shipments: Shipment[];
+    /** List of products */
+    products: Product[];
+}
+
+/**
+ * Reports component - Analytics and reporting page
+ */
+const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, shipments, products }) => {
+    const [dateRange, setDateRange] = useState<string>('30'); // days
+    const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
+
+    const salesTrendData = useMemo<ChartDataPoint[]>(() => {
         const now = new Date();
         const daysAgo = parseInt(dateRange);
         const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
@@ -23,7 +66,7 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
         });
 
         // Group by date
-        const salesByDate = {};
+        const salesByDate: Record<string, number> = {};
         filteredOrders.forEach(order => {
             const date = order.order_date;
             if (!salesByDate[date]) {
@@ -34,7 +77,7 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
 
         // Convert to array and sort by actual date
         return Object.entries(salesByDate)
-            .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+            .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
             .slice(-15) // Last 15 data points
             .map(([date, sales]) => ({
                 date: new Date(date).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
@@ -42,8 +85,8 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
             }));
     }, [orders, dateRange]);
 
-    const orderStatusData = useMemo(() => {
-        const statusCounts = {};
+    const orderStatusData = useMemo<ChartDataPoint[]>(() => {
+        const statusCounts: Record<string, number> = {};
         orders.filter(order => !order.isDeleted).forEach(order => {
             const status = order.status || 'Bilinmiyor';
             statusCounts[status] = (statusCounts[status] || 0) + 1;
@@ -55,8 +98,8 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
         }));
     }, [orders]);
 
-    const customerAnalytics = useMemo(() => {
-        const customerStats = {};
+    const customerAnalytics = useMemo<CustomerStats[]>(() => {
+        const customerStats: Record<string, { total: number; count: number }> = {};
 
         orders.filter(order => !order.isDeleted).forEach(order => {
             const customerId = order.customerId;
@@ -84,7 +127,7 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
             .slice(0, 10);
     }, [orders, customers]);
 
-    const stats = useMemo(() => {
+    const stats = useMemo<Stats>(() => {
         const activeOrders = orders.filter(o => !o.isDeleted);
         const activeCustomers = customers.filter(c => !c.isDeleted);
         const activeTeklifler = teklifler.filter(t => !t.isDeleted);
@@ -110,6 +153,10 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
         };
     }, [orders, customers, teklifler, gorusmeler]);
 
+    const handleDateRangeChange = (e: ChangeEvent<HTMLSelectElement>) => {
+        setDateRange(e.target.value);
+    };
+
     return (
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -120,7 +167,7 @@ const Reports = memo(({ orders, customers, teklifler, gorusmeler, shipments, pro
                 {/* Tarih Aralığı Seçici */}
                 <select
                     value={dateRange}
-                    onChange={(e) => setDateRange(e.target.value)}
+                    onChange={handleDateRangeChange}
                     className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm hover:shadow-md transition-shadow"
                 >
                     <option value="7">Son 7 Gün</option>

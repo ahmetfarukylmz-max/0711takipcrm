@@ -1,12 +1,28 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import SearchBar from '../common/SearchBar';
 import { formatDate, getStatusClass } from '../../utils/formatters';
+import type { Shipment, Order, Product, Customer } from '../../types';
 
-const ShipmentEditForm = ({ shipment, orders = [], shipments = [], onSave, onCancel, readOnly = false }) => {
-    const [formData, setFormData] = useState({
+interface ShipmentFormData {
+    shipment_date: string;
+    transporter: string;
+    notes: string;
+}
+
+interface ShipmentEditFormProps {
+    shipment: Shipment;
+    orders?: Order[];
+    shipments?: Shipment[];
+    onSave: (shipment: Partial<Shipment>) => void;
+    onCancel: () => void;
+    readOnly?: boolean;
+}
+
+const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = [], shipments = [], onSave, onCancel, readOnly = false }) => {
+    const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: shipment.shipment_date || '',
         transporter: shipment.transporter || '',
         notes: shipment.notes || ''
@@ -15,12 +31,12 @@ const ShipmentEditForm = ({ shipment, orders = [], shipments = [], onSave, onCan
     // Find the order related to this shipment
     const relatedOrder = orders.find(o => o.id === shipment.orderId);
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (!formData.transporter.trim()) {
@@ -159,36 +175,67 @@ const ShipmentEditForm = ({ shipment, orders = [], shipments = [], onSave, onCan
     );
 };
 
-const Shipments = memo(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete }) => {
+interface ShipmentFilters {
+    status: string;
+    dateRange: string;
+    customer: string;
+}
+
+interface DeleteConfirmState {
+    isOpen: boolean;
+    shipment: (Shipment & { count?: number }) | null;
+}
+
+interface ShipmentsProps {
+    /** List of shipments */
+    shipments: Shipment[];
+    /** List of orders */
+    orders?: Order[];
+    /** List of products */
+    products?: Product[];
+    /** List of customers */
+    customers?: Customer[];
+    /** Callback when shipment is delivered */
+    onDelivery: (shipmentId: string) => void;
+    /** Callback when shipment is updated */
+    onUpdate: (shipment: Partial<Shipment>) => void;
+    /** Callback when shipment is deleted */
+    onDelete: (id: string) => void;
+}
+
+/**
+ * Shipments component - Shipment management page
+ */
+const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentShipment, setCurrentShipment] = useState(null);
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, shipment: null });
-    const [selectedItems, setSelectedItems] = useState(new Set());
+    const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, shipment: null });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
-    const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState<ShipmentFilters>({
         status: 'Tümü',
         dateRange: 'Tümü',
         customer: 'Tümü'
     });
-    const [sortBy, setSortBy] = useState('shipment_date');
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [sortBy, setSortBy] = useState<'shipment_date' | 'status' | 'customer'>('shipment_date');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-    const handleDelivery = (shipmentId) => {
+    const handleDelivery = (shipmentId: string) => {
         onDelivery(shipmentId);
     };
 
-    const handleOpenModal = (shipment) => {
+    const handleOpenModal = (shipment: Shipment) => {
         setCurrentShipment(shipment);
         setIsModalOpen(true);
     };
 
-    const handleSave = (shipmentData) => {
+    const handleSave = (shipmentData: Partial<Shipment>) => {
         onUpdate(shipmentData);
         setIsModalOpen(false);
         setCurrentShipment(null);
     };
 
-    const handleDelete = (shipment) => {
+    const handleDelete = (shipment: Shipment) => {
         setDeleteConfirm({ isOpen: true, shipment });
     };
 
@@ -204,7 +251,7 @@ const Shipments = memo(({ shipments, orders = [], products = [], customers = [],
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -225,7 +272,7 @@ const Shipments = memo(({ shipments, orders = [], products = [], customers = [],
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            shipment: { id: 'batch', count: selectedItems.size }
+            shipment: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -288,7 +335,7 @@ const Shipments = memo(({ shipments, orders = [], products = [], customers = [],
             let comparison = 0;
 
             if (sortBy === 'shipment_date') {
-                comparison = new Date(a.shipment_date) - new Date(b.shipment_date);
+                comparison = new Date(a.shipment_date).getTime() - new Date(b.shipment_date).getTime();
             } else if (sortBy === 'status') {
                 comparison = (a.status || '').localeCompare(b.status || '');
             } else if (sortBy === 'customer') {
@@ -379,7 +426,7 @@ const Shipments = memo(({ shipments, orders = [], products = [], customers = [],
                         <div className="flex gap-2">
                             <select
                                 value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
+                                onChange={(e) => setSortBy(e.target.value as any)}
                                 className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                             >
                                 <option value="shipment_date">Sevk Tarihi</option>
@@ -523,7 +570,7 @@ const Shipments = memo(({ shipments, orders = [], products = [], customers = [],
                         );
                         }) : (
                             <tr>
-                                <td colSpan="7" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={7} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü'
                                         ? 'Arama kriterine uygun sevkiyat bulunamadı.'
                                         : 'Henüz sevkiyat eklenmemiş.'}
