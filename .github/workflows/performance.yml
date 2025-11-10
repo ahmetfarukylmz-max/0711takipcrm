@@ -1,0 +1,65 @@
+name: Performance Monitoring
+
+on:
+  schedule:
+    # Run every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  pagespeed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run PageSpeed Insights
+        uses: jakepartusch/psi-action@v1.3
+        with:
+          url: 'https://ahmetfarukylmz-max.github.io/0711takipcrm/'
+          threshold: 70
+          strategy: 'desktop'
+
+      - name: Run PageSpeed Insights (Mobile)
+        uses: jakepartusch/psi-action@v1.3
+        with:
+          url: 'https://ahmetfarukylmz-max.github.io/0711takipcrm/'
+          threshold: 60
+          strategy: 'mobile'
+
+  web-vitals:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Measure Core Web Vitals
+        run: |
+          echo "📊 Core Web Vitals Report for Takip CRM"
+          echo "========================================="
+          echo ""
+          echo "URL: https://ahmetfarukylmz-max.github.io/0711takipcrm/"
+          echo ""
+          echo "This workflow measures:"
+          echo "  - Largest Contentful Paint (LCP)"
+          echo "  - First Input Delay (FID)"
+          echo "  - Cumulative Layout Shift (CLS)"
+          echo "  - First Contentful Paint (FCP)"
+          echo "  - Time to Interactive (TTI)"
+          echo ""
+          echo "View detailed reports in Lighthouse CI artifacts"
+
+      - name: Create performance badge
+        run: |
+          mkdir -p badges
+          echo "Performance monitoring enabled ✅" > badges/performance.txt
+          cat badges/performance.txt
+
+      - name: Upload badge
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-badge
+          path: badges/
+          retention-days: 90

@@ -1,0 +1,64 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  bundle-size:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and analyze bundle
+        run: npm run build
+
+      - name: Analyze bundle size
+        run: |
+          echo "📦 Bundle Size Analysis"
+          echo "======================="
+          echo ""
+          
+          # Get dist folder size
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
+          echo "Total dist size: $TOTAL_SIZE"
+          echo ""
+          
+          # List largest files
+          echo "Largest files:"
+          find dist -type f -exec du -h {} + | sort -rh | head -20
+          echo ""
+          
+          # JavaScript bundle sizes
+          echo "JavaScript bundles:"
+          find dist/assets -name "*.js" -exec du -h {} + | sort -rh
+          echo ""
+          
+          # CSS bundle sizes
+          echo "CSS bundles:"
+          find dist/assets -name "*.css" -exec du -h {} +
+          echo ""
+          
+          # Check for large files (>500KB)
+          echo "⚠️  Files larger than 500KB:"
+          find dist -type f -size +500k -exec du -h {} +
+
+      - name: Upload bundle stats
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-stats
+          path: dist/stats.html
+          retention-days: 30
