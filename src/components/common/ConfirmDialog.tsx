@@ -1,6 +1,34 @@
 import React from 'react';
 
-const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Sil", cancelText = "İptal" }) => {
+interface ConfirmDialogProps {
+    /** Whether dialog is visible */
+    isOpen: boolean;
+    /** Callback when dialog should close */
+    onClose: () => void;
+    /** Callback when user confirms the action */
+    onConfirm: () => void;
+    /** Dialog title */
+    title: string;
+    /** Dialog message/description */
+    message: string;
+    /** Text for confirm button */
+    confirmText?: string;
+    /** Text for cancel button */
+    cancelText?: string;
+}
+
+/**
+ * ConfirmDialog component - A modal dialog for confirming destructive actions
+ */
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+    confirmText = "Sil",
+    cancelText = "İptal"
+}) => {
     if (!isOpen) return null;
 
     return (

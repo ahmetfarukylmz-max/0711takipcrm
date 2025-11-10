@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 
 const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
     const modalRef = useRef(null);
@@ -44,6 +45,19 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
             </div>
         </div>
     );
+};
+
+Modal.propTypes = {
+    /** Whether the modal is visible */
+    show: PropTypes.bool.isRequired,
+    /** Callback when modal should close */
+    onClose: PropTypes.func.isRequired,
+    /** Modal title */
+    title: PropTypes.string.isRequired,
+    /** Modal content */
+    children: PropTypes.node.isRequired,
+    /** Tailwind max-width class (e.g., 'max-w-2xl', 'max-w-4xl') */
+    maxWidth: PropTypes.string,
 };
 
 export default Modal;
