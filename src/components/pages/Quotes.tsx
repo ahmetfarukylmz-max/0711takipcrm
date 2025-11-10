@@ -7,27 +7,62 @@ import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import type { Quote, Order, Shipment, Customer, Product } from '../../types';
 
-const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf }) => {
+interface DeleteConfirmState {
+    isOpen: boolean;
+    item: (Quote & { count?: number }) | null;
+}
+
+interface RejectionReasonModal {
+    isOpen: boolean;
+    reason: string;
+}
+
+interface QuotesProps {
+    /** List of quotes */
+    quotes: Quote[];
+    /** List of orders */
+    orders?: Order[];
+    /** List of shipments */
+    shipments?: Shipment[];
+    /** Callback when quote is saved */
+    onSave: (quote: Partial<Quote>) => void;
+    /** Callback when quote is deleted */
+    onDelete: (id: string) => void;
+    /** Callback to convert quote to order */
+    onConvertToOrder: (quote: Quote) => void;
+    /** List of customers */
+    customers: Customer[];
+    /** List of products */
+    products: Product[];
+    /** Callback to generate custom PDF */
+    onGeneratePdf: (quote: Quote) => void;
+}
+
+/**
+ * Quotes component - Quote management page with print functionality
+ */
+const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentQuote, setCurrentQuote] = useState(null);
-    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, item: null });
+    const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Tümü');
-    const [selectedItems, setSelectedItems] = useState(new Set());
-    const [rejectionReasonModal, setRejectionReasonModal] = useState({ isOpen: false, reason: '' });
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [rejectionReasonModal, setRejectionReasonModal] = useState<RejectionReasonModal>({ isOpen: false, reason: '' });
 
-    const handleOpenModal = (quote = null) => {
+    const handleOpenModal = (quote: Quote | null = null) => {
         setCurrentQuote(quote);
         setIsModalOpen(true);
     };
 
-    const handleSave = (quoteData) => {
+    const handleSave = (quoteData: Partial<Quote>) => {
         onSave(quoteData);
         setIsModalOpen(false);
     };
 
-    const handleDelete = (item) => {
+    const handleDelete = (item: Quote) => {
         setDeleteConfirm({ isOpen: true, item });
     };
 
@@ -43,7 +78,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
     };
 
     // Batch delete functions
-    const handleSelectItem = (id) => {
+    const handleSelectItem = (id: string) => {
         const newSelected = new Set(selectedItems);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -64,7 +99,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
     const handleBatchDelete = () => {
         setDeleteConfirm({
             isOpen: true,
-            item: { id: 'batch', count: selectedItems.size }
+            item: { id: 'batch', count: selectedItems.size } as any
         });
     };
 
@@ -74,7 +109,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
         setDeleteConfirm({ isOpen: false, item: null });
     };
 
-    const handlePrint = (quote) => {
+    const handlePrint = (quote: Quote) => {
         const customer = customers.find(c => c.id === quote.customerId);
         if (!customer) {
             toast.error('Müşteri bilgileri bulunamadı!');
@@ -96,7 +131,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
             return `
                 <tr class="border-b border-gray-200 ${isEven ? 'bg-gray-50' : 'bg-white'}">
                     <td class="py-2 px-3 text-center text-gray-500 text-xs">${index + 1}</td>
-                    <td class="py-2 px-3 text-sm text-gray-900">${product?.name || item.product_name || 'Bilinmeyen Ürün'}</td>
+                    <td class="py-2 px-3 text-sm text-gray-900">${product?.name || 'Bilinmeyen Ürün'}</td>
                     <td class="py-2 px-3 text-center text-sm text-gray-700">${item.quantity || 0} Kg</td>
                     <td class="py-2 px-3 text-right text-sm text-gray-700">${formatCurrency(item.unit_price || 0, quote.currency || 'TRY')}</td>
                     <td class="py-2 px-3 text-right text-sm font-semibold text-gray-900">${formatCurrency((item.quantity || 0) * (item.unit_price || 0), quote.currency || 'TRY')}</td>
@@ -144,7 +179,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
                         <h3 class="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">Müşteri Bilgileri</h3>
                         <div class="border border-gray-300 p-3 text-xs">
                             <p class="font-bold text-gray-900">${customer.name}</p>
-                            <p class="text-gray-600">${customer.address || ''}, ${customer.sehir || ''}</p>
+                            <p class="text-gray-600">${customer.address || ''}, ${customer.city || ''}</p>
                             <p class="text-gray-600">${customer.phone || ''}</p>
                             <p class="text-gray-600">${customer.email || ''}</p>
                         </div>
@@ -230,8 +265,10 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
         `;
 
         const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
-        printWindow.document.close();
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        }
     };
 
     // Filter out deleted quotes
@@ -405,7 +442,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
                                         <button
                                             onClick={() => {
                                                 if (quote.status === 'Reddedildi') {
-                                                    setRejectionReasonModal({ isOpen: true, reason: quote.rejection_reason });
+                                                    setRejectionReasonModal({ isOpen: true, reason: quote.rejection_reason || '' });
                                                 }
                                             }}
                                             className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(quote.status)} ${quote.status === 'Reddedildi' ? 'cursor-pointer' : ''}`}>
@@ -418,10 +455,10 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
                                         </div>
                                     </td>
                                 </tr>
-                            )}) 
+                            )})
                         ) : (
                             <tr>
-                                <td colSpan="8" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan={8} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery || statusFilter !== 'Tümü'
                                         ? 'Arama kriterlerine uygun teklif bulunamadı.'
                                         : 'Henüz teklif eklenmemiş. "Yeni Teklif" butonuna tıklayarak ilk teklifinizi oluşturun.'}
@@ -438,7 +475,7 @@ const Quotes = memo(({ quotes, orders = [], shipments = [], onSave, onDelete, on
                 maxWidth="max-w-4xl"
             >
                 <QuoteForm
-                    quote={currentQuote}
+                    quote={currentQuote || undefined}
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                     customers={customers}
