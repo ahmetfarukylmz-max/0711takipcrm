@@ -3,19 +3,49 @@ import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppI
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import Modal from '../common/Modal';
+import type { Customer, Order, Quote, Meeting, Product } from '../../types';
 
-const Dashboard = ({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave }) => {
+interface BestSellingProduct {
+    id: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+}
+
+interface DashboardProps {
+    /** List of customers */
+    customers: Customer[];
+    /** List of orders */
+    orders: Order[];
+    /** List of quotes (teklifler) */
+    teklifler: Quote[];
+    /** List of meetings (gorusmeler) */
+    gorusmeler: Meeting[];
+    /** List of products */
+    products: Product[];
+    /** List of overdue items */
+    overdueItems: Meeting[];
+    /** Callback to set active page */
+    setActivePage: (page: string) => void;
+    /** Callback when meeting is saved */
+    onMeetingSave: (meeting: Partial<Meeting>) => void;
+}
+
+/**
+ * Dashboard component - Main dashboard page with statistics and widgets
+ */
+const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave }) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
     const upcomingActions = gorusmeler
-        .filter(g => !g.isDeleted && g.next_action_date >= today)
-        .sort((a, b) => new Date(a.next_action_date) - new Date(b.next_action_date))
+        .filter(g => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
+        .sort((a, b) => new Date(a.next_action_date!).getTime() - new Date(b.next_action_date!).getTime())
         .slice(0, 5);
 
     // Calculate best selling products
-    const bestSellingProducts = useMemo(() => {
-        const productSales = {};
+    const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
+        const productSales: Record<string, { quantity: number; revenue: number }> = {};
 
         orders.filter(o => !o.isDeleted).forEach(order => {
             if (order.items && Array.isArray(order.items)) {
@@ -58,7 +88,7 @@ const Dashboard = ({ customers, orders, teklifler, gorusmeler, products, overdue
                 const deliveryDate = new Date(order.delivery_date);
                 return deliveryDate >= today && deliveryDate <= next7Days && order.status !== 'Tamamlandı';
             })
-            .sort((a, b) => new Date(a.delivery_date) - new Date(b.delivery_date))
+            .sort((a, b) => new Date(a.delivery_date!).getTime() - new Date(b.delivery_date!).getTime())
             .slice(0, 5);
     }, [orders]);
 
@@ -243,7 +273,7 @@ const Dashboard = ({ customers, orders, teklifler, gorusmeler, products, overdue
                             upcomingDeliveries.map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
                                 const daysUntilDelivery = Math.ceil(
-                                    (new Date(order.delivery_date) - new Date()) / (1000 * 60 * 60 * 24)
+                                    (new Date(order.delivery_date!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                                 );
                                 return (
                                     <div
@@ -275,6 +305,8 @@ const Dashboard = ({ customers, orders, teklifler, gorusmeler, products, overdue
             </div>
         </div>
     );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export default Dashboard;
