@@ -15,6 +15,7 @@
     "use-sync-external-store": "^1.2.0"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "firebase": "^12.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
@@ -23,9 +24,9 @@
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-big-calendar": "^1.19.4",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
-    "recharts": "^3.3.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
