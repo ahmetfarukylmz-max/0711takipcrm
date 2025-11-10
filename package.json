@@ -9,6 +9,10 @@
     "lint": "eslint src",
     "preview": "vite preview"
   },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "dependencies": {
     "firebase": "^12.4.0",
     "html2canvas": "^1.4.1",
