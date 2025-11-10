@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo, useRef } from 'react';
+import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -643,6 +644,29 @@ const Customers = memo(({
         </div>
     );
 });
+
+Customers.propTypes = {
+    customers: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        contact_person: PropTypes.string,
+        phone: PropTypes.string,
+        email: PropTypes.string,
+        address: PropTypes.string,
+        city: PropTypes.string,
+        isDeleted: PropTypes.bool,
+    })).isRequired,
+    onSave: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
+    orders: PropTypes.array,
+    quotes: PropTypes.array,
+    meetings: PropTypes.array,
+    shipments: PropTypes.array,
+    products: PropTypes.array,
+    onQuoteSave: PropTypes.func,
+    onOrderSave: PropTypes.func,
+    onShipmentUpdate: PropTypes.func,
+};
 
 Customers.displayName = 'Customers';
 

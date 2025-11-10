@@ -1,6 +1,25 @@
 import React from 'react';
 
-const SearchBar = ({ placeholder = "Ara...", value, onChange, className = "" }) => {
+interface SearchBarProps {
+    /** Placeholder text */
+    placeholder?: string;
+    /** Current search value */
+    value: string;
+    /** Change handler that receives the new search value */
+    onChange: (value: string) => void;
+    /** Additional CSS classes */
+    className?: string;
+}
+
+/**
+ * SearchBar component - A search input with an icon
+ */
+const SearchBar: React.FC<SearchBarProps> = ({
+    placeholder = "Ara...",
+    value,
+    onChange,
+    className = ""
+}) => {
     return (
         <div className={`relative ${className}`}>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

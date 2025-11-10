@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
+import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -536,6 +537,25 @@ const Orders = memo(({ orders, onSave, onDelete, onShipment, customers, products
         </div>
     );
 });
+
+Orders.propTypes = {
+    orders: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        customerId: PropTypes.string.isRequired,
+        items: PropTypes.array,
+        total_amount: PropTypes.number,
+        order_date: PropTypes.string,
+        delivery_date: PropTypes.string,
+        status: PropTypes.string,
+        isDeleted: PropTypes.bool,
+    })).isRequired,
+    onSave: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
+    onShipment: PropTypes.func.isRequired,
+    customers: PropTypes.array.isRequired,
+    products: PropTypes.array.isRequired,
+    onGeneratePdf: PropTypes.func.isRequired,
+};
 
 Orders.displayName = 'Orders';
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const FormInput = ({ label, ...props }) => {
     return (
@@ -14,6 +15,25 @@ const FormInput = ({ label, ...props }) => {
             />
         </div>
     );
+};
+
+FormInput.propTypes = {
+    /** Input field label */
+    label: PropTypes.string,
+    /** Input type (text, email, number, etc.) */
+    type: PropTypes.string,
+    /** Input name */
+    name: PropTypes.string,
+    /** Input value */
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    /** Change handler */
+    onChange: PropTypes.func,
+    /** Placeholder text */
+    placeholder: PropTypes.string,
+    /** Is field required */
+    required: PropTypes.bool,
+    /** Is field disabled */
+    disabled: PropTypes.bool,
 };
 
 export default FormInput;

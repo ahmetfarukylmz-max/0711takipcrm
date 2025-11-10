@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo, useRef } from 'react';
+import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -408,6 +409,19 @@ const Products = memo(({ products, onSave, onDelete }) => {
         </div>
     );
 });
+
+Products.propTypes = {
+    products: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        cost_price: PropTypes.number,
+        selling_price: PropTypes.number,
+        unit: PropTypes.string,
+        isDeleted: PropTypes.bool,
+    })).isRequired,
+    onSave: PropTypes.func.isRequired,
+    onDelete: PropTypes.func.isRequired,
+};
 
 Products.displayName = 'Products';
 
