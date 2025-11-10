@@ -74,9 +74,14 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.log in production
+        drop_console: false, // Keep console.log temporarily for debugging
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info']
+        pure_funcs: []
+      },
+      mangle: {
+        // Keep function and class names for better error stack traces
+        keep_classnames: true,
+        keep_fnames: true
       }
     },
     rollupOptions: {
@@ -139,8 +144,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 500,
     // Enable CSS code splitting
     cssCodeSplit: true,
-    // Source map for production debugging (optional, increases build size)
-    sourcemap: false
+    // Source map for production debugging (ENABLED for better error tracking)
+    sourcemap: true
   },
   // Optimize dependencies pre-bundling
   optimizeDeps: {
