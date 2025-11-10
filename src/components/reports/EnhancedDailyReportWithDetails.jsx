@@ -1,125 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
     CalendarIcon,
     TrendingUpIcon,
-    TrendingDownIcon,
     UsersIcon,
     DocumentTextIcon,
     ClipboardListIcon,
     TruckIcon,
-    CheckCircleIcon,
     DownloadIcon,
     ChevronDownIcon,
     BoxIcon
 } from '../icons';
-
-// Metrik Kartı Bileşeni
-const MetricCard = ({ title, value, previousValue, prefix = '', suffix = '', icon: Icon, color, details, onClick }) => {
-    const change = previousValue ? ((value - previousValue) / previousValue * 100).toFixed(1) : 0;
-    const isPositive = change >= 0;
-
-    return (
-        <div
-            className={`relative overflow-hidden bg-gradient-to-br ${color} p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group ${onClick ? 'cursor-pointer' : ''}`}
-            onClick={onClick}
-        >
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 opacity-10">
-                <Icon className="w-32 h-32 -mr-8 -mt-8" />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-lg">
-                        <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    {previousValue !== undefined && (
-                        <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                            {isPositive ? (
-                                <TrendingUpIcon className="w-4 h-4 text-white" />
-                            ) : (
-                                <TrendingDownIcon className="w-4 h-4 text-white" />
-                            )}
-                            <span className="text-xs font-semibold text-white">
-                                {Math.abs(change)}%
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="text-white">
-                    <p className="text-sm font-medium opacity-90 mb-1">{title}</p>
-                    <div className="flex items-baseline gap-2">
-                        <h3 className="text-3xl font-bold">
-                            {prefix}{value}{suffix}
-                        </h3>
-                    </div>
-
-                    {details && (
-                        <p className="text-xs opacity-75 mt-2">{details}</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Hover Details */}
-            {previousValue !== undefined && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/20 backdrop-blur-sm p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <p className="text-xs text-white/90">
-                        Dün: {prefix}{previousValue}{suffix}
-                    </p>
-                </div>
-            )}
-
-            {onClick && (
-                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronDownIcon className="w-5 h-5 text-white rotate-[-90deg]" />
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Accordion Bileşeni
-const DetailAccordion = ({ title, icon: Icon, count, isOpen, onToggle, children }) => {
-    return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 page-break-avoid">
-            <button
-                onClick={onToggle}
-                className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors no-print"
-            >
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
-                        <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="text-left">
-                        <h3 className="font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{count} kayıt</p>
-                    </div>
-                </div>
-                <ChevronDownIcon
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-                />
-            </button>
-
-            {/* Print başlığı (sadece yazdırma sırasında) */}
-            <div className="hidden print:block p-5 pb-2 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-bold text-gray-900">{title} ({count})</h3>
-                </div>
-            </div>
-
-            {/* İçerik - Ekranda accordion, yazdırmada her zaman görünür */}
-            <div className={`${isOpen ? 'block' : 'hidden'} print:block p-5 pt-0 space-y-3 print:max-h-none ${isOpen ? 'max-h-96 overflow-y-auto' : ''}`}>
-                {children}
-            </div>
-        </div>
-    );
-};
+import { MetricCard, DetailAccordion } from './shared';
 
 // Detaylı Liste Öğesi
 const DetailListItem = ({ customer, items, total, date, notes, type, getProductName }) => {
@@ -198,17 +92,32 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
     const [openAccordion, setOpenAccordion] = useState(null);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    // Yardımcı fonksiyon: Müşteri adını ID'den bul
-    const getCustomerName = (customerId) => {
-        const customer = customers?.find(c => c.id === customerId);
-        return customer?.name || `Müşteri ID: ${customerId}`;
-    };
+    // Performance: Create lookup maps (O(1) instead of O(n) for each lookup)
+    const customerMap = useMemo(() => {
+        const map = new Map();
+        customers?.forEach(c => map.set(c.id, c.name));
+        return map;
+    }, [customers]);
 
-    // Yardımcı fonksiyon: Ürün adını ID'den bul
-    const getProductName = (productId) => {
-        const product = products?.find(p => p.id === productId && !p.isDeleted);
-        return product?.name || 'Bilinmeyen Ürün';
-    };
+    const productMap = useMemo(() => {
+        const map = new Map();
+        products?.forEach(p => {
+            if (!p.isDeleted) {
+                map.set(p.id, p.name);
+            }
+        });
+        return map;
+    }, [products]);
+
+    // Yardımcı fonksiyon: Müşteri adını ID'den bul (O(1) lookup)
+    const getCustomerName = useCallback((customerId) => {
+        return customerMap.get(customerId) || `Müşteri ID: ${customerId}`;
+    }, [customerMap]);
+
+    // Yardımcı fonksiyon: Ürün adını ID'den bul (O(1) lookup)
+    const getProductName = useCallback((productId) => {
+        return productMap.get(productId) || 'Bilinmeyen Ürün';
+    }, [productMap]);
 
     // Veri filtreleme ve hesaplama fonksiyonu
     const getDetailedDataForDate = (date) => {
@@ -262,7 +171,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         : 0;
 
     // Tarih değiştirme
-    const handleDateRangeChange = (range) => {
+    const handleDateRangeChange = useCallback((range) => {
         setDateRange(range);
         const today = new Date();
 
@@ -277,10 +186,10 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             default:
                 setSelectedDate(today.toISOString().slice(0, 10));
         }
-    };
+    }, []);
 
     // Modern PDF Export fonksiyonu - AutoTable ile
-    const handleExportPdf = async () => {
+    const handleExportPdf = useCallback(async () => {
         setIsGeneratingPdf(true);
         try {
             const pdf = new jsPDF({
@@ -606,10 +515,10 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         } finally {
             setIsGeneratingPdf(false);
         }
-    };
+    }, [selectedDate, todayData, conversionRate, orders, getCustomerName]);
 
     // CSV Export fonksiyonu
-    const handleExportCsv = () => {
+    const handleExportCsv = useCallback(() => {
         const data = [
             ['Günlük Performans Raporu', selectedDate],
             [''],
@@ -627,11 +536,11 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         link.href = URL.createObjectURL(blob);
         link.download = `gunluk_rapor_${selectedDate}.csv`;
         link.click();
-    };
+    }, [selectedDate, todayData, yesterdayData, conversionRate, yesterdayConversionRate]);
 
-    const toggleAccordion = (key) => {
-        setOpenAccordion(openAccordion === key ? null : key);
-    };
+    const toggleAccordion = useCallback((key) => {
+        setOpenAccordion(prev => prev === key ? null : key);
+    }, []);
 
     return (
         <div className="space-y-6">
