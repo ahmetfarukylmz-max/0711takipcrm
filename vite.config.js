@@ -14,6 +14,7 @@ export default defineConfig({
         name: 'Takip CRM',
         short_name: 'TakipCRM',
         description: 'Müşteri İlişkileri Yönetim Sistemi',
+        version: '1.0.0',
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',
