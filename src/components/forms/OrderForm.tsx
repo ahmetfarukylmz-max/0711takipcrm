@@ -1,13 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import ItemEditor from './ItemEditor';
 import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
+import type { Order, Customer, Product, OrderItem, VATRate, Currency } from '../../types';
 
-const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
-    const [formData, setFormData] = useState(order || {
+interface OrderFormData {
+    customerId: string;
+    items: OrderItem[];
+    delivery_date: string;
+    vatRate: VATRate;
+    paymentType: string;
+    paymentTerm: string | number;
+    currency: Currency;
+    notes: string;
+}
+
+interface OrderFormProps {
+    /** Order to edit (undefined for new order) */
+    order?: Partial<Order>;
+    /** Callback when order is saved */
+    onSave: (order: Partial<Order>) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+    /** List of customers */
+    customers: Customer[];
+    /** List of products */
+    products: Product[];
+}
+
+/**
+ * OrderForm component - Form for creating and editing orders
+ */
+const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customers, products }) => {
+    const [formData, setFormData] = useState<OrderFormData>(order || {
         customerId: customers[0]?.id || '',
         items: [],
         delivery_date: '',
@@ -17,7 +45,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
         currency: DEFAULT_CURRENCY,
         notes: ''
     });
-    const [items, setItems] = useState(
+    const [items, setItems] = useState<OrderItem[]>(
         (order?.items || []).map(item => ({
             ...item,
             unit: 'Kg'
@@ -28,7 +56,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
     const vatAmount = subtotal * (formData.vatRate / 100);
     const total = subtotal + vatAmount;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSave({
             ...formData,
@@ -70,7 +98,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
                     label="Para Birimi"
                     name="currency"
                     value={formData.currency}
-                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                    onChange={e => setFormData({ ...formData, currency: e.target.value as Currency })}
                 >
                     {currencies.map(curr => (
                         <option key={curr.code} value={curr.code}>
@@ -117,7 +145,7 @@ const OrderForm = ({ order, onSave, onCancel, customers, products }) => {
                     label="KDV Oranı"
                     name="vatRate"
                     value={formData.vatRate}
-                    onChange={e => setFormData({ ...formData, vatRate: Number(e.target.value) })}
+                    onChange={e => setFormData({ ...formData, vatRate: Number(e.target.value) as VATRate })}
                 >
                     {turkeyVATRates.map(vat => (
                         <option key={vat.rate} value={vat.rate}>
