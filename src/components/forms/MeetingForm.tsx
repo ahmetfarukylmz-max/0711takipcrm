@@ -1,29 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import Modal from '../common/Modal';
 import CustomerForm from './CustomerForm';
 import { PlusIcon } from '../icons';
+import type { Meeting, Customer } from '../../types';
 
-const MeetingForm = ({ meeting, onSave, onCancel, customers, onCustomerSave, readOnly = false }) => {
+interface MeetingFormProps {
+    /** Existing meeting to edit (undefined for new meeting) */
+    meeting?: Partial<Meeting>;
+    /** Callback when form is submitted */
+    onSave: (meeting: Partial<Meeting>) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+    /** List of customers */
+    customers: Customer[];
+    /** Callback when new customer is created */
+    onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Whether form is read-only */
+    readOnly?: boolean;
+}
+
+interface MeetingFormData {
+    customerId: string;
+    date: string;
+    notes: string;
+    outcome: string;
+    status: string;
+    meetingType: string;
+    next_action_date: string;
+    next_action_notes: string;
+}
+
+/**
+ * MeetingForm component - Form for creating/editing meetings
+ */
+const MeetingForm: React.FC<MeetingFormProps> = ({
+    meeting,
+    onSave,
+    onCancel,
+    customers,
+    onCustomerSave,
+    readOnly = false
+}) => {
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [formData, setFormData] = useState(meeting || {
-        customerId: customers[0]?.id || '',
-        date: new Date().toISOString().slice(0, 10),
-        notes: '',
-        outcome: 'İlgileniyor',
-        status: 'Planlandı',
-        meetingType: 'İlk Temas',
-        next_action_date: '',
-        next_action_notes: ''
+    const [formData, setFormData] = useState<MeetingFormData>({
+        customerId: meeting?.customerId || customers[0]?.id || '',
+        date: meeting?.meeting_date || new Date().toISOString().slice(0, 10),
+        notes: meeting?.notes || '',
+        outcome: meeting?.outcome || 'İlgileniyor',
+        status: meeting?.status || 'Planlandı',
+        meetingType: (meeting as any)?.meetingType || 'İlk Temas',
+        next_action_date: meeting?.next_action_date || '',
+        next_action_notes: meeting?.next_action_notes || ''
     });
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleNewCustomerSave = async (customerData) => {
+    const handleNewCustomerSave = async (customerData: Partial<Customer>) => {
         const newCustomerId = await onCustomerSave(customerData);
         if (newCustomerId) {
             setFormData(prev => ({ ...prev, customerId: newCustomerId }));
@@ -31,10 +68,19 @@ const MeetingForm = ({ meeting, onSave, onCancel, customers, onCustomerSave, rea
         setIsCustomerModalOpen(false);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!readOnly) {
-            onSave(formData);
+            onSave({
+                ...meeting,
+                customerId: formData.customerId,
+                meeting_date: formData.date,
+                notes: formData.notes,
+                outcome: formData.outcome as any,
+                status: formData.status,
+                next_action_date: formData.next_action_date,
+                next_action_notes: formData.next_action_notes
+            });
         }
     };
 

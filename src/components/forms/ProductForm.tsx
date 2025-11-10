@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import { currencies, DEFAULT_CURRENCY } from '../../constants';
+import type { Product, Currency } from '../../types';
 
-const ProductForm = ({ product, onSave, onCancel }) => {
-    const [formData, setFormData] = useState(product || {
-        name: '',
-        code: '',
-        description: '',
-        cost_price: '',
-        selling_price: '',
-        currency: DEFAULT_CURRENCY
+interface ProductFormProps {
+    /** Existing product to edit (undefined for new product) */
+    product?: Partial<Product>;
+    /** Callback when form is submitted */
+    onSave: (product: Partial<Product>) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+}
+
+interface ProductFormData {
+    name: string;
+    code: string;
+    description: string;
+    cost_price: string | number;
+    selling_price: string | number;
+    currency: Currency;
+}
+
+/**
+ * ProductForm component - Form for creating/editing products
+ */
+const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) => {
+    const [formData, setFormData] = useState<ProductFormData>({
+        name: product?.name || '',
+        code: product?.id || '',
+        description: product?.description || '',
+        cost_price: product?.cost_price || '',
+        selling_price: product?.selling_price || '',
+        currency: (product as any)?.currency || DEFAULT_CURRENCY
     });
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave(formData);
+        onSave({
+            ...product,
+            name: formData.name,
+            description: formData.description,
+            cost_price: typeof formData.cost_price === 'string' ? parseFloat(formData.cost_price) : formData.cost_price,
+            selling_price: typeof formData.selling_price === 'string' ? parseFloat(formData.selling_price) : formData.selling_price,
+        });
     };
 
     return (

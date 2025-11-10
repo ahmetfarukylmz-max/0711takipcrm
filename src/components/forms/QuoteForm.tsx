@@ -1,13 +1,61 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import ItemEditor from './ItemEditor';
 import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import type { Quote, Customer, Product, Order, Shipment, OrderItem, VATRate, Currency } from '../../types';
 
-const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], shipments = [] }) => {
-    const [formData, setFormData] = useState(quote || {
+interface QuoteFormData {
+    customerId: string;
+    items: OrderItem[];
+    gecerlilik_tarihi: string;
+    status: string;
+    vatRate: VATRate;
+    paymentType: string;
+    paymentTerm: string | number;
+    currency: Currency;
+    notes: string;
+    rejection_reason: string;
+}
+
+interface TimelineEvent {
+    date: any;
+    description: string;
+    status?: string;
+}
+
+interface QuoteFormProps {
+    /** Quote to edit (undefined for new quote) */
+    quote?: Partial<Quote>;
+    /** Callback when quote is saved */
+    onSave: (quote: Partial<Quote>) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+    /** List of customers */
+    customers: Customer[];
+    /** List of products */
+    products: Product[];
+    /** List of orders (for timeline) */
+    orders?: Order[];
+    /** List of shipments (for timeline) */
+    shipments?: Shipment[];
+}
+
+/**
+ * QuoteForm component - Form for creating and editing quotes
+ */
+const QuoteForm: React.FC<QuoteFormProps> = ({
+    quote,
+    onSave,
+    onCancel,
+    customers,
+    products,
+    orders = [],
+    shipments = []
+}) => {
+    const [formData, setFormData] = useState<QuoteFormData>(quote || {
         customerId: customers[0]?.id || '',
         items: [],
         gecerlilik_tarihi: '',
@@ -19,7 +67,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
         notes: '',
         rejection_reason: ''
     });
-    const [items, setItems] = useState(
+    const [items, setItems] = useState<OrderItem[]>(
         (quote?.items || []).map(item => ({
             ...item,
             unit: 'Kg'
@@ -30,7 +78,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
     const vatAmount = subtotal * (formData.vatRate / 100);
     const total = subtotal + vatAmount;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSave({
             ...formData,
@@ -41,10 +89,10 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
         });
     };
 
-    const timelineEvents = useMemo(() => {
+    const timelineEvents = useMemo<TimelineEvent[]>(() => {
         if (!quote) return [];
 
-        const events = [
+        const events: TimelineEvent[] = [
             { date: quote.teklif_tarihi, description: 'Teklif oluşturuldu.', status: 'Hazırlandı' }
         ];
 
@@ -67,7 +115,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
             events.push({ date: null, description: `Teklif reddedildi. Neden: ${quote.rejection_reason || 'Belirtilmemiş'}` , status: 'Reddedildi' });
         }
 
-        return events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [quote, orders, shipments]);
 
     return (
@@ -125,7 +173,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
                     label="Para Birimi"
                     name="currency"
                     value={formData.currency}
-                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                    onChange={e => setFormData({ ...formData, currency: e.target.value as Currency })}
                 >
                     {currencies.map(curr => (
                         <option key={curr.code} value={curr.code}>
@@ -172,7 +220,7 @@ const QuoteForm = ({ quote, onSave, onCancel, customers, products, orders = [], 
                     label="KDV Oranı"
                     name="vatRate"
                     value={formData.vatRate}
-                    onChange={e => setFormData({ ...formData, vatRate: Number(e.target.value) })}
+                    onChange={e => setFormData({ ...formData, vatRate: Number(e.target.value) as VATRate })}
                 >
                     {turkeyVATRates.map(vat => (
                         <option key={vat.rate} value={vat.rate}>

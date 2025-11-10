@@ -1,8 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
+import type { Order, Product } from '../../types';
 
-const ShipmentForm = ({ order, products, onSave, onCancel }) => {
-    const [formData, setFormData] = useState({
+interface ShipmentItem {
+    productId: string;
+    productName: string;
+    orderedQty: number;
+    unit: string;
+    shippedQty: number;
+    toShipQty: number;
+}
+
+interface ShipmentFormData {
+    shipment_date: string;
+    transporter: string;
+    notes: string;
+    items: ShipmentItem[];
+}
+
+interface ShipmentFormProps {
+    /** Order to create shipment for */
+    order: Order;
+    /** List of products */
+    products: Product[];
+    /** Callback when shipment is created */
+    onSave: (shipmentData: any) => void;
+    /** Callback when form is cancelled */
+    onCancel: () => void;
+}
+
+/**
+ * ShipmentForm component - Form for creating shipments from orders
+ */
+const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, onCancel }) => {
+    const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: new Date().toISOString().split('T')[0],
         transporter: '',
         notes: '',
@@ -12,7 +43,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
     useEffect(() => {
         if (order) {
             // Initialize items with order items and their quantities
-            const items = order.items.map(item => ({
+            const items: ShipmentItem[] = order.items.map(item => ({
                 productId: item.productId,
                 productName: products.find(p => p.id === item.productId)?.name || 'Bilinmiyor',
                 orderedQty: item.quantity,
@@ -24,12 +55,12 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
         }
     }, [order, products]);
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleItemQtyChange = (index, value) => {
+    const handleItemQtyChange = (index: number, value: string) => {
         const newItems = [...formData.items];
         const qty = parseInt(value) || 0;
         const maxQty = newItems[index].orderedQty - newItems[index].shippedQty;
@@ -37,7 +68,7 @@ const ShipmentForm = ({ order, products, onSave, onCancel }) => {
         setFormData(prev => ({ ...prev, items: newItems }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         // Validate
