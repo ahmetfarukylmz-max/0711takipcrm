@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import {
     CalendarIcon,
     TrendingUpIcon,
@@ -188,325 +188,244 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         }
     }, []);
 
-    // Modern PDF Export fonksiyonu - AutoTable ile
+    // Modern PDF Export fonksiyonu - html2canvas ile Türkçe karakter desteği
     const handleExportPdf = useCallback(async () => {
         setIsGeneratingPdf(true);
         try {
+            // PDF için özel bir container oluştur
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                position: absolute;
+                left: -9999px;
+                top: 0;
+                width: 210mm;
+                background: white;
+                padding: 20mm;
+                font-family: Arial, sans-serif;
+            `;
+
+            // İçeriği oluştur
+            pdfContainer.innerHTML = `
+                <div style="font-family: Arial, sans-serif; color: #1f2937;">
+                    <!-- Header -->
+                    <div style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px; color: white;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h1 style="margin: 0; font-size: 24px; font-weight: bold;">AKÇELİK METAL SANAYİ</h1>
+                                <p style="margin: 8px 0 0 0; font-size: 12px; opacity: 0.9;">Organize Sanayi Bölgesi, Bursa | Tel: 0224 123 45 67</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">GÜNLÜK PERFORMANS RAPORU</h2>
+                                <p style="margin: 8px 0 0 0; font-size: 14px;">${formatDate(selectedDate)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performans Metrikleri -->
+                    <h3 style="color: #1e3a8a; font-size: 18px; margin: 0 0 16px 0; font-weight: bold;">📊 PERFORMANS METRİKLERİ</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+                        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <div style="font-size: 14px; color: #1e40af; margin-bottom: 8px;">Müşteri Görüşmeleri</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #1e3a8a;">${todayData.stats.newMeetings}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">adet</div>
+                        </div>
+                        <div style="background: #faf5ff; padding: 20px; border-radius: 8px; border-left: 4px solid #a855f7;">
+                            <div style="font-size: 14px; color: #7c3aed; margin-bottom: 8px;">Oluşturulan Teklifler</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #6b21a8;">${todayData.stats.newQuotes}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.newQuotesValue)}</div>
+                        </div>
+                        <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e;">
+                            <div style="font-size: 14px; color: #16a34a; margin-bottom: 8px;">Onaylanan Siparişler</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #15803d;">${todayData.stats.convertedOrders}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.convertedOrdersValue)}</div>
+                        </div>
+                        <div style="background: #fff7ed; padding: 20px; border-radius: 8px; border-left: 4px solid #f97316;">
+                            <div style="font-size: 14px; color: #ea580c; margin-bottom: 8px;">Dönüşüm Oranı</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #c2410c;">${conversionRate}%</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Teklif → Sipariş</div>
+                        </div>
+                    </div>
+
+                    ${todayData.meetings && todayData.meetings.length > 0 ? `
+                    <!-- Müşteri Görüşmeleri -->
+                    <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">👥 MÜŞTERİ GÖRÜŞMELERİ (${todayData.meetings.length})</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #3b82f6; color: white;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #2563eb;">Müşteri Adı</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #2563eb;">Tarih</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #2563eb;">Notlar / Sonuç</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todayData.meetings.map((meeting, idx) => `
+                                <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(meeting.customerId)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(meeting.date)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${meeting.notes || meeting.outcome || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
+                    ${todayData.quotes && todayData.quotes.length > 0 ? `
+                    <!-- Oluşturulan Teklifler -->
+                    <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">📄 OLUŞTURULAN TEKLİFLER (${todayData.quotes.length})</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #a855f7; color: white;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">#</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Müşteri</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Tarih</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #9333ea;">Durum</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; border: 1px solid #9333ea;">Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todayData.quotes.map((quote, idx) => `
+                                <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">#${quote.id.substring(0, 5)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(quote.customerId)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(quote.teklif_tarihi)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${quote.status || 'Bekliyor'}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px; text-align: right;">${formatCurrency(quote.total_amount)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
+                    ${todayData.allOrders && todayData.allOrders.length > 0 ? `
+                    <!-- Onaylanan Siparişler -->
+                    <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">✅ ONAYLANAN SİPARİŞLER (${todayData.allOrders.length})</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #22c55e; color: white;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">#</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Müşteri</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Tarih</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #16a34a;">Durum</th>
+                                <th style="padding: 12px; text-align: right; font-size: 13px; border: 1px solid #16a34a;">Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todayData.allOrders.map((order, idx) => `
+                                <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">#${order.id.substring(0, 5)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(order.customerId)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(order.order_date)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${order.quoteId ? '✓ Tekliften' : (order.status || 'Bekliyor')}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px; text-align: right;">${formatCurrency(order.total_amount)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
+                    ${todayData.shipments && todayData.shipments.length > 0 ? `
+                    <!-- Sevkiyatlar -->
+                    <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">🚚 OLUŞTURULAN SEVKİYATLAR (${todayData.shipments.length})</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #fb923c; color: white;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #f97316;">Müşteri</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #f97316;">Sevkiyat Tarihi</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #f97316;">Durum</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #f97316;">Teslimat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todayData.shipments.map((shipment, idx) => {
+                                const relatedOrder = orders.find(o => o.id === shipment.orderId);
+                                const customerName = relatedOrder ? getCustomerName(relatedOrder.customerId) : 'Bilinmiyor';
+                                return `
+                                    <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
+                                        <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${customerName}</td>
+                                        <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(shipment.shipment_date)}</td>
+                                        <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${shipment.status}</td>
+                                        <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${shipment.delivery_date ? formatDate(shipment.delivery_date) : '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
+                    <!-- Performans Özeti -->
+                    <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 24px; border-radius: 12px; margin-top: 32px; color: white;">
+                        <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">📈 GÜNLÜK PERFORMANS ÖZETİ</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Gelir Potansiyeli</div>
+                                <div style="font-size: 24px; font-weight: bold;">${formatCurrency(todayData.stats.newQuotesValue)}</div>
+                                <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">${todayData.stats.newQuotes} teklif</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Gerçekleşen Gelir</div>
+                                <div style="font-size: 24px; font-weight: bold;">${formatCurrency(todayData.stats.allOrdersValue)}</div>
+                                <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">${todayData.stats.allOrders} sipariş</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.15); padding: 16px; border-radius: 8px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 8px;">Başarı Oranı</div>
+                                <div style="font-size: 24px; font-weight: bold;">${conversionRate}%</div>
+                                <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">${todayData.stats.convertedOrders}/${todayData.stats.newQuotes} onaylandı</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="margin-top: 32px; padding-top: 16px; border-top: 2px solid #e2e8f0; text-align: center; color: #64748b; font-size: 11px;">
+                        <p style="margin: 0;">AKÇELİK METAL SANAYİ - Günlük Performans Raporu</p>
+                        <p style="margin: 4px 0 0 0;">Rapor Tarihi: ${formatDate(selectedDate)}</p>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(pdfContainer);
+
+            // html2canvas ile görüntüye çevir
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowWidth: 794, // A4 width in pixels at 96 DPI
+            });
+
+            document.body.removeChild(pdfContainer);
+
+            // PDF oluştur
+            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF({
-                orientation: 'p',
+                orientation: 'portrait',
                 unit: 'mm',
                 format: 'a4',
-                putOnlyUsedFonts: true,
-                compress: true
             });
 
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 20;
-            let yPosition = margin;
-            let pageNumber = 1;
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            const imgX = 0;
+            const imgY = 0;
 
-            const checkPageBreak = (requiredSpace) => {
-                if (yPosition + requiredSpace > pageHeight - margin) {
+            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio * 25.4 / 96, imgHeight * ratio * 25.4 / 96);
+
+            // Eğer içerik bir sayfadan uzunsa, otomatik olarak sayfa ekle
+            const contentHeight = imgHeight * ratio * 25.4 / 96;
+            if (contentHeight > pdfHeight) {
+                let remainingHeight = contentHeight - pdfHeight;
+                let currentY = -pdfHeight;
+
+                while (remainingHeight > 0) {
                     pdf.addPage();
-                    pageNumber++;
-                    yPosition = margin;
-                    // Yeni sayfada sayfa numarasını ekle
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.text(`Sayfa ${pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    pdf.addImage(imgData, 'PNG', imgX, currentY, imgWidth * ratio * 25.4 / 96, imgHeight * ratio * 25.4 / 96);
+                    currentY -= pdfHeight;
+                    remainingHeight -= pdfHeight;
                 }
-            };
-
-            // ============================================
-            // HEADER - Modern Gradient Header
-            // ============================================
-            const headerHeight = 40;
-            pdf.setFillColor(37, 99, 235);
-            pdf.rect(0, 0, pageWidth, headerHeight, 'F');
-
-            // Sol taraf
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(18);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('AKCELIK METAL SANAYI', 15, 15);
-
-            pdf.setFontSize(8);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('Organize Sanayi Bolgesi, Bursa | Tel: 0224 123 45 67', 15, 23);
-
-            // Sağ taraf
-            pdf.setFontSize(14);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('GUNLUK PERFORMANS RAPORU', pageWidth - 15, 15, { align: 'right' });
-
-            pdf.setFontSize(9);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text(formatDate(selectedDate), pageWidth - 15, 23, { align: 'right' });
-
-            // İlk sayfa numarası
-            pdf.setFontSize(8);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text(`Sayfa 1`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-
-            yPosition = headerHeight + 15;
-
-            // Özet Metrikler - AutoTable ile
-            pdf.setFontSize(16);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(30, 64, 175); // blue-800
-            pdf.text('PERFORMANS METRIKLERI', margin, yPosition);
-            yPosition += 3;
-
-            const metricsBody = [
-                [
-                    { content: `Müşteri Görüşmeleri\n${todayData.stats.newMeetings} adet`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
-                    { content: `Oluşturulan Teklifler\n${todayData.stats.newQuotes} adet\n${formatCurrency(todayData.stats.newQuotesValue)}`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
-                ],
-                [
-                    { content: `Onaylanan Siparişler\n${todayData.stats.convertedOrders} adet\n${formatCurrency(todayData.stats.convertedOrdersValue)}`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
-                    { content: `Dönüşüm Oranı\n${conversionRate}%`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 12 } },
-                ]
-            ];
-
-            autoTable(pdf, {
-                startY: yPosition,
-                body: metricsBody,
-                theme: 'grid',
-                styles: {
-                    cellPadding: 8,
-                    lineWidth: 0.1,
-                    lineColor: [203, 213, 225],
-                },
-                didDrawCell: (data) => {
-                    if (data.section === 'body') {
-                        pdf.setDrawColor(203, 213, 225);
-                        pdf.setLineWidth(0.1);
-                        pdf.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
-                    }
-                },
-                margin: { left: margin, right: margin },
-            });
-
-            yPosition = pdf.lastAutoTable.finalY + 15;
-
-            // Müşteri Görüşmeleri Detayı - AutoTable ile
-            if (todayData.meetings && todayData.meetings.length > 0) {
-                checkPageBreak(50);
-
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(30, 64, 175);
-                pdf.text(`MÜŞTERİ GÖRÜŞMELERİ (${todayData.meetings.length})`, margin, yPosition);
-                yPosition += 10;
-
-                const meetingsBody = todayData.meetings.map(meeting => ([
-                    getCustomerName(meeting.customerId),
-                    formatDate(meeting.date),
-                    meeting.notes || meeting.outcome || '-'
-                ]));
-
-                autoTable(pdf, {
-                    startY: yPosition,
-                    head: [['Müşteri Adı', 'Tarih', 'Notlar / Sonuç']],
-                    body: meetingsBody,
-                    theme: 'grid',
-                    headStyles: {
-                        fillColor: [59, 130, 246],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                    },
-                    styles: {
-                        cellPadding: 3,
-                        fontSize: 9,
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 60 },
-                        1: { cellWidth: 30 },
-                        2: { cellWidth: 'auto' },
-                    },
-                    margin: { left: margin, right: margin },
-                });
-
-                yPosition = pdf.lastAutoTable.finalY + 15;
             }
-
-            // Oluşturulan Teklifler Detayı - AutoTable ile
-            if (todayData.quotes && todayData.quotes.length > 0) {
-                checkPageBreak(50);
-
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(30, 64, 175);
-                pdf.text(`OLUŞTURULAN TEKLİFLER (${todayData.quotes.length})`, margin, yPosition);
-                yPosition += 10;
-
-                const quotesBody = todayData.quotes.map(quote => ([
-                    `#${quote.id.substring(0, 5)}`,
-                    getCustomerName(quote.customerId),
-                    formatDate(quote.teklif_tarihi),
-                    quote.status || 'Bekliyor',
-                    formatCurrency(quote.total_amount)
-                ]));
-
-                autoTable(pdf, {
-                    startY: yPosition,
-                    head: [['#', 'Müşteri', 'Tarih', 'Durum', 'Tutar']],
-                    body: quotesBody,
-                    theme: 'grid',
-                    headStyles: {
-                        fillColor: [168, 85, 247],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                    },
-                    styles: {
-                        cellPadding: 3,
-                        fontSize: 9,
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 20 },
-                        1: { cellWidth: 50 },
-                        2: { cellWidth: 30 },
-                        3: { cellWidth: 30 },
-                        4: { cellWidth: 'auto', halign: 'right' },
-                    },
-                    margin: { left: margin, right: margin },
-                });
-
-                yPosition = pdf.lastAutoTable.finalY + 15;
-            }
-
-            // Onaylanan Siparişler Detayı - AutoTable ile
-            if (todayData.allOrders && todayData.allOrders.length > 0) {
-                checkPageBreak(50);
-
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(30, 64, 175);
-                pdf.text(`ONAYLANAN SİPARİŞLER (${todayData.allOrders.length})`, margin, yPosition);
-                yPosition += 10;
-
-                const ordersBody = todayData.allOrders.map(order => ([
-                    `#${order.id.substring(0, 5)}`,
-                    getCustomerName(order.customerId),
-                    formatDate(order.order_date),
-                    order.quoteId ? '✓ Tekliften' : (order.status || 'Bekliyor'),
-                    formatCurrency(order.total_amount)
-                ]));
-
-                autoTable(pdf, {
-                    startY: yPosition,
-                    head: [['#', 'Müşteri', 'Tarih', 'Durum', 'Tutar']],
-                    body: ordersBody,
-                    theme: 'grid',
-                    headStyles: {
-                        fillColor: [34, 197, 94],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                    },
-                    styles: {
-                        cellPadding: 3,
-                        fontSize: 9,
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 20 },
-                        1: { cellWidth: 50 },
-                        2: { cellWidth: 30 },
-                        3: { cellWidth: 30 },
-                        4: { cellWidth: 'auto', halign: 'right' },
-                    },
-                    margin: { left: margin, right: margin },
-                });
-
-                yPosition = pdf.lastAutoTable.finalY + 15;
-            }
-
-            // Sevkiyatlar - AutoTable ile
-            if (todayData.shipments && todayData.shipments.length > 0) {
-                checkPageBreak(50);
-
-                pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(30, 64, 175);
-                pdf.text(`OLUŞTURULAN SEVKİYATLAR (${todayData.shipments.length})`, margin, yPosition);
-                yPosition += 10;
-
-                const shipmentsBody = todayData.shipments.map(shipment => {
-                    const relatedOrder = orders.find(o => o.id === shipment.orderId);
-                    const customerName = relatedOrder ? getCustomerName(relatedOrder.customerId) : 'Bilinmiyor';
-                    return [
-                        customerName,
-                        formatDate(shipment.shipment_date),
-                        shipment.status,
-                        shipment.delivery_date ? formatDate(shipment.delivery_date) : '-'
-                    ];
-                });
-
-                autoTable(pdf, {
-                    startY: yPosition,
-                    head: [['Müşteri', 'Sevkiyat Tarihi', 'Durum', 'Teslimat']],
-                    body: shipmentsBody,
-                    theme: 'grid',
-                    headStyles: {
-                        fillColor: [251, 146, 60],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                    },
-                    styles: {
-                        cellPadding: 3,
-                        fontSize: 9,
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 60 },
-                        1: { cellWidth: 35 },
-                        2: { cellWidth: 30 },
-                        3: { cellWidth: 'auto' },
-                    },
-                    margin: { left: margin, right: margin },
-                });
-
-                yPosition = pdf.lastAutoTable.finalY + 15;
-            }
-
-            // Modern Footer - AutoTable ile
-            checkPageBreak(55);
-
-            pdf.setFontSize(12);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(30, 64, 175);
-            pdf.text('GÜNLÜK PERFORMANS ÖZETİ', margin, yPosition);
-            yPosition += 10;
-
-            const summaryBody = [
-                [
-                    { content: `Gelir Potansiyeli\n${formatCurrency(todayData.stats.newQuotesValue)}\n${todayData.stats.newQuotes} Teklif`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
-                    { content: `Gerçekleşen Gelir\n${formatCurrency(todayData.stats.allOrdersValue)}\n${todayData.stats.allOrders} Sipariş`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
-                    { content: `Başarı Oranı\n${conversionRate}%\n${todayData.stats.convertedOrders}/${todayData.stats.newQuotes} Onaylandı`, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 10, fillColor: [239, 246, 255] } },
-                ]
-            ];
-
-            autoTable(pdf, {
-                startY: yPosition,
-                body: summaryBody,
-                theme: 'grid',
-                styles: {
-                    cellPadding: 8,
-                    lineWidth: 0.1,
-                    lineColor: [203, 213, 225],
-                },
-                didDrawCell: (data) => {
-                    if (data.section === 'body') {
-                        pdf.setDrawColor(203, 213, 225);
-                        pdf.setLineWidth(0.1);
-                        pdf.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height);
-                    }
-                },
-                margin: { left: margin, right: margin },
-            });
-
-            yPosition = pdf.lastAutoTable.finalY + 15;
-
-
 
             pdf.save(`gunluk_performans_raporu_${selectedDate}.pdf`);
         } catch (error) {
