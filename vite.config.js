@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+// Temporarily disable PWA to prevent service worker caching issues
+// import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
@@ -10,65 +11,15 @@ export default defineConfig({
   resolve: {
     alias: {
       'react': path.resolve('./node_modules/react'),
-      'react-dom': path.resolve('./node_modules/react-dom')
+      'react-dom': path.resolve('./node_modules/react-dom'),
+      'use-sync-external-store/shim': path.resolve('./node_modules/use-sync-external-store/shim'),
+      'use-sync-external-store/shim/with-selector': path.resolve('./node_modules/use-sync-external-store/shim/with-selector')
     },
-    dedupe: ['react', 'react-dom']
+    dedupe: ['react', 'react-dom', 'use-sync-external-store']
   },
   plugins: [
     react({ jsxRuntime: 'automatic' }),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
-      manifest: {
-        name: 'Takip CRM',
-        short_name: 'TakipCRM',
-        description: 'Müşteri İlişkileri Yönetim Sistemi',
-        version: '1.0.0',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/0711takipcrm/',
-        scope: '/0711takipcrm/',
-        icons: [
-          {
-            src: '/0711takipcrm/vite.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'firebase-storage-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-              }
-            }
-          }
-        ]
-      }
-    }),
+    // PWA temporarily disabled to prevent service worker caching old builds
     visualizer({
       open: false,
       filename: 'dist/stats.html',
