@@ -1,4 +1,4 @@
-import React, { useMemo, useState, memo } from 'react';
+import React, { useMemo, useState, memo, useCallback } from 'react';
 import Modal from '../common/Modal';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
@@ -94,22 +94,22 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
 
-    const handleOpenQuoteModal = () => setIsQuoteModalOpen(true);
-    const handleOpenOrderModal = () => setIsOrderModalOpen(true);
+    const handleOpenQuoteModal = useCallback(() => setIsQuoteModalOpen(true), []);
+    const handleOpenOrderModal = useCallback(() => setIsOrderModalOpen(true), []);
 
-    const handleQuoteSave = (quoteData: Partial<Quote>) => {
+    const handleQuoteSave = useCallback((quoteData: Partial<Quote>) => {
         const finalQuoteData = { ...quoteData, customerId: customer.id };
         onQuoteSave(finalQuoteData);
         setIsQuoteModalOpen(false);
-    };
+    }, [customer.id, onQuoteSave]);
 
-    const handleOrderSave = (orderData: Partial<Order>) => {
+    const handleOrderSave = useCallback((orderData: Partial<Order>) => {
         const finalOrderData = { ...orderData, customerId: customer.id };
         onOrderSave(finalOrderData);
         setIsOrderModalOpen(false);
-    };
+    }, [customer.id, onOrderSave]);
 
-    const handleItemClick = (activity: Activity) => {
+    const handleItemClick = useCallback((activity: Activity) => {
         if (activity.type === 'order') {
             onViewOrder && onViewOrder(activity.data as Order);
         } else if (activity.type === 'quote') {
@@ -117,7 +117,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
         } else if (activity.type === 'shipment') {
             onViewShipment && onViewShipment(activity.data as Shipment);
         }
-    };
+    }, [onViewOrder, onViewQuote, onViewShipment]);
 
     // Calculate statistics
     const stats = useMemo<Stats>(() => {
