@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { formatDate, getStatusClass } from '../../utils/formatters';
+import type { Meeting, Customer } from '../../types';
 
-const MeetingDetail = ({ meeting, customer }) => {
+interface MeetingDetailProps {
+    /** Meeting data to display */
+    meeting: Meeting | null;
+    /** Customer associated with the meeting */
+    customer?: Customer | null;
+}
+
+/**
+ * MeetingDetail component - Displays detailed information about a meeting
+ */
+const MeetingDetail = memo<MeetingDetailProps>(({ meeting, customer }) => {
     if (!meeting) return null;
 
     return (
@@ -21,13 +32,13 @@ const MeetingDetail = ({ meeting, customer }) => {
                         <p><span className="font-semibold">Görüşme Tarihi:</span> {formatDate(meeting.date)}</p>
                         <p><span className="font-semibold">Görüşme Türü:</span> {meeting.meetingType}</p>
                         <p>
-                            <span className="font-semibold">Durum:</span> 
+                            <span className="font-semibold">Durum:</span>
                             <span className={`ml-2 p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.status)}`}>
                                 {meeting.status}
                             </span>
                         </p>
                         <p>
-                            <span className="font-semibold">Sonuç:</span> 
+                            <span className="font-semibold">Sonuç:</span>
                             <span className={`ml-2 p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.outcome)}`}>
                                 {meeting.outcome}
                             </span>
@@ -52,6 +63,8 @@ const MeetingDetail = ({ meeting, customer }) => {
             </div>
         </div>
     );
-};
+});
+
+MeetingDetail.displayName = 'MeetingDetail';
 
 export default MeetingDetail;

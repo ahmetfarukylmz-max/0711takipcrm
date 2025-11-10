@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, memo, FormEvent, ChangeEvent } from 'react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import FormInput from '../common/FormInput';
 
-const LoginScreen = () => {
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+/**
+ * LoginScreen component - Handles user authentication (login and registration)
+ */
+const LoginScreen = memo(() => {
+    const [isRegistering, setIsRegistering] = useState<boolean>(false);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [error, setError] = useState<string>('');
 
-    const handleAuthAction = async (e) => {
+    const handleAuthAction = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         try {
@@ -24,6 +27,19 @@ const LoginScreen = () => {
         }
     };
 
+    const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setEmail(e.target.value);
+    };
+
+    const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setPassword(e.target.value);
+    };
+
+    const toggleMode = () => {
+        setIsRegistering(!isRegistering);
+        setError('');
+    };
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
@@ -35,14 +51,14 @@ const LoginScreen = () => {
                         label="E-posta Adresi"
                         type="email"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={handleEmailChange}
                         required
                     />
                     <FormInput
                         label="Şifre"
                         type="password"
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={handlePasswordChange}
                         required
                     />
                     {error && <p className="text-sm text-red-500">{error}</p>}
@@ -56,10 +72,7 @@ const LoginScreen = () => {
                         {isRegistering ? 'Zaten bir hesabınız var mı?' : 'Hesabınız yok mu?'}
                         <button
                             type="button"
-                            onClick={() => {
-                                setIsRegistering(!isRegistering);
-                                setError('');
-                            }}
+                            onClick={toggleMode}
                             className="ml-1 font-medium text-blue-600 hover:underline"
                         >
                             {isRegistering ? 'Giriş Yapın' : 'Kayıt Olun'}
@@ -69,6 +82,8 @@ const LoginScreen = () => {
             </div>
         </div>
     );
-};
+});
+
+LoginScreen.displayName = 'LoginScreen';
 
 export default LoginScreen;

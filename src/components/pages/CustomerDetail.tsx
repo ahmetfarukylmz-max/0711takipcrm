@@ -1,11 +1,79 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import Modal from '../common/Modal';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp, getStatusClass } from '../../utils/formatters';
+import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
 
-const CustomerDetail = ({
+interface ProductStats {
+    id: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+    orderCount: number;
+}
+
+interface Stats {
+    totalOrders: number;
+    totalOrderAmount: number;
+    totalQuotes: number;
+    totalQuoteAmount: number;
+    totalMeetings: number;
+    completedOrders: number;
+    pendingQuotes: number;
+}
+
+interface Activity {
+    type: 'order' | 'quote' | 'meeting' | 'shipment';
+    date: string;
+    title: string;
+    description: string;
+    status: string;
+    id: string;
+    data: Order | Quote | Meeting | Shipment;
+}
+
+type TabId = 'overview' | 'timeline' | 'orders' | 'quotes' | 'top-products';
+
+interface CustomerDetailProps {
+    /** Customer to display */
+    customer: Customer;
+    /** List of all orders */
+    orders?: Order[];
+    /** List of all quotes */
+    quotes?: Quote[];
+    /** List of all meetings */
+    meetings?: Meeting[];
+    /** List of all shipments */
+    shipments?: Shipment[];
+    /** Handler for editing customer */
+    onEdit: () => void;
+    /** Handler for deleting customer */
+    onDelete: () => void;
+    /** Handler for creating a quote */
+    onCreateQuote?: () => void;
+    /** Handler for creating an order */
+    onCreateOrder?: () => void;
+    /** Handler for viewing an order */
+    onViewOrder?: (order: Order) => void;
+    /** Handler for viewing a quote */
+    onViewQuote?: (quote: Quote) => void;
+    /** Handler for viewing a shipment */
+    onViewShipment?: (shipment: Shipment) => void;
+    /** Handler for saving a quote */
+    onQuoteSave: (quote: Partial<Quote>) => void;
+    /** Handler for saving an order */
+    onOrderSave: (order: Partial<Order>) => void;
+    /** List of products for forms */
+    products: Product[];
+}
+
+/**
+ * CustomerDetail component - Displays detailed information about a customer
+ * including orders, quotes, meetings, and statistics
+ */
+const CustomerDetail = memo<CustomerDetailProps>(({
     customer,
     orders = [],
     quotes = [],
@@ -17,42 +85,42 @@ const CustomerDetail = ({
     onCreateOrder,
     onViewOrder,
     onViewQuote,
-    onViewShipment, // Added prop
-    onQuoteSave, // Added prop
-    onOrderSave, // Added prop
-    products,    // Added prop
+    onViewShipment,
+    onQuoteSave,
+    onOrderSave,
+    products,
 }) => {
-    const [activeTab, setActiveTab] = useState('overview');
-    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
-    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabId>('overview');
+    const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
 
     const handleOpenQuoteModal = () => setIsQuoteModalOpen(true);
     const handleOpenOrderModal = () => setIsOrderModalOpen(true);
 
-    const handleQuoteSave = (quoteData) => {
+    const handleQuoteSave = (quoteData: Partial<Quote>) => {
         const finalQuoteData = { ...quoteData, customerId: customer.id };
         onQuoteSave(finalQuoteData);
         setIsQuoteModalOpen(false);
     };
 
-    const handleOrderSave = (orderData) => {
+    const handleOrderSave = (orderData: Partial<Order>) => {
         const finalOrderData = { ...orderData, customerId: customer.id };
         onOrderSave(finalOrderData);
         setIsOrderModalOpen(false);
     };
 
-    const handleItemClick = (activity) => {
+    const handleItemClick = (activity: Activity) => {
         if (activity.type === 'order') {
-            onViewOrder && onViewOrder(activity.data);
+            onViewOrder && onViewOrder(activity.data as Order);
         } else if (activity.type === 'quote') {
-            onViewQuote && onViewQuote(activity.data);
+            onViewQuote && onViewQuote(activity.data as Quote);
         } else if (activity.type === 'shipment') {
-            onViewShipment && onViewShipment(activity.data);
+            onViewShipment && onViewShipment(activity.data as Shipment);
         }
     };
 
     // Calculate statistics
-    const stats = useMemo(() => {
+    const stats = useMemo<Stats>(() => {
         const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
         const customerQuotes = quotes.filter(q => q.customerId === customer.id && !q.isDeleted);
         const customerMeetings = meetings.filter(m => m.customerId === customer.id && !m.isDeleted);
@@ -74,9 +142,9 @@ const CustomerDetail = ({
     }, [customer.id, orders, quotes, meetings]);
 
     // Calculate top products for this customer
-    const topProducts = useMemo(() => {
+    const topProducts = useMemo<ProductStats[]>(() => {
         const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
-        const productStats = {};
+        const productStats: Record<string, { quantity: number; revenue: number; orderCount: number }> = {};
 
         customerOrders.forEach(order => {
             if (order.items && Array.isArray(order.items)) {
@@ -112,8 +180,8 @@ const CustomerDetail = ({
     }, [customer.id, orders, products]);
 
     // Create timeline of all activities
-    const timeline = useMemo(() => {
-        const activities = [];
+    const timeline = useMemo<Activity[]>(() => {
+        const activities: Activity[] = [];
 
         // Add orders
         orders
@@ -178,10 +246,10 @@ const CustomerDetail = ({
             });
 
         // Sort by date descending
-        return activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [customer.id, orders, quotes, meetings, shipments]);
 
-    const getActivityIcon = (type) => {
+    const getActivityIcon = (type: Activity['type']): JSX.Element | null => {
         switch (type) {
             case 'order':
                 return (
@@ -212,7 +280,7 @@ const CustomerDetail = ({
         }
     };
 
-    const getActivityColor = (type) => {
+    const getActivityColor = (type: Activity['type']): string => {
         switch (type) {
             case 'order':
                 return 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300';
@@ -298,20 +366,20 @@ const CustomerDetail = ({
             {/* Modals for Quote and Order Forms */}
             <Modal show={isQuoteModalOpen} onClose={() => setIsQuoteModalOpen(false)} title="Yeni Teklif Oluştur" maxWidth="max-w-4xl">
                 <QuoteForm
-                    quote={{ customerId: customer.id }}
+                    quote={{ customerId: customer.id } as Partial<Quote>}
                     onSave={handleQuoteSave}
                     onCancel={() => setIsQuoteModalOpen(false)}
-                    customers={[customer]} // Pass only the current customer
+                    customers={[customer]}
                     products={products}
                 />
             </Modal>
 
             <Modal show={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="Yeni Sipariş Oluştur" maxWidth="max-w-4xl">
                 <OrderForm
-                    order={{ customerId: customer.id }}
+                    order={{ customerId: customer.id } as Partial<Order>}
                     onSave={handleOrderSave}
                     onCancel={() => setIsOrderModalOpen(false)}
-                    customers={[customer]} // Pass only the current customer
+                    customers={[customer]}
                     products={products}
                 />
             </Modal>
@@ -347,11 +415,11 @@ const CustomerDetail = ({
             <div className="border-b border-gray-200 dark:border-gray-700">
                 <nav className="-mb-px flex gap-6">
                     {[
-                        { id: 'overview', label: 'Özet' },
-                        { id: 'timeline', label: 'Aktiviteler' },
-                        { id: 'orders', label: `Siparişler (${stats.totalOrders})` },
-                        { id: 'quotes', label: `Teklifler (${stats.totalQuotes})` },
-                        { id: 'top-products', label: 'Çok Satanlar' }
+                        { id: 'overview' as TabId, label: 'Özet' },
+                        { id: 'timeline' as TabId, label: 'Aktiviteler' },
+                        { id: 'orders' as TabId, label: `Siparişler (${stats.totalOrders})` },
+                        { id: 'quotes' as TabId, label: `Teklifler (${stats.totalQuotes})` },
+                        { id: 'top-products' as TabId, label: 'Çok Satanlar' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -474,7 +542,7 @@ const CustomerDetail = ({
                                     ))}
                                 {orders.filter(o => o.customerId === customer.id && !o.isDeleted).length === 0 && (
                                     <tr>
-                                        <td colSpan="3" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                             Henüz sipariş bulunmuyor
                                         </td>
                                     </tr>
@@ -514,7 +582,7 @@ const CustomerDetail = ({
                                     ))}
                                 {quotes.filter(q => q.customerId === customer.id && !q.isDeleted).length === 0 && (
                                     <tr>
-                                        <td colSpan="3" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                             Henüz teklif bulunmuyor
                                         </td>
                                     </tr>
@@ -547,7 +615,7 @@ const CustomerDetail = ({
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        <td colSpan={4} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                             Bu müşteriye ait ürün satışı bulunmuyor.
                                         </td>
                                     </tr>
@@ -559,6 +627,8 @@ const CustomerDetail = ({
             </div>
         </div>
     );
-};
+});
+
+CustomerDetail.displayName = 'CustomerDetail';
 
 export default CustomerDetail;

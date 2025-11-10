@@ -1,19 +1,34 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo, ChangeEvent } from 'react';
 import DocumentPreview from './DocumentPreview';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import type { Quote, Order, Customer, Product } from '../../types';
 
-const PdfGenerator = ({ doc, customers, products }) => {
-    const [logo, setLogo] = useState(null);
-    const [themeColor, setThemeColor] = useState('#3b82f6');
-    const [showProductDescriptions, setShowProductDescriptions] = useState(true);
-    const [showUnitPrices, setShowUnitPrices] = useState(true);
-    const [showVatDetails, setShowVatDetails] = useState(true);
-    const [customNotes, setCustomNotes] = useState('');
-    const previewRef = useRef();
+interface PdfGeneratorProps {
+    /** Document data (Quote or Order) */
+    doc: Quote | Order;
+    /** List of customers for lookup */
+    customers: Customer[];
+    /** List of products for lookup */
+    products: Product[];
+}
+
+/**
+ * PdfGenerator component - Generates customizable PDF documents from quotes or orders
+ */
+const PdfGenerator = memo<PdfGeneratorProps>(({ doc, customers, products }) => {
+    const [logo, setLogo] = useState<string | null>(null);
+    const [themeColor, setThemeColor] = useState<string>('#3b82f6');
+    const [showProductDescriptions, setShowProductDescriptions] = useState<boolean>(true);
+    const [showUnitPrices, setShowUnitPrices] = useState<boolean>(true);
+    const [showVatDetails, setShowVatDetails] = useState<boolean>(true);
+    const [customNotes, setCustomNotes] = useState<string>('');
+    const previewRef = useRef<HTMLDivElement>(null);
 
     const handleDownloadPdf = () => {
         const input = previewRef.current;
+        if (!input) return;
+
         html2canvas(input, { scale: 2 }).then((canvas) => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
@@ -35,13 +50,15 @@ const PdfGenerator = ({ doc, customers, products }) => {
                     pageCanvas.width = canvasWidth;
                     pageCanvas.height = pageHeight;
                     const pageCtx = pageCanvas.getContext('2d');
-                    pageCtx.drawImage(canvas, 0, position, canvasWidth, pageHeight, 0, 0, canvasWidth, pageHeight);
-                    const pageImgData = pageCanvas.toDataURL('image/png');
+                    if (pageCtx) {
+                        pageCtx.drawImage(canvas, 0, position, canvasWidth, pageHeight, 0, 0, canvasWidth, pageHeight);
+                        const pageImgData = pageCanvas.toDataURL('image/png');
 
-                    if (page > 1) {
-                        pdf.addPage();
+                        if (page > 1) {
+                            pdf.addPage();
+                        }
+                        pdf.addImage(pageImgData, 'PNG', 5, 5, pdfWidth - 10, 0);
                     }
-                    pdf.addImage(pageImgData, 'PNG', 5, 5, pdfWidth - 10, 0);
                     position += pageHeight;
                     page++;
                 }
@@ -53,7 +70,20 @@ const PdfGenerator = ({ doc, customers, products }) => {
         });
     };
 
-    // TODO: Fetch data based on the ID (from quotes or orders)
+    const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setLogo(URL.createObjectURL(file));
+        }
+    };
+
+    const handleThemeColorChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setThemeColor(e.target.value);
+    };
+
+    const handleCustomNotesChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+        setCustomNotes(e.target.value);
+    };
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
@@ -69,19 +99,21 @@ const PdfGenerator = ({ doc, customers, products }) => {
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Logo Yükle</label>
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                onChange={(e) => setLogo(URL.createObjectURL(e.target.files[0]))} 
-                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tema Rengi</label>
-                            <input 
-                                type="color" 
-                                value={themeColor} 
-                                onChange={(e) => setThemeColor(e.target.value)} 
-                                className="w-full h-10 p-1 border-gray-300 dark:border-gray-600 rounded-md"/>
+                            <input
+                                type="color"
+                                value={themeColor}
+                                onChange={handleThemeColorChange}
+                                className="w-full h-10 p-1 border-gray-300 dark:border-gray-600 rounded-md"
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">İçerik Seçenekleri</label>
@@ -102,11 +134,12 @@ const PdfGenerator = ({ doc, customers, products }) => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Özel Notlar</label>
-                            <textarea 
-                                value={customNotes} 
-                                onChange={(e) => setCustomNotes(e.target.value)} 
-                                rows="4" 
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                            <textarea
+                                value={customNotes}
+                                onChange={handleCustomNotesChange}
+                                rows={4}
+                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            />
                         </div>
                     </div>
                 </div>
@@ -117,14 +150,14 @@ const PdfGenerator = ({ doc, customers, products }) => {
                         Canlı Önizleme
                     </h2>
                     <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg h-full overflow-auto">
-                        <DocumentPreview 
-                            ref={previewRef} 
-                            doc={doc} 
-                            logo={logo} 
-                            themeColor={themeColor} 
-                            showProductDescriptions={showProductDescriptions} 
-                            showUnitPrices={showUnitPrices} 
-                            showVatDetails={showVatDetails} 
+                        <DocumentPreview
+                            ref={previewRef}
+                            doc={doc}
+                            logo={logo || undefined}
+                            themeColor={themeColor}
+                            showProductDescriptions={showProductDescriptions}
+                            showUnitPrices={showUnitPrices}
+                            showVatDetails={showVatDetails}
                             customNotes={customNotes}
                             customers={customers}
                             products={products}
@@ -142,6 +175,8 @@ const PdfGenerator = ({ doc, customers, products }) => {
             </div>
         </div>
     );
-};
+});
+
+PdfGenerator.displayName = 'PdfGenerator';
 
 export default PdfGenerator;

@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { formatDate } from '../../utils/formatters';
+import type { Shipment, Order, Customer } from '../../types';
 
-const ShipmentDetail = ({ shipment, order, customer }) => {
+interface ShipmentDetailProps {
+    /** Shipment data to display */
+    shipment: Shipment | null;
+    /** Associated order */
+    order?: Order | null;
+    /** Associated customer */
+    customer?: Customer | null;
+}
+
+/**
+ * ShipmentDetail component - Displays detailed information about a shipment
+ */
+const ShipmentDetail = memo<ShipmentDetailProps>(({ shipment, order, customer }) => {
     if (!shipment) return null;
 
     return (
@@ -57,6 +70,8 @@ const ShipmentDetail = ({ shipment, order, customer }) => {
             </div>
         </div>
     );
-};
+});
+
+ShipmentDetail.displayName = 'ShipmentDetail';
 
 export default ShipmentDetail;

@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import type { Order, Customer, Product } from '../../types';
 
-const OrderDetail = ({ order, customer, products }) => {
+interface OrderDetailProps {
+    /** Order data to display */
+    order: Order | null;
+    /** Customer associated with the order */
+    customer?: Customer | null;
+    /** List of products for lookup */
+    products: Product[];
+}
+
+/**
+ * OrderDetail component - Displays detailed information about an order
+ */
+const OrderDetail = memo<OrderDetailProps>(({ order, customer, products }) => {
     if (!order) return null;
 
-    const getProductName = (productId) => {
+    const getProductName = (productId: string): string => {
         const product = products.find(p => p.id === productId);
         return product?.name || 'Bilinmeyen Ürün';
     };
@@ -81,6 +94,8 @@ const OrderDetail = ({ order, customer, products }) => {
             )}
         </div>
     );
-};
+});
+
+OrderDetail.displayName = 'OrderDetail';
 
 export default OrderDetail;
