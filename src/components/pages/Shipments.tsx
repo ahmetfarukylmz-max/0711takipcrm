@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import SearchBar from '../common/SearchBar';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { formatDate, getStatusClass } from '../../utils/formatters';
 import type { Shipment, Order, Product, Customer } from '../../types';
 
@@ -449,11 +451,12 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                 </div>
             </div>
 
-            <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left">
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                 <input
                                     type="checkbox"
                                     checked={filteredAndSortedShipments.length > 0 && selectedItems.size === filteredAndSortedShipments.length}
@@ -468,106 +471,75 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y md:divide-none divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredAndSortedShipments.length > 0 ? filteredAndSortedShipments.map(shipment => {
                             const order = orders.find(o => o.id === shipment.orderId);
                             const customer = customers.find(c => c.id === order?.customerId);
 
                             return (
-                            <tr key={shipment.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Seç:{' '}
-                                    </span>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedItems.has(shipment.id)}
-                                        onChange={() => handleSelectItem(shipment.id)}
-                                        className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
-                                    />
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Sipariş No:{' '}
-                                    </span>
-                                    <span className="text-blue-600 dark:text-blue-400 font-mono">
+                                <tr key={shipment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="p-3 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedItems.has(shipment.id)}
+                                            onChange={() => handleSelectItem(shipment.id)}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        />
+                                    </td>
+                                    <td className="p-3 text-sm text-blue-600 dark:text-blue-400 font-mono">
                                         #{order?.id?.slice(-6) || 'N/A'}
-                                    </span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Müşteri:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Nakliye:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{shipment.transporter}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Sevk Tarihi:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Durum:{' '}
-                                    </span>
-                                    <span
-                                        className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}
-                                    >
-                                        {shipment.status}
-                                    </span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        İşlemler:{' '}
-                                    </span>
-                                    <div className="flex gap-3 justify-end md:justify-start">
-                                        {shipment.status !== 'Teslim Edildi' ? (
-                                            <>
-                                                <button
-                                                    onClick={() => handleOpenModal(shipment)}
-                                                    className="text-blue-500 hover:underline min-h-[44px] px-2"
-                                                >
-                                                    Düzenle
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelivery(shipment.id)}
-                                                    className="text-green-600 hover:underline dark:text-green-400 min-h-[44px] px-2"
-                                                >
-                                                    Teslim Edildi
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(shipment)}
-                                                    className="text-red-500 hover:underline dark:text-red-400 min-h-[44px] px-2"
-                                                >
-                                                    Sil
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    onClick={() => handleOpenModal(shipment)}
-                                                    className="text-blue-500 hover:underline min-h-[44px] px-2"
-                                                >
-                                                    Görüntüle
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(shipment)}
-                                                    className="text-red-500 hover:underline dark:text-red-400 min-h-[44px] px-2"
-                                                >
-                                                    Sil
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        );
+                                    </td>
+                                    <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.transporter}</td>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
+                                    <td className="p-3 text-sm">
+                                        <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
+                                            {shipment.status}
+                                        </span>
+                                    </td>
+                                    <td className="p-3 text-sm">
+                                        <div className="flex gap-3">
+                                            {shipment.status !== 'Teslim Edildi' ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleOpenModal(shipment)}
+                                                        className="text-blue-500 hover:underline"
+                                                    >
+                                                        Düzenle
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelivery(shipment.id)}
+                                                        className="text-green-600 hover:underline dark:text-green-400"
+                                                    >
+                                                        Teslim Edildi
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(shipment)}
+                                                        className="text-red-500 hover:underline dark:text-red-400"
+                                                    >
+                                                        Sil
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleOpenModal(shipment)}
+                                                        className="text-blue-500 hover:underline"
+                                                    >
+                                                        Görüntüle
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(shipment)}
+                                                        className="text-red-500 hover:underline dark:text-red-400"
+                                                    >
+                                                        Sil
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
                         }) : (
                             <tr>
                                 <td colSpan={7} className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -579,6 +551,92 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filteredAndSortedShipments.length > 0 ? filteredAndSortedShipments.map(shipment => {
+                    const order = orders.find(o => o.id === shipment.orderId);
+                    const customer = customers.find(c => c.id === order?.customerId);
+
+                    return (
+                        <MobileListItem
+                            key={shipment.id}
+                            title={customer?.name || 'Bilinmeyen Müşteri'}
+                            subtitle={`Sipariş #${order?.id?.slice(-6) || 'N/A'} • ${formatDate(shipment.shipment_date)}`}
+                            onClick={() => handleOpenModal(shipment)}
+                            rightContent={
+                                <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
+                                    {shipment.status}
+                                </span>
+                            }
+                            bottomContent={
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-600 dark:text-gray-400">Nakliye Firması:</span>
+                                        <span className="text-gray-900 dark:text-gray-100 font-medium">{shipment.transporter}</span>
+                                    </div>
+                                    {shipment.trackingNumber && (
+                                        <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span className="text-gray-600 dark:text-gray-400">Takip No:</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-mono text-xs">{shipment.trackingNumber}</span>
+                                        </div>
+                                    )}
+                                    {shipment.notes && (
+                                        <div className="flex items-start justify-between py-2">
+                                            <span className="text-gray-600 dark:text-gray-400">Notlar:</span>
+                                            <span className="text-gray-900 dark:text-gray-100 text-right flex-1 ml-2">{shipment.notes}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            }
+                            actions={
+                                <div className="space-y-2 mt-3">
+                                    {shipment.status !== 'Teslim Edildi' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelivery(shipment.id);
+                                            }}
+                                            className="w-full px-4 py-2.5 bg-green-500 text-white rounded-lg font-medium text-sm transition-colors active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                            Teslim Edildi Olarak İşaretle
+                                        </button>
+                                    )}
+                                    <MobileActions
+                                        actions={[
+                                            {
+                                                label: shipment.status === 'Teslim Edildi' ? 'Görüntüle' : 'Düzenle',
+                                                onClick: (e) => {
+                                                    e?.stopPropagation();
+                                                    handleOpenModal(shipment);
+                                                },
+                                                variant: 'primary'
+                                            },
+                                            {
+                                                label: 'Sil',
+                                                onClick: (e) => {
+                                                    e?.stopPropagation();
+                                                    handleDelete(shipment);
+                                                },
+                                                variant: 'danger'
+                                            }
+                                        ]}
+                                    />
+                                </div>
+                            }
+                        />
+                    );
+                }) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü'
+                                ? 'Arama kriterine uygun sevkiyat bulunamadı.'
+                                : 'Henüz sevkiyat eklenmemiş.'}
+                        </p>
+                    </div>
+                )}
             </div>
 
             <Modal
