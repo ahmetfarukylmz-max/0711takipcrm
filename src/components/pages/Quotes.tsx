@@ -5,6 +5,8 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import QuoteForm from '../forms/QuoteForm';
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import type { Quote, Order, Shipment, Customer, Product } from '../../types';
