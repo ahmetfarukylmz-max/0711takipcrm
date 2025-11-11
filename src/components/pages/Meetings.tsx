@@ -5,6 +5,8 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import MeetingForm from '../forms/MeetingForm';
 import MeetingDetail from './MeetingDetail';
 import ActionsDropdown from '../common/ActionsDropdown';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { PlusIcon, WhatsAppIcon } from '../icons';
 import { formatDate, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';

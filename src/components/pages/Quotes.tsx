@@ -5,6 +5,8 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import QuoteForm from '../forms/QuoteForm';
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import type { Quote, Order, Shipment, Customer, Product } from '../../types';
@@ -366,10 +368,10 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                 </div>
             </div>
 
-            {/* Responsive Table */}
-            <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto rounded-xl shadow-sm bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-200">
                                 <input
@@ -379,14 +381,14 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
                             </th>
-                            {['Müşteri', 'Teklif Tarihi', 'Geçerlilik Tarihi', 'Tutar', 'Ödeme', 'Durum', 'İşlemler'].map(h => (
+                            {['Müşteri', 'Teklif Tarihi', 'Geçerlilik', 'Tutar', 'Ödeme', 'Durum', 'İşlemler'].map(h => (
                                 <th key={h} className={`p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-200 ${h === 'İşlemler' ? 'text-right' : ''}`}>
                                     {h}
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700 md:divide-none">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredQuotes.length > 0 ? (
                             filteredQuotes.map(quote => {
                                 const quoteActions = [
@@ -407,11 +409,8 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                 quoteActions.push({ label: 'Sil', onClick: () => handleDelete(quote), destructive: true });
 
                                 return (
-                                <tr
-                                    key={quote.id}
-                                    className="block md:table-row border-b md:border-none mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700"
-                                >
-                                    <td className="p-3 text-sm block md:table-cell text-center border-b md:border-none">
+                                <tr key={quote.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <td className="p-3 text-sm text-center">
                                         <input
                                             type="checkbox"
                                             checked={selectedItems.has(quote.id)}
@@ -419,57 +418,36 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                         />
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-bold block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Müşteri:{' '}
-                                        </span>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
                                         {customers.find(c => c.id === quote.customerId)?.name || 'Bilinmiyor'}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Teklif Tarihi:{' '}
-                                        </span>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
                                         {formatDate(quote.teklif_tarihi)}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Geçerlilik:{' '}
-                                        </span>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
                                         {formatDate(quote.gecerlilik_tarihi)}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Tutar:{' '}
-                                        </span>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
                                         {formatCurrency(quote.total_amount, quote.currency || 'TRY')}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Ödeme:{' '}
-                                        </span>
-                                        <span className={`p-1.5 text-xs font-medium rounded-lg ${quote.paymentType === 'Peşin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}`}>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-lg ${quote.paymentType === 'Peşin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}`}>
                                             {quote.paymentType || 'Peşin'}
-                                            {quote.paymentType === 'Vadeli' && quote.paymentTerm && ` (${quote.paymentTerm} gün)`}
                                         </span>
                                     </td>
-                                    <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                        <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                            Durum:{' '}
-                                        </span>
+                                    <td className="p-3 text-sm">
                                         <button
                                             onClick={() => {
                                                 if (quote.status === 'Reddedildi') {
                                                     setRejectionReasonModal({ isOpen: true, reason: quote.rejection_reason || '' });
                                                 }
                                             }}
-                                            className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(quote.status)} ${quote.status === 'Reddedildi' ? 'cursor-pointer' : ''}`}>
+                                            className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(quote.status)} ${quote.status === 'Reddedildi' ? 'cursor-pointer' : ''}`}>
                                             {quote.status}
                                         </button>
                                     </td>
-                                    <td className="p-3 text-sm block md:table-cell text-right">
-                                        <div className="flex justify-end">
-                                            <ActionsDropdown actions={quoteActions} />
-                                        </div>
+                                    <td className="p-3 text-sm text-right">
+                                        <ActionsDropdown actions={quoteActions} />
                                     </td>
                                 </tr>
                             )})
@@ -478,12 +456,87 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                 <td colSpan={8} className="p-8 text-center text-gray-500 dark:text-gray-400">
                                     {searchQuery || statusFilter !== 'Tümü'
                                         ? 'Arama kriterlerine uygun teklif bulunamadı.'
-                                        : 'Henüz teklif eklenmemiş. "Yeni Teklif" butonuna tıklayarak ilk teklifinizi oluşturun.'}
+                                        : 'Henüz teklif eklenmemiş.'}
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filteredQuotes.length > 0 ? filteredQuotes.map(quote => {
+                    const customer = customers.find(c => c.id === quote.customerId);
+                    const canConvert = quote.status === 'Hazırlandı' || (quote.orderId && !orders.find(o => o.id === quote.orderId && !o.isDeleted));
+
+                    return (
+                        <MobileListItem
+                            key={quote.id}
+                            title={customer?.name || 'Bilinmiyor'}
+                            subtitle={`${formatDate(quote.teklif_tarihi)} • ${formatCurrency(quote.total_amount, quote.currency || 'TRY')}`}
+                            onClick={() => handleOpenModal(quote)}
+                            rightContent={
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (quote.status === 'Reddedildi') {
+                                            setRejectionReasonModal({ isOpen: true, reason: quote.rejection_reason || '' });
+                                        }
+                                    }}
+                                    className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(quote.status)}`}>
+                                    {quote.status}
+                                </button>
+                            }
+                            bottomContent={
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Geçerlilik:</span>
+                                        <span className="text-gray-900 dark:text-gray-100">{formatDate(quote.gecerlilik_tarihi)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Ödeme:</span>
+                                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${quote.paymentType === 'Peşin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}`}>
+                                            {quote.paymentType || 'Peşin'}
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                            actions={
+                                <div className="space-y-2">
+                                    {canConvert && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onConvertToOrder(quote); }}
+                                            className="w-full px-4 py-2.5 rounded-lg font-medium text-sm bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 active:bg-green-100"
+                                        >
+                                            Siparişe Çevir
+                                        </button>
+                                    )}
+                                    <MobileActions
+                                        actions={[
+                                            {
+                                                label: 'PDF',
+                                                onClick: (e) => { e?.stopPropagation(); handlePrint(quote); },
+                                                variant: 'secondary'
+                                            },
+                                            {
+                                                label: 'Sil',
+                                                onClick: (e) => { e?.stopPropagation(); handleDelete(quote); },
+                                                variant: 'danger'
+                                            }
+                                        ]}
+                                    />
+                                </div>
+                            }
+                        />
+                    );
+                }) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun teklif bulunamadı.' : 'Henüz teklif eklenmemiş.'}
+                        </p>
+                    </div>
+                )}
             </div>
             <Modal
                 show={isModalOpen}

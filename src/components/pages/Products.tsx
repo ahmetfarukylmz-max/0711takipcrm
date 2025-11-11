@@ -4,6 +4,8 @@ import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import ProductForm from '../forms/ProductForm';
 import SearchBar from '../common/SearchBar';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
@@ -246,9 +248,10 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
                 {searchQuery && ` (${activeProducts.length} toplam)`}
             </div>
 
-            <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto rounded-xl shadow-sm bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left">
                                 <input
@@ -265,58 +268,32 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y md:divide-none divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredProducts.length > 0 ? filteredProducts.map(product => (
-                            <tr key={product.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Seç:{' '}
-                                    </span>
+                            <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td className="p-3 text-sm text-center">
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.has(product.id)}
                                         onChange={() => handleSelectItem(product.id)}
-                                        className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Ürün Adı:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300 font-bold">{product.name}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Ürün Kodu:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{product.code}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Maliyet:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Satış:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</span>
-                                </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        İşlemler:{' '}
-                                    </span>
-                                    <div className="flex gap-3 justify-end md:justify-start">
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">{product.name}</td>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</td>
+                                <td className="p-3 text-sm text-right">
+                                    <div className="flex gap-3 justify-end">
                                         <button
                                             onClick={() => handleOpenModal(product)}
-                                            className="text-blue-500 hover:underline dark:text-blue-400 min-h-[44px] px-2"
+                                            className="text-blue-500 hover:underline dark:text-blue-400"
                                         >
                                             Düzenle
                                         </button>
                                         <button
                                             onClick={() => handleDelete(product)}
-                                            className="text-red-500 hover:underline dark:text-red-400 min-h-[44px] px-2"
+                                            className="text-red-500 hover:underline dark:text-red-400"
                                         >
                                             Sil
                                         </button>
@@ -332,6 +309,51 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filteredProducts.length > 0 ? filteredProducts.map(product => (
+                    <MobileListItem
+                        key={product.id}
+                        title={product.name}
+                        subtitle={`Kod: ${product.code}`}
+                        bottomContent={
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Maliyet:</span>
+                                    <span className="text-gray-900 dark:text-gray-100 font-semibold">{formatCurrency(product.cost_price, product.currency || 'TRY')}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Satış:</span>
+                                    <span className="text-blue-600 dark:text-blue-400 font-bold">{formatCurrency(product.selling_price, product.currency || 'TRY')}</span>
+                                </div>
+                            </div>
+                        }
+                        actions={
+                            <MobileActions
+                                actions={[
+                                    {
+                                        label: 'Düzenle',
+                                        onClick: () => handleOpenModal(product),
+                                        variant: 'secondary'
+                                    },
+                                    {
+                                        label: 'Sil',
+                                        onClick: () => handleDelete(product),
+                                        variant: 'danger'
+                                    }
+                                ]}
+                            />
+                        }
+                    />
+                )) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {searchQuery ? 'Arama kriterine uygun ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
+                        </p>
+                    </div>
+                )}
             </div>
             <Modal
                 show={isModalOpen}
