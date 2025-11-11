@@ -3,6 +3,8 @@ import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppI
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import Modal from '../common/Modal';
+import MobileStat from '../common/MobileStat';
+import MobileListItem from '../common/MobileListItem';
 import type { Customer, Order, Quote, Meeting, Product } from '../../types';
 
 interface BestSellingProduct {
@@ -97,57 +99,43 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
             <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz!</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-                <button onClick={() => setActivePage('Müşteriler')} className="text-left bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center justify-between hover:shadow-lg transition-shadow">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">Toplam Müşteri</h3>
-                        <p className="text-3xl font-bold text-blue-600">{customers.filter(c => !c.isDeleted).length}</p>
-                    </div>
-                    <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full">
-                        <UsersIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                </button>
-                <button onClick={() => setActivePage('Siparişler')} className="text-left bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center justify-between hover:shadow-lg transition-shadow">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">Açık Siparişler</h3>
-                        <p className="text-3xl font-bold text-yellow-600">{openOrders.length}</p>
-                    </div>
-                    <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-full">
-                        <ClipboardListIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                </button>
-                <button onClick={() => setActivePage('Teklifler')} className="text-left bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center justify-between hover:shadow-lg transition-shadow">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">Bekleyen Teklifler</h3>
-                        <p className="text-3xl font-bold text-indigo-600">
-                            {teklifler.filter(t => !t.isDeleted && t.status !== 'Onaylandı').length}
-                        </p>
-                    </div>
-                    <div className="bg-indigo-100 dark:bg-indigo-900 p-3 rounded-full">
-                        <DocumentTextIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                </button>
-                <button onClick={() => setActivePage('Görüşmeler')} className="text-left bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center justify-between hover:shadow-lg transition-shadow">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">Planlanan Eylemler</h3>
-                        <p className="text-3xl font-bold text-green-600">{upcomingActions.length}</p>
-                    </div>
-                    <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full">
-                        <CalendarIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-                    </div>
-                </button>
-                <div
-                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center justify-between cursor-pointer hover:shadow-lg transition-shadow"
+            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
+                <MobileStat
+                    label="Toplam Müşteri"
+                    value={customers.filter(c => !c.isDeleted).length}
+                    icon={<UsersIcon className="w-6 h-6" />}
+                    color="blue"
+                    onClick={() => setActivePage('Müşteriler')}
+                />
+                <MobileStat
+                    label="Açık Siparişler"
+                    value={openOrders.length}
+                    icon={<ClipboardListIcon className="w-6 h-6" />}
+                    color="yellow"
+                    onClick={() => setActivePage('Siparişler')}
+                />
+                <MobileStat
+                    label="Bekleyen Teklifler"
+                    value={teklifler.filter(t => !t.isDeleted && t.status !== 'Onaylandı').length}
+                    icon={<DocumentTextIcon className="w-6 h-6" />}
+                    color="indigo"
+                    onClick={() => setActivePage('Teklifler')}
+                />
+                <MobileStat
+                    label="Planlanan Eylemler"
+                    value={upcomingActions.length}
+                    icon={<CalendarIcon className="w-6 h-6" />}
+                    color="green"
+                    onClick={() => setActivePage('Görüşmeler')}
+                />
+                <MobileStat
+                    label="Gecikmiş Eylemler"
+                    value={overdueItems.length}
+                    icon={<BellIcon className="w-6 h-6" />}
+                    color="red"
                     onClick={() => setIsOverdueModalOpen(true)}
-                >
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">Gecikmiş Eylemler</h3>
-                        <p className="text-3xl font-bold text-red-600">{overdueItems.length}</p>
-                    </div>
-                    <div className="bg-red-100 dark:bg-red-900 p-3 rounded-full">
-                        <BellIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
-                    </div>
-                </div>
+                />
             </div>
 
             <Modal
@@ -159,146 +147,121 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 <OverdueActions overdueItems={overdueItems} setActivePage={setActivePage} onMeetingUpdate={onMeetingSave} />
             </Modal>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Yaklaşan Eylemler & Görüşmeler</h3>
-                    <div className="space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Yaklaşan Eylemler & Görüşmeler</h3>
+                    <div className="space-y-2 md:space-y-3">
                         {upcomingActions.length > 0 ? (
                             upcomingActions.map(gorusme => {
                                 const customer = customers.find(c => c.id === gorusme.customerId && !c.isDeleted);
                                 return (
-                                    <div
+                                    <MobileListItem
                                         key={gorusme.id}
-                                        className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-gray-700 dark:text-gray-300">
-                                                {customer?.name || 'Bilinmeyen Müşteri'}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {customer?.phone || 'Telefon yok'}
-                                                </p>
-                                                {customer?.phone && (
+                                        title={customer?.name || 'Bilinmeyen Müşteri'}
+                                        subtitle={gorusme.next_action_notes}
+                                        rightContent={
+                                            <span className="text-xs md:text-sm font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                                                {formatDate(gorusme.next_action_date)}
+                                            </span>
+                                        }
+                                        bottomContent={
+                                            customer?.phone && (
+                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                    <span>{customer.phone}</span>
                                                     <a
                                                         href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
                                                         title="WhatsApp ile mesaj gönder"
+                                                        onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <WhatsAppIcon className="w-4 h-4" />
                                                     </a>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{gorusme.next_action_notes}</p>
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-4 flex-shrink-0">
-                                            {formatDate(gorusme.next_action_date)}
-                                        </span>
-                                    </div>
+                                                </div>
+                                            )
+                                        }
+                                    />
                                 );
                             })
                         ) : (
-                            <p className="text-gray-500 dark:text-gray-400">Yaklaşan bir eylem bulunmuyor.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Yaklaşan bir eylem bulunmuyor.</p>
                         )}
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Son Bekleyen Siparişler</h3>
-                    <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Son Bekleyen Siparişler</h3>
+                    <div className="space-y-2 md:space-y-3">
                         {openOrders.length > 0 ? (
                             openOrders.slice(0, 5).map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
                                 return (
-                                    <div
+                                    <MobileListItem
                                         key={order.id}
-                                        className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                        <div>
-                                            <p className="font-semibold text-gray-700 dark:text-gray-300">
-                                                {customer?.name || 'Bilinmeyen Müşteri'}
-                                            </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                {formatDate(order.order_date)} - {formatCurrency(order.total_amount)}
-                                            </p>
-                                        </div>
-                                        <span
-                                            className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
-                                        >
-                                            {order.status}
-                                        </span>
-                                    </div>
+                                        title={customer?.name || 'Bilinmeyen Müşteri'}
+                                        subtitle={`${formatDate(order.order_date)} - ${formatCurrency(order.total_amount)}`}
+                                        rightContent={
+                                            <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}>
+                                                {order.status}
+                                            </span>
+                                        }
+                                    />
                                 );
                             })
                         ) : (
-                            <p className="text-gray-500 dark:text-gray-400">Bekleyen sipariş bulunmuyor.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Bekleyen sipariş bulunmuyor.</p>
                         )}
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">En Çok Satılan Ürünler</h3>
-                    <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">En Çok Satılan Ürünler</h3>
+                    <div className="space-y-2 md:space-y-3">
                         {bestSellingProducts.length > 0 ? (
                             bestSellingProducts.map(product => (
-                                <div
+                                <MobileListItem
                                     key={product.id}
-                                    className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-gray-700 dark:text-gray-300">
-                                            {product.name}
-                                        </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                            {product.quantity} Kg satıldı
-                                        </p>
-                                    </div>
-                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400 ml-4">
-                                        {formatCurrency(product.revenue)}
-                                    </span>
-                                </div>
+                                    title={product.name}
+                                    subtitle={`${product.quantity} Kg satıldı`}
+                                    rightContent={
+                                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                            {formatCurrency(product.revenue)}
+                                        </span>
+                                    }
+                                />
                             ))
                         ) : (
-                            <p className="text-gray-500 dark:text-gray-400">Henüz satış bulunmuyor.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz satış bulunmuyor.</p>
                         )}
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Yaklaşan Teslimatlar</h3>
-                    <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Yaklaşan Teslimatlar</h3>
+                    <div className="space-y-2 md:space-y-3">
                         {upcomingDeliveries.length > 0 ? (
                             upcomingDeliveries.map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
                                 const daysUntilDelivery = Math.ceil(
                                     (new Date(order.delivery_date!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                                 );
+                                const urgencyText = daysUntilDelivery === 0 ? 'Bugün' : daysUntilDelivery === 1 ? 'Yarın' : `${daysUntilDelivery} gün sonra`;
                                 return (
-                                    <div
+                                    <MobileListItem
                                         key={order.id}
-                                        className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-gray-700 dark:text-gray-300">
-                                                {customer?.name || 'Bilinmeyen Müşteri'}
-                                            </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                {formatCurrency(order.total_amount)} -
-                                                {daysUntilDelivery === 0 && ' Bugün'}
-                                                {daysUntilDelivery === 1 && ' Yarın'}
-                                                {daysUntilDelivery > 1 && ` ${daysUntilDelivery} gün sonra`}
-                                            </p>
-                                        </div>
-                                        <span className="text-sm font-medium text-orange-600 dark:text-orange-400 ml-4 flex-shrink-0">
-                                            {formatDate(order.delivery_date)}
-                                        </span>
-                                    </div>
+                                        title={customer?.name || 'Bilinmeyen Müşteri'}
+                                        subtitle={`${formatCurrency(order.total_amount)} - ${urgencyText}`}
+                                        rightContent={
+                                            <span className="text-xs md:text-sm font-medium text-orange-600 dark:text-orange-400 whitespace-nowrap">
+                                                {formatDate(order.delivery_date)}
+                                            </span>
+                                        }
+                                    />
                                 );
                             })
                         ) : (
-                            <p className="text-gray-500 dark:text-gray-400">Yaklaşan teslimat bulunmuyor.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Yaklaşan teslimat bulunmuyor.</p>
                         )}
                     </div>
                 </div>

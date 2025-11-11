@@ -7,6 +7,8 @@ import OrderDetail from './OrderDetail';
 import ShipmentForm from '../forms/ShipmentForm';
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
@@ -428,9 +430,10 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                 {(searchQuery || statusFilter !== 'Tümü') && ` (${orders.length} toplam)`}
             </div>
 
-            <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto rounded-xl shadow-sm bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                 <input
@@ -447,7 +450,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y md:divide-none divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredOrders.length > 0 ? filteredOrders.map(order => {
                             const orderActions = [
                                 { label: 'Detay', onClick: () => handleOpenDetailModal(order) },
@@ -463,55 +466,31 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                             orderActions.push({ label: 'Sil', onClick: () => handleDelete(order), destructive: true });
 
                             return (
-                            <tr key={order.id} className="block md:table-row mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Seç:{' '}
-                                    </span>
+                            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td className="p-3 text-sm text-center">
                                     <input
                                         type="checkbox"
                                         checked={selectedItems.has(order.id)}
                                         onChange={() => handleSelectItem(order.id)}
-                                        className="w-5 h-5 md:w-4 md:h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Müşteri:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300 font-bold">
-                                        {customers.find(c => c.id === order.customerId)?.name || 'Bilinmiyor'}
-                                    </span>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                                    {customers.find(c => c.id === order.customerId)?.name || 'Bilinmiyor'}
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Sipariş Tarihi:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{formatDate(order.order_date)}</span>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    {formatDate(order.order_date)}
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Toplam:{' '}
-                                    </span>
-                                    <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.total_amount, order.currency || 'TRY')}</span>
+                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    {formatCurrency(order.total_amount, order.currency || 'TRY')}
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        Durum:{' '}
-                                    </span>
-                                    <span
-                                        className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
-                                    >
+                                <td className="p-3 text-sm">
+                                    <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}>
                                         {order.status}
                                     </span>
                                 </td>
-                                <td className="p-3 text-sm block md:table-cell text-right md:text-left">
-                                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                        İşlemler:{' '}
-                                    </span>
-                                    <div className="flex justify-end md:justify-end min-h-[44px] items-center">
-                                        <ActionsDropdown actions={orderActions} />
-                                    </div>
+                                <td className="p-3 text-sm text-right">
+                                    <ActionsDropdown actions={orderActions} />
                                 </td>
                             </tr>
                         )}) : (
@@ -523,6 +502,64 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filteredOrders.length > 0 ? filteredOrders.map(order => {
+                    const customer = customers.find(c => c.id === order.customerId);
+
+                    return (
+                        <MobileListItem
+                            key={order.id}
+                            title={customer?.name || 'Bilinmiyor'}
+                            subtitle={`${formatDate(order.order_date)} • ${formatCurrency(order.total_amount, order.currency || 'TRY')}`}
+                            onClick={() => handleOpenDetailModal(order)}
+                            rightContent={
+                                <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}>
+                                    {order.status}
+                                </span>
+                            }
+                            actions={
+                                <div className="space-y-2">
+                                    {(order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleOpenShipmentModal(order); }}
+                                            className="w-full px-4 py-2.5 rounded-lg font-medium text-sm bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 active:bg-green-100 dark:active:bg-green-900/50"
+                                        >
+                                            Sevk Et
+                                        </button>
+                                    )}
+                                    <MobileActions
+                                        actions={[
+                                            {
+                                                label: 'Düzenle',
+                                                onClick: (e) => { e?.stopPropagation(); handleOpenModal(order); },
+                                                variant: 'secondary'
+                                            },
+                                            {
+                                                label: 'PDF',
+                                                onClick: (e) => { e?.stopPropagation(); handlePrint(order); },
+                                                variant: 'secondary'
+                                            },
+                                            {
+                                                label: 'Sil',
+                                                onClick: (e) => { e?.stopPropagation(); handleDelete(order); },
+                                                variant: 'danger'
+                                            }
+                                        ]}
+                                    />
+                                </div>
+                            }
+                        />
+                    );
+                }) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : 'Henüz sipariş eklenmemiş.'}
+                        </p>
+                    </div>
+                )}
             </div>
             <Modal
                 show={isModalOpen}
