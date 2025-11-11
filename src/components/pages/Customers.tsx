@@ -9,7 +9,9 @@ import OrderForm from '../forms/OrderForm';
 import ShipmentDetail from './ShipmentDetail';
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
-import { PlusIcon, WhatsAppIcon } from '../icons';
+import MobileListItem from '../common/MobileListItem';
+import MobileActions from '../common/MobileActions';
+import { PlusIcon, WhatsAppIcon, EditIcon, TrashIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
@@ -383,9 +385,10 @@ const Customers = memo<CustomersProps>(({
                 {searchQuery && ` (${customers.filter(c => !c.isDeleted).length} toplam)`}
             </div>
 
-            <div className="overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto rounded-xl shadow-sm bg-white dark:bg-gray-800">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600 hidden md:table-header-group">
+                    <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                 <input
@@ -402,7 +405,7 @@ const Customers = memo<CustomersProps>(({
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700 md:divide-none">
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {filteredCustomers.length > 0 ? (
                             filteredCustomers.map(customer => {
                                 const status = getCustomerStatus(customer.id);
@@ -412,11 +415,8 @@ const Customers = memo<CustomersProps>(({
                                 ];
 
                                 return (
-                                    <tr
-                                        key={customer.id}
-                                        className="block md:table-row border-b md:border-none mb-4 md:mb-0 rounded-lg md:rounded-none shadow md:shadow-none hover:bg-gray-50 dark:hover:bg-gray-700"
-                                    >
-                                        <td className="p-3 text-sm block md:table-cell text-center border-b md:border-none">
+                                    <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <td className="p-3 text-sm text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedItems.has(customer.id)}
@@ -424,28 +424,19 @@ const Customers = memo<CustomersProps>(({
                                                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                             />
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-bold block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                                Müşteri Adı:{' '}
-                                            </span>
+                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
                                             <button
                                                 onClick={() => handleOpenDetailModal(customer)}
-                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-bold"
+                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold"
                                             >
                                                 {customer.name}
                                             </button>
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                                Yetkili Kişi:{' '}
-                                            </span>
+                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
                                             {customer.contact_person}
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                                Telefon:{' '}
-                                            </span>
-                                            <div className="flex items-center gap-2 justify-end md:justify-start">
+                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                            <div className="flex items-center gap-2">
                                                 <span>{customer.phone}</span>
                                                 {customer.phone && (
                                                     <a
@@ -460,24 +451,16 @@ const Customers = memo<CustomersProps>(({
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                                Şehir:{' '}
-                                            </span>
+                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
                                             {customer.city}
                                         </td>
-                                        <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <span className="float-left font-semibold text-gray-500 dark:text-gray-400 md:hidden uppercase tracking-wider text-xs">
-                                                Durum:{' '}
-                                            </span>
-                                            <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
+                                        <td className="p-3 text-sm">
+                                            <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
                                                 {status}
                                             </span>
                                         </td>
-                                        <td className="p-3 text-sm block md:table-cell text-right md:text-left border-b md:border-none">
-                                            <div className="flex justify-end">
-                                                <ActionsDropdown actions={customerActions} />
-                                            </div>
+                                        <td className="p-3 text-sm text-right">
+                                            <ActionsDropdown actions={customerActions} />
                                         </td>
                                     </tr>
                                 );
@@ -493,6 +476,81 @@ const Customers = memo<CustomersProps>(({
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map(customer => {
+                        const status = getCustomerStatus(customer.id);
+
+                        return (
+                            <MobileListItem
+                                key={customer.id}
+                                title={customer.name}
+                                subtitle={customer.contact_person}
+                                onClick={() => handleOpenDetailModal(customer)}
+                                rightContent={
+                                    <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
+                                        {status}
+                                    </span>
+                                }
+                                bottomContent={
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">Telefon:</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-gray-900 dark:text-gray-100">{customer.phone}</span>
+                                                {customer.phone && (
+                                                    <a
+                                                        href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+                                                        title="WhatsApp ile mesaj gönder"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <WhatsAppIcon className="w-5 h-5" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {customer.city && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-600 dark:text-gray-400">Şehir:</span>
+                                                <span className="text-gray-900 dark:text-gray-100">{customer.city}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                }
+                                actions={
+                                    <MobileActions
+                                        actions={[
+                                            {
+                                                label: 'Düzenle',
+                                                onClick: (e) => { e?.stopPropagation(); handleOpenModal(customer); },
+                                                variant: 'secondary'
+                                            },
+                                            {
+                                                label: 'Sil',
+                                                onClick: (e) => { e?.stopPropagation(); handleDelete(customer); },
+                                                variant: 'danger'
+                                            }
+                                        ]}
+                                    />
+                                }
+                            />
+                        );
+                    })
+                ) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                            {searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
+                                ? 'Arama kriterlerine uygun müşteri bulunamadı.'
+                                : 'Henüz müşteri eklenmemiş.'}
+                        </p>
+                    </div>
+                )}
             </div>
             <Modal
                 show={isModalOpen}
