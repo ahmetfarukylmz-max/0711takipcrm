@@ -88,7 +88,14 @@ const CrmApp = () => {
     };
 
     // Handle FAB actions
-    const handleFABAction = (action) => {
+    const handleFABAction = (action, customerId) => {
+        // Handle viewCustomer action
+        if (action === 'viewCustomer' && customerId) {
+            setActivePage('Müşteriler');
+            // Could store customerId to open detail modal, but for now just navigate
+            return;
+        }
+
         const actionMap = {
             'addCustomer': {
                 page: 'Müşteriler',
@@ -592,7 +599,7 @@ const CrmApp = () => {
 
             {/* Mobile Navigation Components */}
             <BottomNav activePage={activePage} setActivePage={setActivePage} onToggleGuide={handleToggleGuide} />
-            <FAB activePage={activePage} onAction={handleFABAction} />
+            <FAB activePage={activePage} onAction={handleFABAction} customers={customers} />
             {showGuide && (
                 <Modal show={showGuide} onClose={handleToggleGuide} title="Kullanıcı Rehberi">
                     <Guide />
