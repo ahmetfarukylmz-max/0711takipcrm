@@ -125,17 +125,30 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!readOnly) {
-            onSave({
+            const meetingData: Partial<Meeting> = {
                 ...meeting,
                 customerId: formData.customerId,
                 meeting_date: formData.date,
                 notes: formData.notes,
                 outcome: formData.outcome as any,
                 status: formData.status,
-                next_action_date: formData.next_action_date,
-                next_action_notes: formData.next_action_notes,
-                inquiredProducts: inquiredProducts.length > 0 ? inquiredProducts : undefined
+                next_action_date: formData.next_action_date || undefined,
+                next_action_notes: formData.next_action_notes || undefined
+            };
+
+            // Only add inquiredProducts if there are any
+            if (inquiredProducts.length > 0) {
+                meetingData.inquiredProducts = inquiredProducts;
+            }
+
+            // Remove undefined values to avoid Firebase errors
+            Object.keys(meetingData).forEach(key => {
+                if (meetingData[key as keyof Meeting] === undefined) {
+                    delete meetingData[key as keyof Meeting];
+                }
             });
+
+            onSave(meetingData);
         }
     };
 
