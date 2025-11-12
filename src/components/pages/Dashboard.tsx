@@ -14,6 +14,12 @@ interface BestSellingProduct {
     name: string;
     quantity: number;
     revenue: number;
+    customers: Array<{
+        customerId: string;
+        customerName: string;
+        quantity: number;
+        revenue: number;
+    }>;
 }
 
 interface DashboardProps {
@@ -42,6 +48,7 @@ interface DashboardProps {
  */
 const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave, loading = false }) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
     const upcomingActions = gorusmeler
@@ -49,22 +56,42 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
         .sort((a, b) => new Date(a.next_action_date!).getTime() - new Date(b.next_action_date!).getTime())
         .slice(0, 5);
 
-    // Calculate best selling products
+    // Calculate best selling products with customer details
     const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
-        const productSales: Record<string, { quantity: number; revenue: number }> = {};
+        const productSales: Record<string, {
+            quantity: number;
+            revenue: number;
+            customerData: Record<string, { quantity: number; revenue: number }>
+        }> = {};
 
         orders.filter(o => !o.isDeleted).forEach(order => {
             if (order.items && Array.isArray(order.items)) {
                 order.items.forEach(item => {
                     const productId = item.productId;
+                    const customerId = order.customerId;
+
                     if (!productSales[productId]) {
                         productSales[productId] = {
+                            quantity: 0,
+                            revenue: 0,
+                            customerData: {}
+                        };
+                    }
+
+                    if (!productSales[productId].customerData[customerId]) {
+                        productSales[productId].customerData[customerId] = {
                             quantity: 0,
                             revenue: 0
                         };
                     }
-                    productSales[productId].quantity += item.quantity || 0;
-                    productSales[productId].revenue += (item.quantity || 0) * (item.unit_price || 0);
+
+                    const itemQuantity = item.quantity || 0;
+                    const itemRevenue = itemQuantity * (item.unit_price || 0);
+
+                    productSales[productId].quantity += itemQuantity;
+                    productSales[productId].revenue += itemRevenue;
+                    productSales[productId].customerData[customerId].quantity += itemQuantity;
+                    productSales[productId].customerData[customerId].revenue += itemRevenue;
                 });
             }
         });
@@ -72,16 +99,31 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
         return Object.entries(productSales)
             .map(([productId, stats]) => {
                 const product = products.find(p => p.id === productId && !p.isDeleted);
+
+                // Convert customer data to array and sort by quantity
+                const customersList = Object.entries(stats.customerData)
+                    .map(([customerId, customerStats]) => {
+                        const customer = customers.find(c => c.id === customerId && !c.isDeleted);
+                        return {
+                            customerId,
+                            customerName: customer?.name || 'Bilinmeyen Müşteri',
+                            quantity: customerStats.quantity,
+                            revenue: customerStats.revenue
+                        };
+                    })
+                    .sort((a, b) => b.quantity - a.quantity);
+
                 return {
                     id: productId,
                     name: product?.name || 'Bilinmeyen Ürün',
                     quantity: stats.quantity,
-                    revenue: stats.revenue
+                    revenue: stats.revenue,
+                    customers: customersList
                 };
             })
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, 5);
-    }, [orders, products]);
+    }, [orders, products, customers]);
 
     // Calculate upcoming deliveries
     const upcomingDeliveries = useMemo(() => {
@@ -178,6 +220,65 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 <OverdueActions overdueItems={overdueItems} setActivePage={setActivePage} onMeetingUpdate={onMeetingSave} />
             </Modal>
 
+            {/* Product Customers Modal */}
+            <Modal
+                show={!!selectedProduct}
+                onClose={() => setSelectedProduct(null)}
+                title={`${selectedProduct?.name || ''} - Alıcı Müşteriler`}
+                maxWidth="max-w-2xl"
+            >
+                {selectedProduct && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Toplam Satış:</span>
+                                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedProduct.quantity} Kg</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Toplam Gelir:</span>
+                                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(selectedProduct.revenue)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                                Müşteri Listesi ({selectedProduct.customers.length})
+                            </h4>
+                            <div className="space-y-2">
+                                {selectedProduct.customers.map((customer, index) => (
+                                    <div
+                                        key={customer.customerId}
+                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                                                {index + 1}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">{customer.customerName}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {customer.quantity} Kg • {formatCurrency(customer.revenue)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                                %{((customer.quantity / selectedProduct.quantity) * 100).toFixed(1)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                Pay
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
                 <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
                     <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Yaklaşan Eylemler & Görüşmeler</h3>
@@ -254,12 +355,13 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                                 <MobileListItem
                                     key={product.id}
                                     title={product.name}
-                                    subtitle={`${product.quantity} Kg satıldı`}
+                                    subtitle={`${product.quantity} Kg satıldı • ${product.customers.length} müşteri`}
                                     rightContent={
                                         <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                                             {formatCurrency(product.revenue)}
                                         </span>
                                     }
+                                    onClick={() => setSelectedProduct(product)}
                                 />
                             ))
                         ) : (
