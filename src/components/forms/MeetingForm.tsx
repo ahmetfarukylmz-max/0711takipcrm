@@ -21,6 +21,8 @@ interface MeetingFormProps {
     products: Product[];
     /** Callback when new customer is created */
     onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Callback when new product is created */
+    onProductSave: (product: Partial<Product>) => Promise<string | void>;
     /** Callback to create quote from meeting */
     onCreateQuote?: (customerId: string, products: InquiredProduct[]) => void;
     /** Whether form is read-only */
@@ -48,6 +50,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
     customers,
     products,
     onCustomerSave,
+    onProductSave,
     onCreateQuote,
     readOnly = false
 }) => {
@@ -418,6 +421,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                         setIsProductModalOpen(false);
                         setEditingProductIndex(null);
                     }}
+                    onProductSave={onProductSave}
                     existingProduct={editingProductIndex !== null ? inquiredProducts[editingProductIndex] : undefined}
                 />
             </Modal>
