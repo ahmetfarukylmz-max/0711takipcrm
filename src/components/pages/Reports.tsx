@@ -197,22 +197,22 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
             {/* Quick Access Card for Daily Report */}
             <div
                 onClick={() => setShowDailyReportModal(true)}
-                className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] group"
+                className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-[0.99] group"
             >
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+                    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full md:w-auto">
                         <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
-                            <ChartBarIcon className="w-12 h-12 text-white" />
+                            <ChartBarIcon className="w-10 h-10 md:w-12 md:h-12 text-white" />
                         </div>
-                        <div className="text-white">
-                            <h3 className="text-2xl font-bold mb-2">Günlük Performans Raporu</h3>
+                        <div className="text-white text-center md:text-left">
+                            <h3 className="text-xl md:text-2xl font-bold mb-2">Günlük Performans Raporu</h3>
                             <p className="text-white/90 text-sm md:text-base">
                                 Bugünün detaylı satış, teklif ve operasyon metriklerini görüntüleyin.
                                 Önceki günlerle karşılaştırın ve performansınızı takip edin.
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 text-white font-semibold bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg group-hover:bg-white/30 transition-colors whitespace-nowrap">
+                    <div className="flex items-center gap-2 text-white font-semibold bg-white/20 backdrop-blur-sm px-6 py-3 rounded-lg group-hover:bg-white/30 transition-colors whitespace-nowrap min-h-[44px]">
                         <span>Raporu Görüntüle</span>
                         <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -21,25 +21,25 @@ const Modal = ({ show, onClose, title, children, maxWidth = 'max-w-2xl' }) => {
 
     return (
         <div
-            className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-start pt-8"
+            className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-start p-4 md:pt-8 overflow-y-auto"
             onClick={onClose}
         >
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className={`bg-white dark:bg-gray-700 rounded-lg shadow-xl p-6 w-full ${maxWidth} outline-none`}
+                className={`bg-white dark:bg-gray-700 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-full md:${maxWidth} outline-none my-auto md:my-0`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-3">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 text-2xl font-bold"
+                        className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 text-2xl font-bold min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 transition-transform"
                     >
                         &times;
                     </button>
                 </div>
-                <div className="mt-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div className="mt-4 max-h-[60vh] md:max-h-[70vh] overflow-y-auto pr-2">
                     {children}
                 </div>
             </div>
