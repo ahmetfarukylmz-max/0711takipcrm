@@ -131,7 +131,7 @@ const CrmApp = () => {
     };
 
     // Fetch all collections
-    const { collections, connectionStatus } = useFirestoreCollections([
+    const { collections, connectionStatus, loading: dataLoading } = useFirestoreCollections([
         'customers',
         'products',
         'orders',
@@ -323,6 +323,7 @@ const CrmApp = () => {
                         overdueItems={overdueItems}
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
+                        loading={dataLoading}
                     />
                 );
             case 'Müşteriler':
@@ -339,10 +340,11 @@ const CrmApp = () => {
                         onQuoteSave={handleQuoteSave}
                         onOrderSave={handleOrderSave}
                         onShipmentUpdate={handleShipmentUpdate}
+                        loading={dataLoading}
                     />
                 );
             case 'Ürünler':
-                return <Products products={products} onSave={handleProductSave} onDelete={handleProductDelete} />;
+                return <Products products={products} onSave={handleProductSave} onDelete={handleProductDelete} loading={dataLoading} />;
             case 'Teklifler':
                 return (
                     <Quotes
@@ -355,6 +357,7 @@ const CrmApp = () => {
                         customers={customers}
                         products={products}
                         onGeneratePdf={handleGeneratePdf}
+                        loading={dataLoading}
                     />
                 );
             case 'Siparişler':
@@ -367,6 +370,7 @@ const CrmApp = () => {
                         customers={customers}
                         products={products}
                         onGeneratePdf={handleGeneratePdf}
+                        loading={dataLoading}
                     />
                 );
             case 'Görüşmeler':
@@ -377,10 +381,11 @@ const CrmApp = () => {
                         onSave={handleMeetingSave}
                         onDelete={handleMeetingDelete}
                         onCustomerSave={handleCustomerSave}
+                        loading={dataLoading}
                     />
                 );
             case 'Sevkiyat':
-                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} />;
+                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
             case 'Raporlar':
                 return (
                     <Reports
@@ -405,6 +410,7 @@ const CrmApp = () => {
                         overdueItems={overdueItems}
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
+                        loading={dataLoading}
                     />
                 );
         }

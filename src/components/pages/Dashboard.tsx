@@ -5,6 +5,8 @@ import OverdueActions from '../dashboard/OverdueActions';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
+import SkeletonStat from '../common/SkeletonStat';
+import SkeletonList from '../common/SkeletonList';
 import type { Customer, Order, Quote, Meeting, Product } from '../../types';
 
 interface BestSellingProduct {
@@ -31,12 +33,14 @@ interface DashboardProps {
     setActivePage: (page: string) => void;
     /** Callback when meeting is saved */
     onMeetingSave: (meeting: Partial<Meeting>) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Dashboard component - Main dashboard page with statistics and widgets
  */
-const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave }) => {
+const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave, loading = false }) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
@@ -93,6 +97,33 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
             .sort((a, b) => new Date(a.delivery_date!).getTime() - new Date(b.delivery_date!).getTime())
             .slice(0, 5);
     }, [orders]);
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz!</h1>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
+
+                {/* Stats skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                        <SkeletonStat key={index} />
+                    ))}
+                </div>
+
+                {/* Widgets skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                            <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-2/3 mb-4 animate-pulse"></div>
+                            <SkeletonList count={5} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>
