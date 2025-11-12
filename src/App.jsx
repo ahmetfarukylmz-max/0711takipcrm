@@ -11,8 +11,10 @@ import {
     convertQuoteToOrder,
     markShipmentDelivered,
     deleteDocument,
+    undoDelete,
     logActivity
 } from './services/firestoreService';
+import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils';
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
@@ -245,43 +247,157 @@ const CrmApp = () => {
     // Delete handler functions
     const handleCustomerDelete = (id) => {
         const customer = customers.find(c => c.id === id);
-        deleteDocument(user.uid, 'customers', id).then(() => {
-            logUserActivity('DELETE_CUSTOMER', { message: `Müşteri silindi: ${customer?.name}` });
+        if (!customer) return;
+
+        const relatedOrders = orders.filter(o => o.customerId === id && !o.isDeleted).length;
+        const relatedQuotes = teklifler.filter(t => t.customerId === id && !t.isDeleted).length;
+        const relatedMeetings = gorusmeler.filter(m => m.customerId === id && !m.isDeleted).length;
+        const totalRelated = relatedOrders + relatedQuotes + relatedMeetings;
+
+        showSmartConfirm({
+            itemName: customer.name,
+            itemType: 'müşteri',
+            relatedCount: totalRelated,
+            relatedType: totalRelated > 0 ? `sipariş/teklif/görüşme` : '',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'customers', id).then(() => {
+                    logUserActivity('DELETE_CUSTOMER', { message: `Müşteri silindi: ${customer?.name}` });
+                    showUndoableDelete(
+                        `"${customer.name}" müşterisi silindi`,
+                        () => {
+                            undoDelete(user.uid, 'customers', id);
+                            logUserActivity('UNDO_DELETE_CUSTOMER', { message: `Müşteri geri alındı: ${customer?.name}` });
+                        }
+                    );
+                });
+            }
         });
     };
     const handleProductDelete = (id) => {
         const product = products.find(p => p.id === id);
-        deleteDocument(user.uid, 'products', id).then(() => {
-            logUserActivity('DELETE_PRODUCT', { message: `Ürün silindi: ${product?.name}` });
+        if (!product) return;
+
+        const usedInOrders = orders.some(o =>
+            !o.isDeleted && o.items && o.items.some(item => item.productId === id)
+        );
+
+        showSmartConfirm({
+            itemName: product.name,
+            itemType: 'ürün',
+            relatedCount: usedInOrders ? 1 : 0,
+            relatedType: usedInOrders ? 'siparişte kullanılıyor' : '',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'products', id).then(() => {
+                    logUserActivity('DELETE_PRODUCT', { message: `Ürün silindi: ${product?.name}` });
+                    showUndoableDelete(
+                        `"${product.name}" ürünü silindi`,
+                        () => {
+                            undoDelete(user.uid, 'products', id);
+                            logUserActivity('UNDO_DELETE_PRODUCT', { message: `Ürün geri alındı: ${product?.name}` });
+                        }
+                    );
+                });
+            }
         });
     };
     const handleOrderDelete = (id) => {
         const order = orders.find(o => o.id === id);
-        const customerName = customers.find(c => c.id === order?.customerId)?.name || '';
-        deleteDocument(user.uid, 'orders', id).then(() => {
-            logUserActivity('DELETE_ORDER', { message: `${customerName} müşterisinin siparişi silindi` });
+        if (!order) return;
+
+        const customer = customers.find(c => c.id === order?.customerId);
+        const customerName = customer?.name || 'Bilinmeyen müşteri';
+        const relatedShipments = shipments.filter(s => s.orderId === id && !s.isDeleted).length;
+
+        showSmartConfirm({
+            itemName: `${customerName} - Sipariş`,
+            itemType: 'sipariş',
+            relatedCount: relatedShipments,
+            relatedType: relatedShipments > 0 ? 'sevkiyat' : '',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'orders', id).then(() => {
+                    logUserActivity('DELETE_ORDER', { message: `${customerName} müşterisinin siparişi silindi` });
+                    showUndoableDelete(
+                        `${customerName} müşterisinin siparişi silindi`,
+                        () => {
+                            undoDelete(user.uid, 'orders', id);
+                            logUserActivity('UNDO_DELETE_ORDER', { message: `Sipariş geri alındı: ${customerName}` });
+                        }
+                    );
+                });
+            }
         });
     };
     const handleQuoteDelete = (id) => {
         const quote = teklifler.find(q => q.id === id);
-        const customerName = customers.find(c => c.id === quote?.customerId)?.name || '';
-        deleteDocument(user.uid, 'teklifler', id).then(() => {
-            logUserActivity('DELETE_QUOTE', { message: `${customerName} müşterisinin teklifi silindi` });
+        if (!quote) return;
+
+        const customer = customers.find(c => c.id === quote?.customerId);
+        const customerName = customer?.name || 'Bilinmeyen müşteri';
+
+        showSmartConfirm({
+            itemName: `${customerName} - Teklif`,
+            itemType: 'teklif',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'teklifler', id).then(() => {
+                    logUserActivity('DELETE_QUOTE', { message: `${customerName} müşterisinin teklifi silindi` });
+                    showUndoableDelete(
+                        `${customerName} müşterisinin teklifi silindi`,
+                        () => {
+                            undoDelete(user.uid, 'teklifler', id);
+                            logUserActivity('UNDO_DELETE_QUOTE', { message: `Teklif geri alındı: ${customerName}` });
+                        }
+                    );
+                });
+            }
         });
     };
     const handleMeetingDelete = (id) => {
         const meeting = gorusmeler.find(m => m.id === id);
-        const customerName = customers.find(c => c.id === meeting?.customerId)?.name || '';
-        deleteDocument(user.uid, 'gorusmeler', id).then(() => {
-            logUserActivity('DELETE_MEETING', { message: `${customerName} müşterisiyle olan görüşme silindi` });
+        if (!meeting) return;
+
+        const customer = customers.find(c => c.id === meeting?.customerId);
+        const customerName = customer?.name || 'Bilinmeyen müşteri';
+
+        showSmartConfirm({
+            itemName: `${customerName} - Görüşme`,
+            itemType: 'görüşme',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'gorusmeler', id).then(() => {
+                    logUserActivity('DELETE_MEETING', { message: `${customerName} müşterisiyle olan görüşme silindi` });
+                    showUndoableDelete(
+                        `${customerName} müşterisiyle olan görüşme silindi`,
+                        () => {
+                            undoDelete(user.uid, 'gorusmeler', id);
+                            logUserActivity('UNDO_DELETE_MEETING', { message: `Görüşme geri alındı: ${customerName}` });
+                        }
+                    );
+                });
+            }
         });
     };
     const handleShipmentDelete = (id) => {
         const shipment = shipments.find(s => s.id === id);
+        if (!shipment) return;
+
         const order = orders.find(o => o.id === shipment?.orderId);
-        const customerName = customers.find(c => c.id === order?.customerId)?.name || '';
-        deleteDocument(user.uid, 'shipments', id).then(() => {
-            logUserActivity('DELETE_SHIPMENT', { message: `${customerName} müşterisinin sevkiyatı silindi` });
+        const customer = customers.find(c => c.id === order?.customerId);
+        const customerName = customer?.name || 'Bilinmeyen müşteri';
+
+        showSmartConfirm({
+            itemName: `${customerName} - Sevkiyat`,
+            itemType: 'sevkiyat',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'shipments', id).then(() => {
+                    logUserActivity('DELETE_SHIPMENT', { message: `${customerName} müşterisinin sevkiyatı silindi` });
+                    showUndoableDelete(
+                        `${customerName} müşterisinin sevkiyatı silindi`,
+                        () => {
+                            undoDelete(user.uid, 'shipments', id);
+                            logUserActivity('UNDO_DELETE_SHIPMENT', { message: `Sevkiyat geri alındı: ${customerName}` });
+                        }
+                    );
+                });
+            }
         });
     };
 

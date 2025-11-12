@@ -150,3 +150,26 @@ export const deleteDocument = async (userId, collectionName, docId) => {
         return false;
     }
 };
+
+/**
+ * Undo a soft delete (restore a deleted document)
+ * @param {string} userId - User ID
+ * @param {string} collectionName - Collection name
+ * @param {string} docId - Document ID
+ * @returns {Promise<boolean>} Success status
+ */
+export const undoDelete = async (userId, collectionName, docId) => {
+    if (!userId || !docId) return false;
+
+    try {
+        const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
+        await updateDoc(docRef, {
+            isDeleted: false,
+            deletedAt: null
+        });
+        return true;
+    } catch (error) {
+        console.error('Undo delete error:', error);
+        return false;
+    }
+};
