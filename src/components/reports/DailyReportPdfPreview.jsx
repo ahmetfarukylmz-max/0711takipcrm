@@ -14,9 +14,9 @@ const DailyReportPdfPreview = React.forwardRef(({
 }, ref) => {
     const companyInfo = {
         name: "AKÇELİK METAL SANAYİ",
-        address: "Organize Sanayi Bölgesi, Sanayi Cd. No:1, Bursa",
-        phone: "0224 123 45 67",
-        email: "info@akcelik.com.tr",
+        address: "Küçükbalıklı mh. 11 Eylül Bulvarı No:208/A Osmangazi/Bursa",
+        phone: "+90 0224 256 86 56",
+        email: "satis@akcelik-grup.com",
     };
 
     const formatChange = (current, previous) => {
