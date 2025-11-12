@@ -148,7 +148,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 />
                 <MobileStat
                     label="Bekleyen Teklifler"
-                    value={teklifler.filter(t => !t.isDeleted && t.status !== 'Onaylandı').length}
+                    value={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı').length}
                     icon={<DocumentTextIcon className="w-6 h-6" />}
                     color="indigo"
                     onClick={() => setActivePage('Teklifler')}
