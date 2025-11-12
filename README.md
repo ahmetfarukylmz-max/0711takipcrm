@@ -7,6 +7,9 @@ Modern, hızlı ve kullanıcı dostu bir **Müşteri İlişkileri Yönetim (CRM)
 [![Vite](https://img.shields.io/badge/Vite-7.1.7-purple.svg)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-Private-red.svg)]()
 
+> 📖 **[Detaylı Kullanıcı Rehberi için tıklayın →](USER_GUIDE.md)**
+> Sistemi nasıl kullanacağınızı adım adım öğrenmek için kapsamlı rehberimizi inceleyin.
+
 ## ✨ Özellikler
 
 ### 📊 Temel Modüller
