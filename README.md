@@ -27,6 +27,14 @@ Modern, hızlı ve kullanıcı dostu bir **Müşteri İlişkileri Yönetim (CRM)
 - ✅ **Excel Export/Import** - Veri içe/dışa aktarma
 - ✅ **PDF Oluşturma** - Teklif ve sipariş PDF'leri
 
+### 📱 Mobil UX Özellikleri (Yeni!)
+- ✅ **Loading Skeletons** - Yüklenirken gösterilen iskelet ekranlar
+- ✅ **Smart Confirmations** - Akıllı onay ve geri alma sistemi
+- ✅ **Quick Actions FAB** - Hızlı erişim floating menüsü
+- ✅ **Swipe Gestures** - Sol/sağ kaydırma hareketleri ile düzenleme/silme
+- ✅ **Pull-to-Refresh** - Aşağı çekerek yenileme özelliği
+- ✅ **Undo Delete** - 3 saniye içinde silme işlemini geri alma
+
 ### 📈 Görselleştirme
 - **Satış Grafikleri** - Trend analizi (Chart.js)
 - **Durum Grafikleri** - Sipariş durum dağılımı
@@ -154,11 +162,16 @@ npm run test:coverage
 ```
 0711takipcrm/
 ├── public/              # Static assets
+│   └── 404.html         # SPA routing for GitHub Pages
 ├── src/
 │   ├── components/      # React components
 │   │   ├── pages/       # Page components
 │   │   ├── forms/       # Form components
 │   │   ├── common/      # Reusable UI components
+│   │   │   ├── LoadingSkeleton.jsx       # Yükleme iskelet ekranı
+│   │   │   ├── QuickActionsFAB.jsx       # Hızlı erişim menüsü
+│   │   │   ├── SwipeableListItem.jsx     # Kaydırılabilir liste öğesi
+│   │   │   └── PullToRefresh.jsx         # Aşağı çekme yenileme
 │   │   ├── charts/      # Chart components
 │   │   ├── layout/      # Layout components
 │   │   └── reports/     # Report components
@@ -166,11 +179,15 @@ npm run test:coverage
 │   ├── hooks/           # Custom hooks
 │   ├── services/        # Firebase services
 │   ├── utils/           # Utility functions
+│   │   └── toastUtils.jsx                # Toast bildirimleri
 │   ├── types/           # TypeScript types
 │   ├── constants/       # Constants
 │   ├── test/            # Test setup
 │   ├── App.jsx          # Main app component
 │   └── main.jsx         # Entry point
+├── .github/
+│   └── workflows/
+│       └── deploy.yml   # GitHub Actions deployment
 ├── .env.example         # Environment variables template
 ├── firestore.rules      # Firestore security rules
 ├── vite.config.js       # Vite configuration
@@ -184,13 +201,14 @@ npm run test:coverage
 
 ### Müşteri Ekleme
 1. Sol menüden "Müşteriler" sekmesine gidin
-2. Sağ alt köşedeki "+" butonuna tıklayın
-3. Müşteri bilgilerini doldurun
-4. "Kaydet" butonuna tıklayın
+2. Sağ alt köşedeki Quick Actions (FAB) menüsüne tıklayın
+3. "Yeni Müşteri" seçeneğini seçin
+4. Müşteri bilgilerini doldurun
+5. "Kaydet" butonuna tıklayın
 
 ### Teklif Oluşturma
 1. "Teklifler" sekmesine gidin
-2. "Yeni Teklif" butonuna tıklayın
+2. Quick Actions menüsünden "Yeni Teklif"e tıklayın
 3. Müşteri seçin
 4. Ürünleri ekleyin
 5. KDV oranını belirleyin
@@ -202,6 +220,32 @@ npm run test:coverage
 3. Detaylı raporları inceleyin
 4. Grafikleri görüntüleyin
 5. Excel'e aktarın
+
+### 📱 Mobil Kullanım İpuçları
+
+#### Swipe Gestures (Kaydırma Hareketleri)
+- **Sağa kaydır**: Müşteri/sipariş/teklif düzenle
+- **Sola kaydır**: Sil (geri alma ile)
+- Her kaydırma işlemi görsel geri bildirim gösterir
+
+#### Quick Actions Menüsü
+- Sağ alt köşedeki mavi yuvarlak butona tıklayın
+- Hızlı erişim seçenekleri:
+  - ➕ Yeni Müşteri
+  - 📦 Yeni Sipariş
+  - 📄 Yeni Teklif
+  - 🏭 Yeni Ürün
+- Menü dışına tıklayarak kapatın
+
+#### Smart Confirmations
+- Silme işlemlerinde "Geri Al" butonu görünür
+- 3 saniye içinde silme işlemini geri alabilirsiniz
+- Otomatik kapanma ile kullanıcı dostu deneyim
+
+#### Pull to Refresh
+- Listede en üstteyken aşağı çekin
+- Sayfayı yenilemek için bırakın
+- Yenilenme animasyonu görünür
 
 ---
 
@@ -313,6 +357,16 @@ Proje Linki: [https://github.com/ahmetfarukylmz-max/0711takipcrm](https://github
 ---
 
 ## 📈 Versiyon Geçmişi
+
+### v1.1.0 (2025-11-12) - Mobil UX İyileştirmeleri
+- ✅ **Loading Skeletons** - Tüm sayfalara iskelet yükleme ekranları
+- ✅ **Smart Confirmations** - Geri alınabilir silme işlemleri
+- ✅ **Quick Actions FAB** - Floating action button ile hızlı erişim
+- ✅ **Swipe Gestures** - Kaydırma hareketleri ile düzenleme/silme
+- ✅ **Pull-to-Refresh** - Aşağı çekerek yenileme özelliği
+- ✅ **Undo System** - 3 saniye içinde işlemleri geri alma
+- ✅ GitHub Pages deployment iyileştirmeleri
+- ✅ Touch event optimizasyonları
 
 ### v1.0.0 (2024-11-10)
 - ✅ İlk stable release
