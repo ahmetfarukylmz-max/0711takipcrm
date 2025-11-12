@@ -12,7 +12,7 @@ import { PlusIcon, WhatsAppIcon } from '../icons';
 import { formatDate, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
-import type { Meeting, Customer } from '../../types';
+import type { Meeting, Customer, Product } from '../../types';
 
 const localizer = momentLocalizer(moment);
 
@@ -41,12 +41,16 @@ interface MeetingsProps {
     meetings: Meeting[];
     /** List of customers */
     customers: Customer[];
+    /** List of products */
+    products: Product[];
     /** Callback when meeting is saved */
     onSave: (meeting: Partial<Meeting>) => void;
     /** Callback when meeting is deleted */
     onDelete: (id: string) => void;
     /** Callback when customer is saved */
     onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Callback to create quote from meeting */
+    onCreateQuote?: (customerId: string, products: any[]) => void;
     /** Loading state */
     loading?: boolean;
 }
@@ -54,7 +58,7 @@ interface MeetingsProps {
 /**
  * Meetings component - Meeting management page with calendar view
  */
-const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, onCustomerSave, loading = false }) => {
+const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, onDelete, onCustomerSave, onCreateQuote, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);
@@ -612,7 +616,9 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, o
                     onSave={handleSave}
                     onCancel={() => setIsModalOpen(false)}
                     customers={customers}
+                    products={products}
                     onCustomerSave={onCustomerSave}
+                    onCreateQuote={onCreateQuote}
                     readOnly={false}
                 />
             </Modal>

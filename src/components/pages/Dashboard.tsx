@@ -125,6 +125,55 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
             .slice(0, 5);
     }, [orders, products, customers]);
 
+    // Calculate most inquired products from meetings
+    const mostInquiredProducts = useMemo(() => {
+        const productInquiries: Record<string, {
+            count: number;
+            totalQuantity: number;
+            meetingsCount: number;
+            lastInquiryDate: string;
+        }> = {};
+
+        gorusmeler
+            .filter(m => !m.isDeleted && m.inquiredProducts && m.inquiredProducts.length > 0)
+            .forEach(meeting => {
+                meeting.inquiredProducts?.forEach(ip => {
+                    if (!productInquiries[ip.productId]) {
+                        productInquiries[ip.productId] = {
+                            count: 0,
+                            totalQuantity: 0,
+                            meetingsCount: 0,
+                            lastInquiryDate: meeting.meeting_date
+                        };
+                    }
+
+                    productInquiries[ip.productId].count += 1;
+                    productInquiries[ip.productId].totalQuantity += ip.quantity || 0;
+                    productInquiries[ip.productId].meetingsCount += 1;
+
+                    // Update last inquiry date if this meeting is more recent
+                    if (meeting.meeting_date > productInquiries[ip.productId].lastInquiryDate) {
+                        productInquiries[ip.productId].lastInquiryDate = meeting.meeting_date;
+                    }
+                });
+            });
+
+        return Object.entries(productInquiries)
+            .map(([productId, stats]) => {
+                const product = products.find(p => p.id === productId && !p.isDeleted);
+                return {
+                    id: productId,
+                    name: product?.name || 'Bilinmeyen Ürün',
+                    count: stats.count,
+                    totalQuantity: stats.totalQuantity,
+                    meetingsCount: stats.meetingsCount,
+                    lastInquiryDate: stats.lastInquiryDate
+                };
+            })
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+    }, [gorusmeler, products]);
+
     // Calculate upcoming deliveries
     const upcomingDeliveries = useMemo(() => {
         const today = new Date();
@@ -366,6 +415,36 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                             ))
                         ) : (
                             <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz satış bulunmuyor.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
+                        <span>🔥</span>
+                        En Çok Sorulan Ürünler
+                    </h3>
+                    <div className="space-y-2 md:space-y-3">
+                        {mostInquiredProducts.length > 0 ? (
+                            mostInquiredProducts.map(product => (
+                                <MobileListItem
+                                    key={product.id}
+                                    title={product.name}
+                                    subtitle={`${product.meetingsCount} görüşmede soruldu${product.totalQuantity > 0 ? ` • ${product.totalQuantity} Kg` : ''}`}
+                                    rightContent={
+                                        <div className="text-right">
+                                            <span className="block text-sm font-semibold text-purple-600 dark:text-purple-400">
+                                                {product.count} kez
+                                            </span>
+                                            <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                                Son: {formatDate(product.lastInquiryDate)}
+                                            </span>
+                                        </div>
+                                    }
+                                />
+                            ))
+                        ) : (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">Henüz ürün sorgusu bulunmuyor.</p>
                         )}
                     </div>
                 </div>
