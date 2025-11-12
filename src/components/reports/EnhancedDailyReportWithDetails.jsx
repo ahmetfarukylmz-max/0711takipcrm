@@ -123,7 +123,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
     const getDetailedDataForDate = (date) => {
         const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
 
-        const dayMeetings = meetings.filter(m => !m.isDeleted && m.date === dateStr);
+        const dayMeetings = meetings.filter(m => !m.isDeleted && m.meeting_date === dateStr);
         const dayQuotes = quotes.filter(q => !q.isDeleted && q.teklif_tarihi === dateStr);
         const dayOrders = orders.filter(o => !o.isDeleted && o.order_date === dateStr);
         const convertedOrders = dayOrders.filter(o => o.quoteId);
@@ -261,7 +261,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                             ${todayData.meetings.map((meeting, idx) => `
                                 <tr style="background: ${idx % 2 === 0 ? '#f8fafc' : 'white'};">
                                     <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${getCustomerName(meeting.customerId)}</td>
-                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(meeting.date)}</td>
+                                    <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${formatDate(meeting.meeting_date)}</td>
                                     <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">${meeting.notes || meeting.outcome || '-'}</td>
                                 </tr>
                             `).join('')}
@@ -628,7 +628,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                             <DetailListItem
                                 key={meeting.id}
                                 customer={getCustomerName(meeting.customerId)}
-                                date={meeting.date}
+                                date={meeting.meeting_date}
                                 notes={meeting.notes || meeting.outcome || 'Görüşme yapıldı'}
                                 type="meeting"
                                 getProductName={getProductName}
