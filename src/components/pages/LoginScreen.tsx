@@ -41,15 +41,16 @@ const LoginScreen = memo(() => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center text-gray-800">
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+            <div className="w-full max-w-md p-6 md:p-8 space-y-6 bg-white rounded-lg shadow-md">
+                <h2 className="text-xl md:text-2xl font-bold text-center text-gray-800">
                     {isRegistering ? 'Yeni Hesap Oluştur' : 'Takip CRM\'e Hoş Geldiniz'}
                 </h2>
                 <form onSubmit={handleAuthAction} className="space-y-6">
                     <FormInput
                         label="E-posta Adresi"
                         type="email"
+                        inputMode="email"
                         value={email}
                         onChange={handleEmailChange}
                         required
@@ -64,7 +65,7 @@ const LoginScreen = memo(() => {
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <button
                         type="submit"
-                        className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="w-full px-4 py-3 min-h-[44px] text-white bg-blue-600 rounded-md hover:bg-blue-700 active:scale-[0.98] transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         {isRegistering ? 'Kayıt Ol' : 'Giriş Yap'}
                     </button>
@@ -73,7 +74,7 @@ const LoginScreen = memo(() => {
                         <button
                             type="button"
                             onClick={toggleMode}
-                            className="ml-1 font-medium text-blue-600 hover:underline"
+                            className="ml-1 font-medium text-blue-600 hover:underline min-h-[44px] inline-flex items-center"
                         >
                             {isRegistering ? 'Giriş Yapın' : 'Kayıt Olun'}
                         </button>

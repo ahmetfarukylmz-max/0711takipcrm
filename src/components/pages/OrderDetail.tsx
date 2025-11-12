@@ -46,7 +46,9 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products }) => {
             </div>
 
             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Sipariş Kalemleri</h3>
-            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+
+            {/* Desktop: Table View */}
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -67,6 +69,29 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products }) => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile: Card View */}
+            <div className="md:hidden space-y-3">
+                {order.items.map((item, index) => (
+                    <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{getProductName(item.productId)}</div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span className="text-gray-600 dark:text-gray-400">Miktar:</span>
+                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{item.quantity} {item.unit || 'Kg'}</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-gray-600 dark:text-gray-400">Birim Fiyat:</span>
+                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formatCurrency(item.unit_price, order.currency)}</span>
+                            </div>
+                            <div className="col-span-2 pt-2 border-t border-gray-300 dark:border-gray-600">
+                                <span className="text-gray-600 dark:text-gray-400">Toplam:</span>
+                                <span className="ml-2 font-bold text-blue-600 dark:text-blue-400">{formatCurrency(item.quantity * item.unit_price, order.currency)}</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="flex justify-end mt-6">

@@ -157,7 +157,8 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, on
             <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Sevk Edilecek Ürünler</h3>
 
-                <div className="overflow-x-auto">
+                {/* Desktop: Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-gray-100 dark:bg-gray-600">
                             <tr>
@@ -179,6 +180,7 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, on
                                         <div className="flex items-center justify-center gap-2">
                                             <input
                                                 type="number"
+                                                inputMode="numeric"
                                                 min="0"
                                                 max={item.orderedQty - item.shippedQty}
                                                 value={item.toShipQty}
@@ -193,20 +195,62 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, on
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile: Card View */}
+                <div className="md:hidden space-y-3">
+                    {formData.items.map((item, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{item.productName}</div>
+
+                            <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                                <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Sipariş:</span>
+                                    <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{item.orderedQty} {item.unit}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-600 dark:text-gray-400">Sevk Edildi:</span>
+                                    <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{item.shippedQty} {item.unit}</span>
+                                </div>
+                                <div className="col-span-2">
+                                    <span className="text-gray-600 dark:text-gray-400">Kalan:</span>
+                                    <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">{item.orderedQty - item.shippedQty} {item.unit}</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Sevk Edilecek Miktar *
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="0"
+                                        max={item.orderedQty - item.shippedQty}
+                                        value={item.toShipQty}
+                                        onChange={(e) => handleItemQtyChange(index, e.target.value)}
+                                        className="flex-1 px-3 py-2 min-h-[44px] text-center border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.unit}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
+                    className="px-4 py-2.5 min-h-[44px] bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 active:scale-[0.98] transition-transform"
                 >
                     İptal
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-4 py-2.5 min-h-[44px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:scale-[0.98] transition-transform"
                 >
                     Sevk Et
                 </button>
