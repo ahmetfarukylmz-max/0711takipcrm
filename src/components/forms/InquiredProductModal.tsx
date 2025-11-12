@@ -41,17 +41,34 @@ const InquiredProductModal: React.FC<InquiredProductModalProps> = ({
         const selectedProduct = products.find(p => p.id === formData.productId);
         if (!selectedProduct) return;
 
-        const inquiredProduct: Omit<InquiredProduct, 'id'> = {
+        // Build inquired product object without undefined values
+        const inquiredProduct: any = {
             productId: formData.productId,
-            productName: selectedProduct.name,
-            quantity: formData.quantity ? Number(formData.quantity) : undefined,
-            unit: formData.unit || undefined,
-            priority: formData.priority as any || undefined,
-            notes: formData.notes || undefined,
-            priceQuoted: formData.priceQuoted ? Number(formData.priceQuoted) : undefined
+            productName: selectedProduct.name
         };
 
-        onSave(inquiredProduct);
+        // Only add optional fields if they have values
+        if (formData.quantity && Number(formData.quantity) > 0) {
+            inquiredProduct.quantity = Number(formData.quantity);
+        }
+
+        if (formData.unit) {
+            inquiredProduct.unit = formData.unit;
+        }
+
+        if (formData.priority) {
+            inquiredProduct.priority = formData.priority;
+        }
+
+        if (formData.notes && formData.notes.trim()) {
+            inquiredProduct.notes = formData.notes.trim();
+        }
+
+        if (formData.priceQuoted && Number(formData.priceQuoted) > 0) {
+            inquiredProduct.priceQuoted = Number(formData.priceQuoted);
+        }
+
+        onSave(inquiredProduct as Omit<InquiredProduct, 'id'>);
     };
 
     return (
