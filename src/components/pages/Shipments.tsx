@@ -5,6 +5,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import SearchBar from '../common/SearchBar';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { formatDate, getStatusClass } from '../../utils/formatters';
 import type { Shipment, Order, Product, Customer } from '../../types';
 
@@ -203,12 +204,14 @@ interface ShipmentsProps {
     onUpdate: (shipment: Partial<Shipment>) => void;
     /** Callback when shipment is deleted */
     onDelete: (id: string) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Shipments component - Shipment management page
  */
-const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete }) => {
+const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, shipment: null });
@@ -351,6 +354,25 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
             return sortOrder === 'asc' ? comparison : -comparison;
         });
     }, [activeShipments, searchQuery, filters, sortBy, sortOrder, orders, customers]);
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Sevkiyat Yönetimi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={7} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={7} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

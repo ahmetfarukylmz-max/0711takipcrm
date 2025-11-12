@@ -9,6 +9,7 @@ import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
@@ -34,12 +35,14 @@ interface OrdersProps {
     products: Product[];
     /** Callback to generate custom PDF */
     onGeneratePdf: (order: Order) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Orders component - Order management page
  */
-const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf }) => {
+const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -358,6 +361,25 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
     }, [orders, searchQuery, statusFilter, customers]);
 
     const statusOptions = ['Tümü', 'Bekliyor', 'Hazırlanıyor', 'Tamamlandı'];
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Sipariş Yönetimi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={6} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={6} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

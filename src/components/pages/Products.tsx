@@ -6,6 +6,7 @@ import ProductForm from '../forms/ProductForm';
 import SearchBar from '../common/SearchBar';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
@@ -24,12 +25,14 @@ interface ProductsProps {
     onSave: (product: Partial<Product>) => Promise<void> | void;
     /** Callback when product is deleted */
     onDelete: (id: string) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Products component - Product management page
  */
-const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
+const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, product: null });
@@ -187,6 +190,25 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete }) => {
             return matchesSearch;
         });
     }, [activeProducts, searchQuery]);
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Ürün Yönetimi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={6} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={6} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

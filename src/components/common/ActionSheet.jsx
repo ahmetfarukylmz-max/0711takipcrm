@@ -74,7 +74,12 @@ const ActionSheet = ({ show, onClose, title, actions }) => {
                                     {action.icon}
                                 </span>
                             )}
-                            <span className="flex-1 text-left font-medium">{action.label}</span>
+                            <div className="flex-1 text-left">
+                                <div className="font-medium">{action.label}</div>
+                                {action.subtitle && (
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">{action.subtitle}</span>
+                                )}
+                            </div>
                         </button>
                     ))}
                 </div>

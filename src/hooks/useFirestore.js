@@ -46,11 +46,12 @@ export const useFirestoreCollection = (collectionName) => {
 /**
  * Custom hook for managing multiple Firestore collections
  * @param {Array<string>} collectionNames - Array of collection names
- * @returns {Object} Object with collection data and connection status
+ * @returns {Object} Object with collection data, connection status, and loading state
  */
 export const useFirestoreCollections = (collectionNames) => {
     const [collections, setCollections] = useState({});
     const [connectionStatus, setConnectionStatus] = useState('Bağlanılıyor...');
+    const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -61,8 +62,11 @@ export const useFirestoreCollections = (collectionNames) => {
             });
             setCollections(emptyCollections);
             setConnectionStatus('Bağlantı Bekleniyor');
+            setLoading(false);
             return;
         }
+
+        setLoading(true);
 
         const handleSnapshotError = (error) => {
             console.error('Veritabanı bağlantı hatası:', error);
@@ -81,6 +85,7 @@ export const useFirestoreCollections = (collectionNames) => {
                         [collectionName]: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     }));
                     setConnectionStatus('Bağlandı');
+                    setLoading(false);
                 },
                 handleSnapshotError
             );
@@ -89,5 +94,5 @@ export const useFirestoreCollections = (collectionNames) => {
         return () => unsubscribers.forEach(unsub => unsub());
     }, [user, JSON.stringify(collectionNames)]);
 
-    return { collections, connectionStatus };
+    return { collections, connectionStatus, loading };
 };

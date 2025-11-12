@@ -7,6 +7,7 @@ import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import type { Quote, Order, Shipment, Customer, Product } from '../../types';
@@ -40,12 +41,14 @@ interface QuotesProps {
     products: Product[];
     /** Callback to generate custom PDF */
     onGeneratePdf: (quote: Quote) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Quotes component - Quote management page with print functionality
  */
-const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf }) => {
+const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
@@ -311,6 +314,25 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
     });
 
     const statuses = ['Tümü', 'Hazırlandı', 'Onaylandı', 'Reddedildi'];
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Teklif Yönetimi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={8} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={8} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

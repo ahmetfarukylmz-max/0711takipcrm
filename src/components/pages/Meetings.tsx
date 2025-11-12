@@ -7,6 +7,7 @@ import MeetingDetail from './MeetingDetail';
 import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon, WhatsAppIcon } from '../icons';
 import { formatDate, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
@@ -46,12 +47,14 @@ interface MeetingsProps {
     onDelete: (id: string) => void;
     /** Callback when customer is saved */
     onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
  * Meetings component - Meeting management page with calendar view
  */
-const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, onCustomerSave }) => {
+const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, onCustomerSave, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);
@@ -245,6 +248,25 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, onSave, onDelete, o
             return sortOrder === 'asc' ? comparison : -comparison;
         });
     }, [activeMeetings, filters, sortBy, sortOrder, customers]);
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Görüşme Takibi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={9} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={9} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>

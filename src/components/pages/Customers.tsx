@@ -11,6 +11,7 @@ import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
+import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon, WhatsAppIcon, EditIcon, TrashIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
@@ -45,6 +46,8 @@ interface CustomersProps {
     onOrderSave?: (order: Partial<Order>) => void;
     /** Callback when shipment is updated */
     onShipmentUpdate?: (shipment: Partial<Shipment>) => void;
+    /** Loading state */
+    loading?: boolean;
 }
 
 /**
@@ -61,7 +64,8 @@ const Customers = memo<CustomersProps>(({
     products = [],
     onQuoteSave,
     onOrderSave,
-    onShipmentUpdate
+    onShipmentUpdate,
+    loading = false
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -302,6 +306,25 @@ const Customers = memo<CustomersProps>(({
             return matchesSearch && matchesStatus && matchesCity;
         });
     }, [customers, searchQuery, statusFilter, cityFilter, orders, shipments]);
+
+    // Show skeleton when loading
+    if (loading) {
+        return (
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Müşteri Yönetimi</h1>
+                </div>
+                {/* Desktop: Table skeleton */}
+                <div className="hidden md:block">
+                    <SkeletonTable rows={10} columns={7} />
+                </div>
+                {/* Mobile: Card skeleton */}
+                <div className="md:hidden">
+                    <SkeletonTable rows={10} columns={7} mobileCardView={true} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div>
