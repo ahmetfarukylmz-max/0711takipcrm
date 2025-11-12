@@ -19,7 +19,7 @@ import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils.jsx';
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
 import Modal from './components/common/Modal';
-import Guide from './components/common/Guide';
+import UserGuide from './components/common/UserGuide';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import BottomNav from './components/common/BottomNav';
 import FAB from './components/common/FAB';
@@ -518,6 +518,7 @@ const CrmApp = () => {
                         gorusmeler={gorusmeler}
                         shipments={shipments}
                         products={products}
+                        onGuideClick={handleToggleGuide}
                     />
                 );
             case 'belge-hazirla':
@@ -601,8 +602,8 @@ const CrmApp = () => {
             <BottomNav activePage={activePage} setActivePage={setActivePage} onToggleGuide={handleToggleGuide} />
             <FAB activePage={activePage} onAction={handleFABAction} customers={customers} />
             {showGuide && (
-                <Modal show={showGuide} onClose={handleToggleGuide} title="Kullanıcı Rehberi">
-                    <Guide />
+                <Modal show={showGuide} onClose={handleToggleGuide} title="Kullanıcı Rehberi" maxWidth="max-w-7xl">
+                    <UserGuide />
                 </Modal>
             )}
         </div>

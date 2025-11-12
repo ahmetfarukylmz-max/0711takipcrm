@@ -45,12 +45,14 @@ interface ReportsProps {
     shipments: Shipment[];
     /** List of products */
     products: Product[];
+    /** Callback to open user guide */
+    onGuideClick?: () => void;
 }
 
 /**
  * Reports component - Analytics and reporting page
  */
-const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, shipments, products }) => {
+const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, shipments, products, onGuideClick }) => {
     const [dateRange, setDateRange] = useState<string>('30'); // days
     const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
 
@@ -341,6 +343,59 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
                     </div>
                 </div>
             </div>
+
+            {/* User Guide Section */}
+            {onGuideClick && (
+                <div className="mt-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-1 rounded-xl shadow-lg">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-gradient-to-br from-blue-500 to-purple-500 p-4 rounded-full">
+                                    <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        📚 Kullanıcı Rehberi
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        Takip CRM'in tüm özelliklerini keşfedin. Adım adım talimatlar, mobil kullanım ipuçları,
+                                        klavye kısayolları ve daha fazlası için kapsamlı rehberimizi inceleyin.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onGuideClick}
+                                className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-4 rounded-lg font-semibold hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2 whitespace-nowrap min-h-[52px]"
+                            >
+                                <span>Rehberi Aç</span>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {[
+                                { icon: '🔐', text: 'Giriş' },
+                                { icon: '👥', text: 'Müşteriler' },
+                                { icon: '📦', text: 'Siparişler' },
+                                { icon: '📱', text: 'Mobil' },
+                                { icon: '💡', text: 'İpuçları' },
+                            ].map((item) => (
+                                <div
+                                    key={item.text}
+                                    className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-center border border-gray-200 dark:border-gray-600"
+                                >
+                                    <span className="text-2xl block mb-1">{item.icon}</span>
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">{item.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 });
