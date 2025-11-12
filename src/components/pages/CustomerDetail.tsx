@@ -298,8 +298,8 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-start">
-                <div>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="flex-1">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
                         {customer.name}
                     </h2>
@@ -329,34 +329,34 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         )}
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full md:w-auto">
                     <button
                         onClick={handleOpenQuoteModal}
-                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+                        className="px-3 py-2.5 min-h-[44px] bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-sm"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Yeni Teklif
+                        <span className="hidden sm:inline">Yeni</span> Teklif
                     </button>
                     <button
                         onClick={handleOpenOrderModal}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                        className="px-3 py-2.5 min-h-[44px] bg-green-500 text-white rounded-lg hover:bg-green-600 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-sm"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Yeni Sipariş
+                        <span className="hidden sm:inline">Yeni</span> Sipariş
                     </button>
                     <button
                         onClick={onEdit}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        className="px-3 py-2.5 min-h-[44px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:scale-[0.98] transition-transform text-sm"
                     >
                         Düzenle
                     </button>
                     <button
                         onClick={onDelete}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                        className="px-3 py-2.5 min-h-[44px] bg-red-500 text-white rounded-lg hover:bg-red-600 active:scale-[0.98] transition-transform text-sm"
                     >
                         Sil
                     </button>
@@ -412,8 +412,8 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex gap-6">
+            <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                <nav className="-mb-px flex gap-4 md:gap-6 min-w-min">
                     {[
                         { id: 'overview' as TabId, label: 'Özet' },
                         { id: 'timeline' as TabId, label: 'Aktiviteler' },
@@ -424,7 +424,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            className={`py-2.5 px-3 border-b-2 font-medium text-sm whitespace-nowrap min-h-[44px] ${
                                 activeTab === tab.id
                                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -513,116 +513,209 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 )}
 
                 {activeTab === 'orders' && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                                <tr>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tarih</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tutar</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {orders
-                                    .filter(o => o.customerId === customer.id && !o.isDeleted)
-                                    .map(order => (
-                                        <tr
-                                            key={order.id}
-                                            onClick={() => onViewOrder && onViewOrder(order)}
-                                            className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                        >
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(order.order_date)}</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(order.total_amount)}</td>
-                                            <td className="p-3 text-sm">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(order.status)}`}>
-                                                    {order.status}
-                                                </span>
+                    <>
+                        {/* Desktop: Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                                    <tr>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tarih</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tutar</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {orders
+                                        .filter(o => o.customerId === customer.id && !o.isDeleted)
+                                        .map(order => (
+                                            <tr
+                                                key={order.id}
+                                                onClick={() => onViewOrder && onViewOrder(order)}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                            >
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(order.order_date)}</td>
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(order.total_amount)}</td>
+                                                <td className="p-3 text-sm">
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(order.status)}`}>
+                                                        {order.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    {orders.filter(o => o.customerId === customer.id && !o.isDeleted).length === 0 && (
+                                        <tr>
+                                            <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                                Henüz sipariş bulunmuyor
                                             </td>
                                         </tr>
-                                    ))}
-                                {orders.filter(o => o.customerId === customer.id && !o.isDeleted).length === 0 && (
-                                    <tr>
-                                        <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                            Henüz sipariş bulunmuyor
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile: Card View */}
+                        <div className="md:hidden space-y-3">
+                            {orders
+                                .filter(o => o.customerId === customer.id && !o.isDeleted)
+                                .map(order => (
+                                    <div
+                                        key={order.id}
+                                        onClick={() => onViewOrder && onViewOrder(order)}
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 active:scale-[0.98] transition-transform cursor-pointer"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">{formatDate(order.order_date)}</div>
+                                            <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(order.status)}`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                        <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(order.total_amount)}</div>
+                                    </div>
+                                ))}
+                            {orders.filter(o => o.customerId === customer.id && !o.isDeleted).length === 0 && (
+                                <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    Henüz sipariş bulunmuyor
+                                </div>
+                            )}
+                        </div>
+                    </>
                 )}
 
                 {activeTab === 'quotes' && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                                <tr>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tarih</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tutar</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {quotes
-                                    .filter(q => q.customerId === customer.id && !q.isDeleted)
-                                    .map(quote => (
-                                        <tr
-                                            key={quote.id}
-                                            onClick={() => onViewQuote && onViewQuote(quote)}
-                                            className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                                        >
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(quote.teklif_tarihi)}</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(quote.total_amount)}</td>
-                                            <td className="p-3 text-sm">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(quote.status)}`}>
-                                                    {quote.status}
-                                                </span>
+                    <>
+                        {/* Desktop: Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                                    <tr>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tarih</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Tutar</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {quotes
+                                        .filter(q => q.customerId === customer.id && !q.isDeleted)
+                                        .map(quote => (
+                                            <tr
+                                                key={quote.id}
+                                                onClick={() => onViewQuote && onViewQuote(quote)}
+                                                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                            >
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(quote.teklif_tarihi)}</td>
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(quote.total_amount)}</td>
+                                                <td className="p-3 text-sm">
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(quote.status)}`}>
+                                                        {quote.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    {quotes.filter(q => q.customerId === customer.id && !q.isDeleted).length === 0 && (
+                                        <tr>
+                                            <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                                Henüz teklif bulunmuyor
                                             </td>
                                         </tr>
-                                    ))}
-                                {quotes.filter(q => q.customerId === customer.id && !q.isDeleted).length === 0 && (
-                                    <tr>
-                                        <td colSpan={3} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                            Henüz teklif bulunmuyor
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile: Card View */}
+                        <div className="md:hidden space-y-3">
+                            {quotes
+                                .filter(q => q.customerId === customer.id && !q.isDeleted)
+                                .map(quote => (
+                                    <div
+                                        key={quote.id}
+                                        onClick={() => onViewQuote && onViewQuote(quote)}
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 active:scale-[0.98] transition-transform cursor-pointer"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">{formatDate(quote.teklif_tarihi)}</div>
+                                            <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusClass(quote.status)}`}>
+                                                {quote.status}
+                                            </span>
+                                        </div>
+                                        <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatCurrency(quote.total_amount)}</div>
+                                    </div>
+                                ))}
+                            {quotes.filter(q => q.customerId === customer.id && !q.isDeleted).length === 0 && (
+                                <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    Henüz teklif bulunmuyor
+                                </div>
+                            )}
+                        </div>
+                    </>
                 )}
 
                 {activeTab === 'top-products' && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                                <tr>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Ürün Adı</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Miktar</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Toplam Gelir</th>
-                                    <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Sipariş Sayısı</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {topProducts.length > 0 ? (
-                                    topProducts.map(product => (
-                                        <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.name}</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.quantity} adet</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.revenue)}</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.orderCount}</td>
-                                        </tr>
-                                    ))
-                                ) : (
+                    <>
+                        {/* Desktop: Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                                     <tr>
-                                        <td colSpan={4} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                            Bu müşteriye ait ürün satışı bulunmuyor.
-                                        </td>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Ürün Adı</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Miktar</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Toplam Gelir</th>
+                                        <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Sipariş Sayısı</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {topProducts.length > 0 ? (
+                                        topProducts.map(product => (
+                                            <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.name}</td>
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.quantity} adet</td>
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.revenue)}</td>
+                                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.orderCount}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="p-8 text-center text-gray-500 dark:text-gray-400">
+                                                Bu müşteriye ait ürün satışı bulunmuyor.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile: Card View */}
+                        <div className="md:hidden space-y-3">
+                            {topProducts.length > 0 ? (
+                                topProducts.map(product => (
+                                    <div
+                                        key={product.id}
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-3">{product.name}</div>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                                <span className="text-gray-600 dark:text-gray-400">Miktar:</span>
+                                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{product.quantity} adet</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600 dark:text-gray-400">Sipariş:</span>
+                                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{product.orderCount}</span>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <span className="text-gray-600 dark:text-gray-400">Gelir:</span>
+                                                <span className="ml-2 font-bold text-blue-600 dark:text-blue-400">{formatCurrency(product.revenue)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    Bu müşteriye ait ürün satışı bulunmuyor.
+                                </div>
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
         </div>

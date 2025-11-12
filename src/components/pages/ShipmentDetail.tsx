@@ -49,7 +49,9 @@ const ShipmentDetail = memo<ShipmentDetailProps>(({ shipment, order, customer })
             {/* Shipped Items */}
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                 <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Sevk Edilen Ürünler</h3>
-                <div className="overflow-x-auto">
+
+                {/* Desktop: Table View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-100 dark:bg-gray-700">
                             <tr>
@@ -66,6 +68,18 @@ const ShipmentDetail = memo<ShipmentDetailProps>(({ shipment, order, customer })
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile: Card View */}
+                <div className="md:hidden space-y-3">
+                    {shipment.items && shipment.items.map((item, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</span>
+                                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{item.quantity} {item.unit || 'adet'}</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>
