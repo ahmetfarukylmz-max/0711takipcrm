@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 const UserGuide = () => {
     const [activeSection, setActiveSection] = useState('giris');
     const [searchQuery, setSearchQuery] = useState('');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const sections = [
         { id: 'giris', title: '🔐 Giriş Yapma', icon: '🔐' },
@@ -665,10 +666,37 @@ const UserGuide = () => {
         section.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleSectionClick = (sectionId) => {
+        setActiveSection(sectionId);
+        setSidebarOpen(false); // Close sidebar on mobile after selection
+    };
+
     return (
-        <div className="flex h-[80vh] bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-[80vh] bg-gray-50 dark:bg-gray-900 relative">
+            {/* Mobile Hamburger Button */}
+            <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden fixed top-4 left-4 z-50 bg-blue-500 text-white p-3 rounded-lg shadow-lg hover:bg-blue-600 active:scale-95 transition-all"
+                aria-label="Toggle menu"
+            >
+                {sidebarOpen ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                )}
+            </button>
+
             {/* Sidebar Navigation */}
-            <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+            <div className={`
+                fixed lg:static inset-y-0 left-0 z-40
+                w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+                overflow-y-auto transform transition-transform duration-300 ease-in-out
+                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Kullanıcı Rehberi</h2>
                     <input
@@ -683,7 +711,7 @@ const UserGuide = () => {
                     {filteredSections.map((section) => (
                         <button
                             key={section.id}
-                            onClick={() => setActiveSection(section.id)}
+                            onClick={() => handleSectionClick(section.id)}
                             className={`w-full text-left px-4 py-3 rounded-lg mb-1 transition-colors ${
                                 activeSection === section.id
                                     ? 'bg-blue-500 text-white'
@@ -699,8 +727,16 @@ const UserGuide = () => {
                 </nav>
             </div>
 
+            {/* Overlay for mobile when sidebar is open */}
+            {sidebarOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="flex-1 overflow-y-auto p-4 pt-16 lg:pt-6 lg:p-8">
                 <div className="max-w-4xl mx-auto">
                     {content[activeSection]}
                 </div>
