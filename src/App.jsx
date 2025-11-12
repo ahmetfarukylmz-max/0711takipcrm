@@ -14,7 +14,7 @@ import {
     undoDelete,
     logActivity
 } from './services/firestoreService';
-import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils';
+import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils.jsx';
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
