@@ -73,6 +73,7 @@ const CrmApp = () => {
     const [showGuide, setShowGuide] = useState(false);
     const [overdueItems, setOverdueItems] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
+    const [prefilledQuote, setPrefilledQuote] = useState(null);
 
     const handleToggleGuide = () => {
         setShowGuide(!showGuide);
@@ -222,6 +223,56 @@ const CrmApp = () => {
         const details = { message: `${customerName} ile görüşme ${data.id ? 'güncellendi' : 'oluşturuldu'}` };
         await saveDocument(user.uid, 'gorusmeler', data);
         logUserActivity(action, details);
+    };
+
+    const handleCreateQuoteFromMeeting = (customerId, inquiredProducts) => {
+        // Convert inquired products to quote items
+        const quoteItems = inquiredProducts
+            .filter(ip => ip.productId)
+            .map(ip => {
+                const product = products.find(p => p.id === ip.productId);
+                if (!product) return null;
+
+                return {
+                    productId: ip.productId,
+                    productName: ip.productName,
+                    quantity: ip.quantity || 1,
+                    unit: ip.unit || product.unit || 'Adet',
+                    unitPrice: ip.priceQuoted || product.price || 0,
+                    totalPrice: (ip.quantity || 1) * (ip.priceQuoted || product.price || 0)
+                };
+            })
+            .filter(item => item !== null);
+
+        if (quoteItems.length === 0) {
+            toast.error('Teklif oluşturmak için en az bir geçerli ürün gerekli');
+            return;
+        }
+
+        // Calculate totals
+        const subtotal = quoteItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const vatRate = 20; // Default VAT rate
+        const vatAmount = (subtotal * vatRate) / 100;
+        const total_amount = subtotal + vatAmount;
+
+        // Create prefilled quote
+        const newQuote = {
+            customerId,
+            items: quoteItems,
+            subtotal,
+            vatRate,
+            vatAmount,
+            total_amount,
+            quote_date: new Date().toISOString().slice(0, 10),
+            valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), // 30 days
+            status: 'Hazırlandı',
+            currency: 'TRY'
+        };
+
+        // Set prefilled quote and navigate to Quotes page
+        setPrefilledQuote(newQuote);
+        setActivePage('Teklifler');
+        toast.success(`${quoteItems.length} ürünle teklif oluşturuluyor...`);
     };
 
     // Shipment handler
@@ -480,6 +531,8 @@ const CrmApp = () => {
                         customers={customers}
                         products={products}
                         onGeneratePdf={handleGeneratePdf}
+                        prefilledQuote={prefilledQuote}
+                        onPrefilledQuoteConsumed={() => setPrefilledQuote(null)}
                         loading={dataLoading}
                     />
                 );
@@ -501,9 +554,11 @@ const CrmApp = () => {
                     <Meetings
                         meetings={gorusmeler}
                         customers={customers}
+                        products={products}
                         onSave={handleMeetingSave}
                         onDelete={handleMeetingDelete}
                         onCustomerSave={handleCustomerSave}
+                        onCreateQuote={handleCreateQuoteFromMeeting}
                         loading={dataLoading}
                     />
                 );

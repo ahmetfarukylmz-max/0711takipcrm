@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -41,6 +41,10 @@ interface QuotesProps {
     products: Product[];
     /** Callback to generate custom PDF */
     onGeneratePdf: (quote: Quote) => void;
+    /** Prefilled quote data from meeting */
+    prefilledQuote?: Partial<Quote> | null;
+    /** Callback when prefilled quote is consumed */
+    onPrefilledQuoteConsumed?: () => void;
     /** Loading state */
     loading?: boolean;
 }
@@ -48,7 +52,7 @@ interface QuotesProps {
 /**
  * Quotes component - Quote management page with print functionality
  */
-const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf, loading = false }) => {
+const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave, onDelete, onConvertToOrder, customers, products, onGeneratePdf, prefilledQuote, onPrefilledQuoteConsumed, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
@@ -56,6 +60,16 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
     const [statusFilter, setStatusFilter] = useState('Tümü');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [rejectionReasonModal, setRejectionReasonModal] = useState<RejectionReasonModal>({ isOpen: false, reason: '' });
+
+    // Handle prefilled quote from meeting
+    useEffect(() => {
+        if (prefilledQuote) {
+            setCurrentQuote(prefilledQuote as Quote);
+            setIsModalOpen(true);
+            // Notify parent to clear the prefilled quote
+            onPrefilledQuoteConsumed?.();
+        }
+    }, [prefilledQuote, onPrefilledQuoteConsumed]);
 
     const handleOpenModal = (quote: Quote | null = null) => {
         setCurrentQuote(quote);

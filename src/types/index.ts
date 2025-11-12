@@ -112,6 +112,18 @@ export interface Order {
   quoteId?: string; // If created from quote
 }
 
+// Inquired Product Interface (Products asked about during meetings)
+export interface InquiredProduct {
+  id: string; // Unique ID for this inquiry
+  productId: string;
+  productName: string; // Denormalized
+  quantity?: number;
+  unit?: string; // "Kg", "Adet", "Metre", etc.
+  priority?: 'Düşük' | 'Orta' | 'Yüksek'; // Interest level (optional)
+  notes?: string; // Specific notes about this product inquiry
+  priceQuoted?: number; // If a verbal price was given
+}
+
 // Meeting Interface
 export interface Meeting {
   id: string;
@@ -124,6 +136,7 @@ export interface Meeting {
   next_action_date?: string;
   next_action_notes?: string;
   status?: string;
+  inquiredProducts?: InquiredProduct[]; // Products customer asked about
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
