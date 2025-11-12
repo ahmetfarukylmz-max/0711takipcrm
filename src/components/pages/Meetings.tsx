@@ -49,6 +49,8 @@ interface MeetingsProps {
     onDelete: (id: string) => void;
     /** Callback when customer is saved */
     onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Callback when product is saved */
+    onProductSave: (product: Partial<Product>) => Promise<string | void>;
     /** Callback to create quote from meeting */
     onCreateQuote?: (customerId: string, products: any[]) => void;
     /** Loading state */
@@ -58,7 +60,7 @@ interface MeetingsProps {
 /**
  * Meetings component - Meeting management page with calendar view
  */
-const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, onDelete, onCustomerSave, onCreateQuote, loading = false }) => {
+const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, onDelete, onCustomerSave, onProductSave, onCreateQuote, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);
@@ -618,6 +620,7 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                     customers={customers}
                     products={products}
                     onCustomerSave={onCustomerSave}
+                    onProductSave={onProductSave}
                     onCreateQuote={onCreateQuote}
                     readOnly={false}
                 />

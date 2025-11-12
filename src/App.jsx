@@ -558,6 +558,7 @@ const CrmApp = () => {
                         onSave={handleMeetingSave}
                         onDelete={handleMeetingDelete}
                         onCustomerSave={handleCustomerSave}
+                        onProductSave={handleProductSave}
                         onCreateQuote={handleCreateQuoteFromMeeting}
                         loading={dataLoading}
                     />

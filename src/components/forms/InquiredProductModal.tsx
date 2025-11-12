@@ -2,12 +2,16 @@ import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormSelect from '../common/FormSelect';
 import FormInput from '../common/FormInput';
 import FormTextarea from '../common/FormTextarea';
+import Modal from '../common/Modal';
+import ProductForm from './ProductForm';
+import { PlusIcon } from '../icons';
 import type { InquiredProduct, Product } from '../../types';
 
 interface InquiredProductModalProps {
     products: Product[];
     onSave: (product: Omit<InquiredProduct, 'id'>) => void;
     onCancel: () => void;
+    onProductSave: (product: Partial<Product>) => Promise<string | void>;
     existingProduct?: InquiredProduct;
 }
 
@@ -15,8 +19,10 @@ const InquiredProductModal: React.FC<InquiredProductModalProps> = ({
     products,
     onSave,
     onCancel,
+    onProductSave,
     existingProduct
 }) => {
+    const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         productId: existingProduct?.productId || '',
         quantity: existingProduct?.quantity || '',
@@ -29,6 +35,14 @@ const InquiredProductModal: React.FC<InquiredProductModalProps> = ({
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleNewProductSave = async (productData: Partial<Product>) => {
+        const newProductId = await onProductSave(productData);
+        if (newProductId) {
+            setFormData(prev => ({ ...prev, productId: newProductId }));
+        }
+        setIsNewProductModalOpen(false);
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -72,25 +86,38 @@ const InquiredProductModal: React.FC<InquiredProductModalProps> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <FormSelect
-                label="Ürün"
-                name="productId"
-                value={formData.productId}
-                onChange={handleChange}
-                required
-            >
-                <option value="">Ürün Seçin</option>
-                {products
-                    .filter(p => !p.isDeleted)
-                    .map(product => (
-                        <option key={product.id} value={product.id}>
-                            {product.name}
-                        </option>
-                    ))}
-            </FormSelect>
+        <>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex items-end gap-2">
+                    <div className="flex-grow">
+                        <FormSelect
+                            label="Ürün"
+                            name="productId"
+                            value={formData.productId}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Ürün Seçin</option>
+                            {products
+                                .filter(p => !p.isDeleted)
+                                .map(product => (
+                                    <option key={product.id} value={product.id}>
+                                        {product.name}
+                                    </option>
+                                ))}
+                        </FormSelect>
+                    </div>
+                    <button
+                        type="button"
+                        title="Yeni Ürün Ekle"
+                        onClick={() => setIsNewProductModalOpen(true)}
+                        className="p-2.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                    >
+                        <PlusIcon className="w-5 h-5 !mr-0" />
+                    </button>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                 <FormInput
                     label="Miktar (Opsiyonel)"
                     name="quantity"
@@ -162,6 +189,17 @@ const InquiredProductModal: React.FC<InquiredProductModalProps> = ({
                 </button>
             </div>
         </form>
+        <Modal
+            show={isNewProductModalOpen}
+            onClose={() => setIsNewProductModalOpen(false)}
+            title="Yeni Ürün Ekle"
+        >
+            <ProductForm
+                onSave={handleNewProductSave}
+                onCancel={() => setIsNewProductModalOpen(false)}
+            />
+        </Modal>
+        </>
     );
 };
 
