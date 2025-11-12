@@ -178,7 +178,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                     <option>İlgilenmiyor</option>
                     <option>Tahsilat</option>
                 </FormSelect>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
                     <FormInput
                         label="Sonraki Eylem Tarihi"
                         name="next_action_date"
@@ -196,18 +196,18 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                         disabled={readOnly}
                     />
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                        className="px-4 py-2.5 min-h-[44px] bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-[0.98] transition-transform"
                     >
                         {readOnly ? 'Kapat' : 'İptal'}
                     </button>
                     {!readOnly && (
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-[0.98] transition-transform"
                         >
                             Kaydet
                         </button>

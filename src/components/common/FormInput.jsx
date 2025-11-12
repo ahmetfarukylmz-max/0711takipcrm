@@ -34,6 +34,8 @@ FormInput.propTypes = {
     required: PropTypes.bool,
     /** Is field disabled */
     disabled: PropTypes.bool,
+    /** Mobile keyboard type (tel, email, numeric, decimal, etc.) */
+    inputMode: PropTypes.oneOf(['none', 'text', 'tel', 'url', 'email', 'numeric', 'decimal', 'search']),
 };
 
 export default FormInput;

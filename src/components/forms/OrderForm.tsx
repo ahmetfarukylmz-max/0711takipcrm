@@ -120,6 +120,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                         label="Vade Süresi (gün)"
                         name="paymentTerm"
                         type="number"
+                        inputMode="numeric"
                         min="1"
                         placeholder="Örn: 30, 60, 90"
                         value={formData.paymentTerm}
@@ -169,17 +170,17 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                    className="px-4 py-2.5 min-h-[44px] bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-[0.98] transition-transform"
                 >
                     İptal
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-[0.98] transition-transform"
                 >
                     Siparişi Kaydet
                 </button>

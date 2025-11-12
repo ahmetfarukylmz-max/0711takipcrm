@@ -83,6 +83,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                     label={`Maliyet Fiyatı (${formData.currency === 'USD' ? '$' : '₺'})`}
                     name="cost_price"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={formData.cost_price}
                     onChange={handleChange}
@@ -92,6 +93,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                     label={`Satış Fiyatı (${formData.currency === 'USD' ? '$' : '₺'})`}
                     name="selling_price"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={formData.selling_price}
                     onChange={handleChange}
@@ -104,17 +106,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 value={formData.description}
                 onChange={handleChange}
             />
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                    className="px-4 py-2.5 min-h-[44px] bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-[0.98] transition-transform"
                 >
                     İptal
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-[0.98] transition-transform"
                 >
                     Kaydet
                 </button>
