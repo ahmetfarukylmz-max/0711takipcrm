@@ -14,8 +14,11 @@ const PullToRefresh = ({ onRefresh, children }) => {
         if (!container) return;
 
         const handleTouchStart = (e) => {
-            // Only start if we're at the top of the page
-            if (window.scrollY === 0 && !isRefreshing) {
+            // Check both window and container scroll position
+            const container = containerRef.current;
+            const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
+
+            if (isAtTop && !isRefreshing) {
                 startY.current = e.touches[0].clientY;
                 setIsPulling(true);
             }
@@ -26,11 +29,15 @@ const PullToRefresh = ({ onRefresh, children }) => {
 
             const currentY = e.touches[0].clientY;
             const distance = currentY - startY.current;
+            const container = containerRef.current;
+            const isAtTop = window.scrollY === 0 && (!container || container.scrollTop === 0);
 
-            // Only allow pulling down
-            if (distance > 0 && window.scrollY === 0) {
-                // Prevent default scroll
-                e.preventDefault();
+            // Only allow pulling down when at top
+            if (distance > 0 && isAtTop) {
+                // Only prevent default if event is cancelable
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
 
                 // Apply resistance to pull (diminishing returns)
                 const resistance = Math.min(distance / 2.5, threshold * 1.5);
