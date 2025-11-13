@@ -132,6 +132,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                 ...meeting,
                 customerId: formData.customerId,
                 meeting_date: formData.date,
+                meetingType: formData.meetingType,
                 notes: formData.notes,
                 outcome: formData.outcome as any,
                 status: formData.status,
