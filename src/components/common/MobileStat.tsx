@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import { useCounterAnimation } from '../../hooks/useCounterAnimation';
 
 interface MobileStatProps {
     /** Stat label */
@@ -16,6 +17,8 @@ interface MobileStatProps {
         value: string;
         isPositive: boolean;
     };
+    /** Disable counter animation */
+    disableAnimation?: boolean;
 }
 
 const colorClasses = {
@@ -66,16 +69,28 @@ const MobileStat: React.FC<MobileStatProps> = ({
     icon,
     color = 'blue',
     onClick,
-    trend
+    trend,
+    disableAnimation = false
 }) => {
     const colors = colorClasses[color];
+
+    // Use counter animation only for numeric values
+    const numericValue = typeof value === 'number' ? value : parseInt(String(value), 10);
+    const isNumeric = !isNaN(numericValue);
+    const animatedValue = useCounterAnimation(
+        isNumeric ? numericValue : 0,
+        1000,
+        !disableAnimation && isNumeric
+    );
+
+    const displayValue = !disableAnimation && isNumeric ? animatedValue : value;
 
     return (
         <div
             className={`
                 ${colors.bg} rounded-xl p-4
                 ${onClick ? 'active:scale-[0.98] cursor-pointer' : ''}
-                transition-all
+                transition-all hover:shadow-md
             `}
             onClick={onClick}
         >
@@ -85,10 +100,10 @@ const MobileStat: React.FC<MobileStatProps> = ({
                         {label}
                     </p>
                     <p className={`text-2xl font-bold ${colors.text}`}>
-                        {value}
+                        {displayValue}
                     </p>
                     {trend && (
-                        <p className={`text-xs mt-1 ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`text-xs mt-1 font-medium ${trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {trend.isPositive ? '↑' : '↓'} {trend.value}
                         </p>
                     )}
