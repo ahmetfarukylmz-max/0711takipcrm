@@ -2,6 +2,7 @@ import React, { useMemo, useState, memo, useCallback } from 'react';
 import Modal from '../common/Modal';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
+import MeetingForm from '../forms/MeetingForm';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp, getStatusClass } from '../../utils/formatters';
 import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
@@ -65,6 +66,12 @@ interface CustomerDetailProps {
     onQuoteSave: (quote: Partial<Quote>) => void;
     /** Handler for saving an order */
     onOrderSave: (order: Partial<Order>) => void;
+    /** Handler for saving a meeting */
+    onMeetingSave?: (meeting: Partial<Meeting>) => void;
+    /** Handler for saving a customer (for MeetingForm) */
+    onCustomerSave?: (customer: Partial<Customer>) => Promise<string | void>;
+    /** Handler for saving a product (for MeetingForm) */
+    onProductSave?: (product: Partial<Product>) => Promise<string | void>;
     /** List of products for forms */
     products: Product[];
 }
@@ -88,14 +95,19 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     onViewShipment,
     onQuoteSave,
     onOrderSave,
+    onMeetingSave,
+    onCustomerSave,
+    onProductSave,
     products,
 }) => {
     const [activeTab, setActiveTab] = useState<TabId>('overview');
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
+    const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
 
     const handleOpenQuoteModal = useCallback(() => setIsQuoteModalOpen(true), []);
     const handleOpenOrderModal = useCallback(() => setIsOrderModalOpen(true), []);
+    const handleOpenMeetingModal = useCallback(() => setIsMeetingModalOpen(true), []);
 
     const handleQuoteSave = useCallback((quoteData: Partial<Quote>) => {
         const finalQuoteData = { ...quoteData, customerId: customer.id };
@@ -108,6 +120,14 @@ const CustomerDetail = memo<CustomerDetailProps>(({
         onOrderSave(finalOrderData);
         setIsOrderModalOpen(false);
     }, [customer.id, onOrderSave]);
+
+    const handleMeetingSave = useCallback((meetingData: Partial<Meeting>) => {
+        const finalMeetingData = { ...meetingData, customerId: customer.id };
+        if (onMeetingSave) {
+            onMeetingSave(finalMeetingData);
+        }
+        setIsMeetingModalOpen(false);
+    }, [customer.id, onMeetingSave]);
 
     const handleItemClick = useCallback((activity: Activity) => {
         if (activity.type === 'order') {
@@ -340,6 +360,15 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 </div>
                 <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full md:w-auto">
                     <button
+                        onClick={handleOpenMeetingModal}
+                        className="px-3 py-2.5 min-h-[44px] bg-orange-500 text-white rounded-lg hover:bg-orange-600 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-sm"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="hidden sm:inline">Yeni</span> Görüşme
+                    </button>
+                    <button
                         onClick={handleOpenQuoteModal}
                         className="px-3 py-2.5 min-h-[44px] bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:scale-[0.98] transition-transform flex items-center justify-center gap-2 text-sm"
                     >
@@ -390,6 +419,18 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                     onCancel={() => setIsOrderModalOpen(false)}
                     customers={[customer]}
                     products={products}
+                />
+            </Modal>
+
+            <Modal show={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} title="Yeni Görüşme Kaydı" maxWidth="max-w-4xl">
+                <MeetingForm
+                    meeting={{ customerId: customer.id } as Partial<Meeting>}
+                    onSave={handleMeetingSave}
+                    onCancel={() => setIsMeetingModalOpen(false)}
+                    customers={[customer]}
+                    products={products}
+                    onCustomerSave={onCustomerSave || (async () => {})}
+                    onProductSave={onProductSave || (async () => {})}
                 />
             </Modal>
 

@@ -44,6 +44,10 @@ interface CustomersProps {
     onQuoteSave?: (quote: Partial<Quote>) => void;
     /** Callback when order is saved */
     onOrderSave?: (order: Partial<Order>) => void;
+    /** Callback when meeting is saved */
+    onMeetingSave?: (meeting: Partial<Meeting>) => void;
+    /** Callback when product is saved */
+    onProductSave?: (product: Partial<Product>) => Promise<string | void>;
     /** Callback when shipment is updated */
     onShipmentUpdate?: (shipment: Partial<Shipment>) => void;
     /** Loading state */
@@ -64,6 +68,8 @@ const Customers = memo<CustomersProps>(({
     products = [],
     onQuoteSave,
     onOrderSave,
+    onMeetingSave,
+    onProductSave,
     onShipmentUpdate,
     loading = false
 }) => {
@@ -605,6 +611,12 @@ const Customers = memo<CustomersProps>(({
                         onClose={() => setIsDetailModalOpen(false)}
                         onQuoteSave={onQuoteSave}
                         onOrderSave={onOrderSave}
+                        onMeetingSave={onMeetingSave}
+                        onCustomerSave={async (customer) => {
+                            await onSave(customer);
+                            return customer.id;
+                        }}
+                        onProductSave={onProductSave}
                         products={products}
                         onViewOrder={handleViewOrder}
                         onViewQuote={handleViewQuote}
