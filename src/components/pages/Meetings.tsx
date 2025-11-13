@@ -428,13 +428,8 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                                 />
                                             </td>
-                                            <td className="p-3 text-sm">
-                                                <div className="text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmiyor'}</div>
-                                                {customer?.phone && (
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                        {customer.phone}
-                                                    </div>
-                                                )}
+                                            <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">
+                                                {customer?.name || 'Bilinmiyor'}
                                             </td>
                                             <td className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{formatDate(meeting.meeting_date)}</td>
                                             <td className="p-3 text-sm">
