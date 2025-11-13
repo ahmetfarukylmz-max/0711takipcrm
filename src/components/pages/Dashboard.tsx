@@ -1,14 +1,16 @@
 import React, { useMemo, memo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppIcon, BellIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
+import CustomTaskForm from '../forms/CustomTaskForm';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
-import type { Customer, Order, Quote, Meeting, Product } from '../../types';
+import type { Customer, Order, Quote, Meeting, Product, CustomTask } from '../../types';
 
 interface BestSellingProduct {
     id: string;
@@ -25,11 +27,14 @@ interface BestSellingProduct {
 
 interface TodayTask {
     id: string;
-    type: 'call' | 'delivery' | 'meeting';
+    type: 'call' | 'delivery' | 'meeting' | 'custom';
     title: string;
     subtitle: string;
     time?: string;
     completed: boolean;
+    sourceType: 'meeting' | 'order' | 'customTask';
+    sourceId: string;
+    priority?: 'low' | 'medium' | 'high';
 }
 
 interface DashboardProps {
@@ -45,10 +50,14 @@ interface DashboardProps {
     products: Product[];
     /** List of overdue items */
     overdueItems: Meeting[];
+    /** List of custom tasks */
+    customTasks: CustomTask[];
     /** Callback to set active page */
     setActivePage: (page: string) => void;
     /** Callback when meeting is saved */
     onMeetingSave: (meeting: Partial<Meeting>) => void;
+    /** Callback when custom task is saved */
+    onCustomTaskSave: (task: Partial<CustomTask>) => void;
     /** Loading state */
     loading?: boolean;
 }

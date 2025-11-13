@@ -147,7 +147,8 @@ const CrmApp = () => {
         'orders',
         'shipments',
         'teklifler',
-        'gorusmeler'
+        'gorusmeler',
+        'customTasks'
     ]);
 
     const customers = collections.customers || [];
@@ -156,6 +157,7 @@ const CrmApp = () => {
     const shipments = collections.shipments || [];
     const teklifler = collections.teklifler || [];
     const gorusmeler = collections.gorusmeler || [];
+    const customTasks = collections.customTasks || [];
 
     const logUserActivity = (action, details) => {
         logActivity(user.uid, action, details);
@@ -223,6 +225,14 @@ const CrmApp = () => {
         const details = { message: `${customerName} ile görüşme ${data.id ? 'güncellendi' : 'oluşturuldu'}` };
         await saveDocument(user.uid, 'gorusmeler', data);
         logUserActivity(action, details);
+    };
+
+    const handleCustomTaskSave = async (data) => {
+        const action = data.id ? 'UPDATE_CUSTOM_TASK' : 'CREATE_CUSTOM_TASK';
+        const details = { message: `Görev ${data.id ? 'güncellendi' : 'oluşturuldu'}: ${data.title}` };
+        await saveDocument(user.uid, 'customTasks', data);
+        logUserActivity(action, details);
+        toast.success(data.id ? 'Görev güncellendi!' : 'Görev eklendi!');
     };
 
     const handleCreateQuoteFromMeeting = (customerId, inquiredProducts) => {
@@ -495,8 +505,10 @@ const CrmApp = () => {
                         gorusmeler={gorusmeler}
                         products={products}
                         overdueItems={overdueItems}
+                        customTasks={customTasks}
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
+                        onCustomTaskSave={handleCustomTaskSave}
                         loading={dataLoading}
                     />
                 );
