@@ -78,6 +78,8 @@ export const exportCustomers = (
     'E-posta': customer.email || '',
     'Adres': customer.address || '',
     'Şehir': customer.city || '',
+    'Vergi Dairesi': customer.taxOffice || '',
+    'Vergi No': customer.taxNumber || '',
     'Kayıt Tarihi': formatDate(customer.createdAt),
   }));
 

@@ -38,6 +38,8 @@ export interface Customer {
   email?: string;
   address?: string;
   city?: string;
+  taxOffice?: string; // Vergi Dairesi
+  taxNumber?: string; // Vergi No
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;

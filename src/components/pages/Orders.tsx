@@ -227,8 +227,8 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                         <div class="border border-gray-300 p-3 text-xs">
                             <p class="font-bold text-gray-900">${customer.name}</p>
                             <p class="text-gray-600">${customer.address || ''}, ${customer.city || ''}</p>
-                            <p class="text-gray-600">${customer.phone || ''}</p>
-                            <p class="text-gray-600">${customer.email || ''}</p>
+                            <p class="text-gray-600">Tel: ${customer.phone || ''} ${customer.email ? '| E-posta: ' + customer.email : ''}</p>
+                            ${customer.taxOffice || customer.taxNumber ? `<p class="text-gray-600 mt-1">${customer.taxOffice ? 'Vergi Dairesi: ' + customer.taxOffice : ''} ${customer.taxOffice && customer.taxNumber ? '|' : ''} ${customer.taxNumber ? 'Vergi No: ' + customer.taxNumber : ''}</p>` : ''}
                         </div>
                     </section>
 

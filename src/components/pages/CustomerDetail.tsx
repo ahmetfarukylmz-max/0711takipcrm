@@ -327,6 +327,15 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         {customer.address && (
                             <p><span className="font-semibold">Adres:</span> {customer.address}</p>
                         )}
+                        {customer.city && (
+                            <p><span className="font-semibold">Şehir:</span> {customer.city}</p>
+                        )}
+                        {customer.taxOffice && (
+                            <p><span className="font-semibold">Vergi Dairesi:</span> {customer.taxOffice}</p>
+                        )}
+                        {customer.taxNumber && (
+                            <p><span className="font-semibold">Vergi No:</span> {customer.taxNumber}</p>
+                        )}
                     </div>
                 </div>
                 <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full md:w-auto">
