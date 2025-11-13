@@ -361,6 +361,15 @@ Proje Linki: [https://github.com/ahmetfarukylmz-max/0711takipcrm](https://github
 
 ## 📈 Versiyon Geçmişi
 
+### v1.2.0 (2025-11-13) - Dashboard İyileştirmeleri
+- ✅ **Bugünün Görevleri Widget** - Checkbox'lı task takibi ve progress bar
+- ✅ **Kritik Uyarılar** - Gecikmiş teslimatlar, pasif müşteriler için smart alerts
+- ✅ **Counter Animasyonlar** - KPI kartlarında smooth sayı animasyonları
+- ✅ **Fade-in Efektleri** - Widget'lar için staggered entrance animasyonları
+- ✅ **Kompakt/Geniş Görünüm** - Kullanıcı kontrollü layout yoğunluğu
+- ✅ **Gelişmiş İkonlar** - Tüm widget'larda emoji ve görsel iyileştirmeler
+- ✅ **Müşteri Sıralama** - Türkçe locale-aware alfabetik sıralama
+
 ### v1.1.0 (2025-11-12) - Mobil UX İyileştirmeleri
 - ✅ **Loading Skeletons** - Tüm sayfalara iskelet yükleme ekranları
 - ✅ **Smart Confirmations** - Geri alınabilir silme işlemleri
