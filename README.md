@@ -363,6 +363,8 @@ Proje Linki: [https://github.com/ahmetfarukylmz-max/0711takipcrm](https://github
 
 ### v1.2.0 (2025-11-13) - Dashboard İyileştirmeleri
 - ✅ **Bugünün Görevleri Widget** - Checkbox'lı task takibi ve progress bar
+- ✅ **Manuel Görev Ekleme** - Kullanıcı kendi görevlerini ekleyebilir
+- ✅ **Firebase Task Entegrasyonu** - Görevler Firebase'e kaydedilir
 - ✅ **Kritik Uyarılar** - Gecikmiş teslimatlar, pasif müşteriler için smart alerts
 - ✅ **Counter Animasyonlar** - KPI kartlarında smooth sayı animasyonları
 - ✅ **Fade-in Efektleri** - Widget'lar için staggered entrance animasyonları
