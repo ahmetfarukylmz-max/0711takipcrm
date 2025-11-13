@@ -320,7 +320,6 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 customers={customers}
                 orders={orders}
                 meetings={gorusmeler}
-                overdueCount={overdueItems.length}
                 setActivePage={setActivePage}
             />
 

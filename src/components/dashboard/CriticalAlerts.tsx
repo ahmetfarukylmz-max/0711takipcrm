@@ -14,7 +14,6 @@ interface CriticalAlertsProps {
   customers: Customer[];
   orders: Order[];
   meetings: Meeting[];
-  overdueCount: number;
   setActivePage: (page: string) => void;
 }
 
@@ -25,7 +24,6 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   customers,
   orders,
   meetings,
-  overdueCount,
   setActivePage
 }) => {
   const today = new Date();
@@ -73,18 +71,6 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       message: `${inactiveCustomers.length} müşteriye 2 haftadır ulaşılmadı!`,
       action: () => setActivePage('Müşteriler'),
       actionLabel: 'İncele'
-    });
-  }
-
-  // Overdue actions
-  if (overdueCount > 0) {
-    alerts.push({
-      id: 'overdue-actions',
-      type: 'danger',
-      icon: '⏰',
-      message: `${overdueCount} gecikmiş eylem var!`,
-      action: () => setActivePage('Görüşmeler'),
-      actionLabel: 'Görüntüle'
     });
   }
 
