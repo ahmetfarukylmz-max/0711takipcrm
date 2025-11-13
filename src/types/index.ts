@@ -207,3 +207,20 @@ export interface ExcelColumn {
   type?: 'string' | 'number' | 'date' | 'email' | 'phone';
   validate?: (value: any) => boolean | string;
 }
+
+// Custom Task Interface (for manual tasks on dashboard)
+export interface CustomTask {
+  id: string;
+  userId: string;
+  title: string;
+  notes?: string;
+  date: string; // YYYY-MM-DD format
+  time?: string; // HH:MM format
+  completed: boolean;
+  completedAt?: Timestamp;
+  priority?: 'low' | 'medium' | 'high';
+  isDeleted?: boolean;
+  deletedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}
