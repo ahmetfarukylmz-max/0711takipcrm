@@ -137,6 +137,7 @@ export interface Meeting {
   customerName?: string; // Denormalized
   meeting_date: string; // YYYY-MM-DD
   meeting_time?: string; // HH:MM
+  meetingType?: string; // İlk Temas, Teklif Sunumu, Takip Görüşmesi, etc.
   outcome?: MeetingOutcome;
   notes?: string;
   next_action_date?: string;

@@ -29,8 +29,8 @@ const MeetingDetail = memo<MeetingDetailProps>(({ meeting, customer }) => {
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Görüşme Bilgileri</h3>
                     <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                        <p><span className="font-semibold">Görüşme Tarihi:</span> {formatDate(meeting.date)}</p>
-                        <p><span className="font-semibold">Görüşme Türü:</span> {meeting.meetingType}</p>
+                        <p><span className="font-semibold">Görüşme Tarihi:</span> {formatDate(meeting.meeting_date)}</p>
+                        <p><span className="font-semibold">Görüşme Türü:</span> {meeting.meetingType || 'N/A'}</p>
                         <p>
                             <span className="font-semibold">Durum:</span>
                             <span className={`ml-2 p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.status)}`}>
