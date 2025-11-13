@@ -8,8 +8,8 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
-import { PlusIcon, WhatsAppIcon } from '../icons';
-import { formatDate, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
+import { PlusIcon } from '../icons';
+import { formatDate, getStatusClass } from '../../utils/formatters';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
 import moment from 'moment';
 import type { Meeting, Customer, Product } from '../../types';
@@ -399,11 +399,14 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                         />
                                     </th>
-                                    {['Müşteri', 'Görüşme Tarihi', 'Durum', 'Tür', 'Sonuç', 'Sonraki Eylem', 'Eylem Tarihi', 'İşlemler'].map(head => (
-                                        <th key={head} className={`p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 ${head === 'İşlemler' ? 'text-right' : ''}`}>
-                                            {head}
-                                        </th>
-                                    ))}
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Müşteri</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">Tarih</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Durum</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Tür</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sonuç</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">Sonraki Eylem</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">Eylem Tarihi</th>
+                                    <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">İşlemler</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -428,38 +431,33 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                             <td className="p-3 text-sm">
                                                 <div className="text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmiyor'}</div>
                                                 {customer?.phone && (
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-gray-500 dark:text-gray-400">{customer.phone}</span>
-                                                        <a
-                                                            href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-green-600 hover:text-green-700 transition-colors"
-                                                            title="WhatsApp ile mesaj gönder"
-                                                        >
-                                                            <WhatsAppIcon className="w-4 h-4" />
-                                                        </a>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        {customer.phone}
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(meeting.meeting_date)}</td>
+                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{formatDate(meeting.meeting_date)}</td>
                                             <td className="p-3 text-sm">
-                                                <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.status || 'Planlandı')}`}>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-lg whitespace-nowrap ${getStatusClass(meeting.status || 'Planlandı')}`}>
                                                     {meeting.status || 'Planlandı'}
                                                 </span>
                                             </td>
                                             <td className="p-3 text-sm">
-                                                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                                                <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded whitespace-nowrap">
                                                     {meeting.meetingType || 'İlk Temas'}
                                                 </span>
                                             </td>
                                             <td className="p-3 text-sm">
-                                                <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(meeting.outcome)}`}>
-                                                    {meeting.outcome}
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-lg whitespace-nowrap ${getStatusClass(meeting.outcome)}`}>
+                                                    {meeting.outcome || '-'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{meeting.next_action_notes}</td>
-                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(meeting.next_action_date)}</td>
+                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                                <div className="max-w-xs truncate" title={meeting.next_action_notes}>
+                                                    {meeting.next_action_notes || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{formatDate(meeting.next_action_date) || '-'}</td>
                                             <td className="p-3 text-sm text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
@@ -517,26 +515,9 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                                 </div>
                                             )}
                                             {meeting.next_action_date && (
-                                                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                                <div className="flex items-center justify-between py-2">
                                                     <span className="text-gray-600 dark:text-gray-400">Eylem Tarihi:</span>
                                                     <span className="text-gray-900 dark:text-gray-100 font-bold">{formatDate(meeting.next_action_date)}</span>
-                                                </div>
-                                            )}
-                                            {customer?.phone && (
-                                                <div className="flex items-center justify-between py-2">
-                                                    <span className="text-gray-600 dark:text-gray-400">Telefon:</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-gray-900 dark:text-gray-100">{customer.phone}</span>
-                                                        <a
-                                                            href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-green-600 hover:text-green-700 transition-colors"
-                                                            title="WhatsApp ile mesaj gönder"
-                                                        >
-                                                            <WhatsAppIcon className="w-5 h-5" />
-                                                        </a>
-                                                    </div>
                                                 </div>
                                             )}
                                         </div>
