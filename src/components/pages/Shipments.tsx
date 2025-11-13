@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import SearchBar from '../common/SearchBar';
+import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
@@ -227,6 +228,42 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
     const handleDelivery = (shipmentId: string) => {
         onDelivery(shipmentId);
+    };
+
+    // Helper functions for quick status updates
+    const getNextStatusIcon = (currentStatus: string) => {
+        switch (currentStatus) {
+            case 'Hazırlanıyor': return '🚚';
+            case 'Yolda': return '✅';
+            case 'Dağıtımda': return '✅';
+            default: return '→';
+        }
+    };
+
+    const getNextStatusText = (currentStatus: string) => {
+        switch (currentStatus) {
+            case 'Hazırlanıyor': return 'Yola Çıkar';
+            case 'Yolda': return 'Teslim Et';
+            case 'Dağıtımda': return 'Teslim Et';
+            default: return 'İlerlet';
+        }
+    };
+
+    const handleQuickStatusUpdate = (shipment: Shipment) => {
+        let nextStatus: string;
+        switch (shipment.status) {
+            case 'Hazırlanıyor':
+                nextStatus = 'Yolda';
+                onUpdate({ ...shipment, status: nextStatus });
+                toast.success('Sevkiyat yola çıktı!');
+                break;
+            case 'Yolda':
+            case 'Dağıtımda':
+                handleDelivery(shipment.id);
+                return;
+            default:
+                return;
+        }
     };
 
     const handleOpenModal = (shipment: Shipment) => {
@@ -486,11 +523,12 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
                             </th>
-                            {['Sipariş No', 'Müşteri', 'Nakliye Firması', 'Sevk Tarihi', 'Durum', 'İşlemler'].map(head => (
-                                <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
-                                    {head}
-                                </th>
-                            ))}
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sipariş No</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Müşteri</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Nakliye Firması</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sevk Tarihi</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Durum</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">İşlemler</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -520,44 +558,45 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         </span>
                                     </td>
                                     <td className="p-3 text-sm">
-                                        <div className="flex gap-3">
-                                            {shipment.status !== 'Teslim Edildi' ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleOpenModal(shipment)}
-                                                        className="text-blue-500 hover:underline"
-                                                    >
-                                                        Düzenle
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelivery(shipment.id)}
-                                                        className="text-green-600 hover:underline dark:text-green-400"
-                                                    >
-                                                        Teslim Edildi
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(shipment)}
-                                                        className="text-red-500 hover:underline dark:text-red-400"
-                                                    >
-                                                        Sil
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleOpenModal(shipment)}
-                                                        className="text-blue-500 hover:underline"
-                                                    >
-                                                        Görüntüle
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(shipment)}
-                                                        className="text-red-500 hover:underline dark:text-red-400"
-                                                    >
-                                                        Sil
-                                                    </button>
-                                                </>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {/* Hızlı Durum Değiştirme - Sadece aktif sevkiyatlar için */}
+                                            {shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' && (
+                                                <button
+                                                    onClick={() => handleQuickStatusUpdate(shipment)}
+                                                    className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm whitespace-nowrap"
+                                                    title={`${getNextStatusText(shipment.status)}`}
+                                                >
+                                                    <span className="mr-1">{getNextStatusIcon(shipment.status)}</span>
+                                                    {getNextStatusText(shipment.status)}
+                                                </button>
                                             )}
+
+                                            {/* Detay Butonu */}
+                                            <button
+                                                onClick={() => handleOpenModal(shipment)}
+                                                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                title="Detay Görüntüle"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+
+                                            {/* Dropdown Menü */}
+                                            <ActionsDropdown
+                                                actions={[
+                                                    {
+                                                        label: shipment.status === 'Teslim Edildi' ? 'Görüntüle' : 'Düzenle',
+                                                        onClick: () => handleOpenModal(shipment)
+                                                    },
+                                                    {
+                                                        label: 'Sil',
+                                                        onClick: () => handleDelete(shipment),
+                                                        destructive: true
+                                                    }
+                                                ]}
+                                            />
                                         </div>
                                     </td>
                                 </tr>
