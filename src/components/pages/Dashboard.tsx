@@ -2,6 +2,7 @@ import React, { useMemo, memo, useState } from 'react';
 import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppIcon, BellIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
+import CriticalAlerts from '../dashboard/CriticalAlerts';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
@@ -20,6 +21,15 @@ interface BestSellingProduct {
         quantity: number;
         revenue: number;
     }>;
+}
+
+interface TodayTask {
+    id: string;
+    type: 'call' | 'delivery' | 'meeting';
+    title: string;
+    subtitle: string;
+    time?: string;
+    completed: boolean;
 }
 
 interface DashboardProps {
@@ -49,12 +59,72 @@ interface DashboardProps {
 const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave, loading = false }) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
+    const [isCompactView, setIsCompactView] = useState(false);
+    const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
     const upcomingActions = gorusmeler
         .filter(g => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
         .sort((a, b) => new Date(a.next_action_date!).getTime() - new Date(b.next_action_date!).getTime())
         .slice(0, 5);
+
+    // Calculate today's tasks
+    const todayTasks = useMemo<TodayTask[]>(() => {
+        const tasks: TodayTask[] = [];
+
+        // Today's meetings
+        gorusmeler
+            .filter(m => !m.isDeleted && m.next_action_date === today)
+            .forEach(meeting => {
+                const customer = customers.find(c => c.id === meeting.customerId);
+                tasks.push({
+                    id: `meeting-${meeting.id}`,
+                    type: 'meeting',
+                    title: customer?.name || 'Bilinmeyen Müşteri',
+                    subtitle: meeting.next_action_notes || 'Görüşme',
+                    time: meeting.meeting_time,
+                    completed: completedTasks.has(`meeting-${meeting.id}`)
+                });
+            });
+
+        // Today's deliveries
+        orders
+            .filter(o => !o.isDeleted && o.delivery_date === today && o.status !== 'Tamamlandı')
+            .forEach(order => {
+                const customer = customers.find(c => c.id === order.customerId);
+                tasks.push({
+                    id: `delivery-${order.id}`,
+                    type: 'delivery',
+                    title: customer?.name || 'Bilinmeyen Müşteri',
+                    subtitle: `Teslimat - ${formatCurrency(order.total_amount)}`,
+                    completed: completedTasks.has(`delivery-${order.id}`)
+                });
+            });
+
+        return tasks.sort((a, b) => {
+            if (a.time && b.time) return a.time.localeCompare(b.time);
+            if (a.time) return -1;
+            if (b.time) return 1;
+            return 0;
+        });
+    }, [gorusmeler, orders, customers, today, completedTasks]);
+
+    const toggleTask = (taskId: string) => {
+        setCompletedTasks(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(taskId)) {
+                newSet.delete(taskId);
+            } else {
+                newSet.add(taskId);
+            }
+            return newSet;
+        });
+    };
+
+    const completedTasksCount = todayTasks.filter(t => t.completed).length;
+    const totalTasksCount = todayTasks.length;
+    const completionPercentage = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
     // Calculate best selling products with customer details
     const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
@@ -193,7 +263,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
     if (loading) {
         return (
             <div>
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz!</h1>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz! 👋</h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
 
                 {/* Stats skeleton */}
@@ -216,48 +286,91 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
         );
     }
 
+    const widgetGridClass = isCompactView
+        ? 'grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4'
+        : 'grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8';
+
+    const widgetPadding = isCompactView ? 'p-3 md:p-4' : 'p-4 md:p-6';
+
     return (
         <div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz!</h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz! 👋</h1>
+                    <p className="text-gray-600 dark:text-gray-400">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
+                </div>
+                <button
+                    onClick={() => setIsCompactView(!isCompactView)}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    title={isCompactView ? 'Geniş Görünüm' : 'Kompakt Görünüm'}
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {isCompactView ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                        ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        )}
+                    </svg>
+                    <span className="hidden lg:inline">{isCompactView ? 'Geniş' : 'Kompakt'}</span>
+                </button>
+            </div>
+
+            {/* Critical Alerts */}
+            <CriticalAlerts
+                customers={customers}
+                orders={orders}
+                meetings={gorusmeler}
+                overdueCount={overdueItems.length}
+                setActivePage={setActivePage}
+            />
 
             {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
-                <MobileStat
-                    label="Toplam Müşteri"
-                    value={customers.filter(c => !c.isDeleted).length}
-                    icon={<UsersIcon className="w-6 h-6" />}
-                    color="blue"
-                    onClick={() => setActivePage('Müşteriler')}
-                />
-                <MobileStat
-                    label="Açık Siparişler"
-                    value={openOrders.length}
-                    icon={<ClipboardListIcon className="w-6 h-6" />}
-                    color="yellow"
-                    onClick={() => setActivePage('Siparişler')}
-                />
-                <MobileStat
-                    label="Bekleyen Teklifler"
-                    value={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı').length}
-                    icon={<DocumentTextIcon className="w-6 h-6" />}
-                    color="indigo"
-                    onClick={() => setActivePage('Teklifler')}
-                />
-                <MobileStat
-                    label="Planlanan Eylemler"
-                    value={upcomingActions.length}
-                    icon={<CalendarIcon className="w-6 h-6" />}
-                    color="green"
-                    onClick={() => setActivePage('Görüşmeler')}
-                />
-                <MobileStat
-                    label="Gecikmiş Eylemler"
-                    value={overdueItems.length}
-                    icon={<BellIcon className="w-6 h-6" />}
-                    color="red"
-                    onClick={() => setIsOverdueModalOpen(true)}
-                />
+                <div className="animate-fadeIn">
+                    <MobileStat
+                        label="Toplam Müşteri"
+                        value={customers.filter(c => !c.isDeleted).length}
+                        icon={<UsersIcon className="w-6 h-6" />}
+                        color="blue"
+                        onClick={() => setActivePage('Müşteriler')}
+                    />
+                </div>
+                <div className="animate-fadeIn animate-delay-100">
+                    <MobileStat
+                        label="Açık Siparişler"
+                        value={openOrders.length}
+                        icon={<ClipboardListIcon className="w-6 h-6" />}
+                        color="yellow"
+                        onClick={() => setActivePage('Siparişler')}
+                    />
+                </div>
+                <div className="animate-fadeIn animate-delay-200">
+                    <MobileStat
+                        label="Bekleyen Teklifler"
+                        value={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı').length}
+                        icon={<DocumentTextIcon className="w-6 h-6" />}
+                        color="indigo"
+                        onClick={() => setActivePage('Teklifler')}
+                    />
+                </div>
+                <div className="animate-fadeIn animate-delay-300">
+                    <MobileStat
+                        label="Planlanan Eylemler"
+                        value={upcomingActions.length}
+                        icon={<CalendarIcon className="w-6 h-6" />}
+                        color="green"
+                        onClick={() => setActivePage('Görüşmeler')}
+                    />
+                </div>
+                <div className="animate-fadeIn animate-delay-400">
+                    <MobileStat
+                        label="Gecikmiş Eylemler"
+                        value={overdueItems.length}
+                        icon={<BellIcon className="w-6 h-6" />}
+                        color="red"
+                        onClick={() => setIsOverdueModalOpen(true)}
+                    />
+                </div>
             </div>
 
             <Modal
@@ -328,10 +441,86 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 )}
             </Modal>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Yaklaşan Eylemler & Görüşmeler</h3>
-                    <div className="space-y-2 md:space-y-3">
+            <div className={widgetGridClass}>
+                {/* Today's Tasks Widget */}
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn`}>
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                        <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            <span>✅</span>
+                            Bugünün Görevleri
+                        </h3>
+                        {totalTasksCount > 0 && (
+                            <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                <span className="text-blue-600 dark:text-blue-400 font-semibold">{completedTasksCount}/{totalTasksCount}</span>
+                                <span className="hidden sm:inline ml-1">({completionPercentage}%)</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {totalTasksCount > 0 && (
+                        <div className="mb-3">
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div
+                                    className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${completionPercentage}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                        {todayTasks.length > 0 ? (
+                            todayTasks.map(task => {
+                                const taskIcon = task.type === 'meeting' ? '📞' : task.type === 'delivery' ? '📦' : '📋';
+                                return (
+                                    <div
+                                        key={task.id}
+                                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                            task.completed
+                                                ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 opacity-60'
+                                                : 'bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-800 hover:shadow-sm'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={task.completed}
+                                            onChange={() => toggleTask(task.id)}
+                                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm">{taskIcon}</span>
+                                                <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                                                    {task.title}
+                                                </p>
+                                            </div>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">
+                                                {task.subtitle}
+                                            </p>
+                                        </div>
+                                        {task.time && (
+                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                                                {task.time}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-4xl mb-2">🎉</p>
+                                <p className="text-gray-500 dark:text-gray-400">Bugün için görev yok!</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-100`}>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
+                        <span>📅</span>
+                        Yaklaşan Eylemler
+                    </h3>
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
                         {upcomingActions.length > 0 ? (
                             upcomingActions.map(gorusme => {
                                 const customer = customers.find(c => c.id === gorusme.customerId && !c.isDeleted);
@@ -371,9 +560,12 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Son Bekleyen Siparişler</h3>
-                    <div className="space-y-2 md:space-y-3">
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-200`}>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
+                        <span>📋</span>
+                        Bekleyen Siparişler
+                    </h3>
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
                         {openOrders.length > 0 ? (
                             openOrders.slice(0, 5).map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
@@ -396,9 +588,12 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">En Çok Satılan Ürünler</h3>
-                    <div className="space-y-2 md:space-y-3">
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-300`}>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
+                        <span>🏆</span>
+                        En Çok Satılan Ürünler
+                    </h3>
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
                         {bestSellingProducts.length > 0 ? (
                             bestSellingProducts.map(product => (
                                 <MobileListItem
@@ -419,12 +614,12 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-400`}>
                     <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
                         <span>🔥</span>
                         En Çok Sorulan Ürünler
                     </h3>
-                    <div className="space-y-2 md:space-y-3">
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
                         {mostInquiredProducts.length > 0 ? (
                             mostInquiredProducts.map(product => (
                                 <MobileListItem
@@ -449,9 +644,12 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Yaklaşan Teslimatlar</h3>
-                    <div className="space-y-2 md:space-y-3">
+                <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-500`}>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
+                        <span>🚚</span>
+                        Yaklaşan Teslimatlar
+                    </h3>
+                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
                         {upcomingDeliveries.length > 0 ? (
                             upcomingDeliveries.map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
