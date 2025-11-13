@@ -65,11 +65,22 @@ interface DashboardProps {
 /**
  * Dashboard component - Main dashboard page with statistics and widgets
  */
-const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmeler, products, overdueItems, setActivePage, onMeetingSave, loading = false }) => {
+const Dashboard = memo<DashboardProps>(({
+    customers,
+    orders,
+    teklifler,
+    gorusmeler,
+    products,
+    overdueItems,
+    customTasks,
+    setActivePage,
+    onMeetingSave,
+    onCustomTaskSave,
+    loading = false
+}) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
-    const [isCompactView, setIsCompactView] = useState(false);
-    const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
@@ -93,7 +104,9 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     title: customer?.name || 'Bilinmeyen Müşteri',
                     subtitle: meeting.next_action_notes || 'Görüşme',
                     time: meeting.meeting_time,
-                    completed: completedTasks.has(`meeting-${meeting.id}`)
+                    completed: meeting.status === 'Tamamlandı',
+                    sourceType: 'meeting',
+                    sourceId: meeting.id
                 });
             });
 
@@ -107,7 +120,27 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                     type: 'delivery',
                     title: customer?.name || 'Bilinmeyen Müşteri',
                     subtitle: `Teslimat - ${formatCurrency(order.total_amount)}`,
-                    completed: completedTasks.has(`delivery-${order.id}`)
+                    completed: order.status === 'Teslim Edildi',
+                    sourceType: 'order',
+                    sourceId: order.id
+                });
+            });
+
+        // Today's custom tasks
+        customTasks
+            .filter(t => !t.isDeleted && t.date === today)
+            .forEach(task => {
+                const priorityIcon = task.priority === 'high' ? '🔴' : task.priority === 'low' ? '🟢' : '🟡';
+                tasks.push({
+                    id: `custom-${task.id}`,
+                    type: 'custom',
+                    title: task.title,
+                    subtitle: task.notes || '',
+                    time: task.time,
+                    completed: task.completed,
+                    sourceType: 'customTask',
+                    sourceId: task.id,
+                    priority: task.priority
                 });
             });
 
@@ -117,18 +150,41 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
             if (b.time) return 1;
             return 0;
         });
-    }, [gorusmeler, orders, customers, today, completedTasks]);
+    }, [gorusmeler, orders, customers, customTasks, today]);
 
-    const toggleTask = (taskId: string) => {
-        setCompletedTasks(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(taskId)) {
-                newSet.delete(taskId);
-            } else {
-                newSet.add(taskId);
+    const toggleTask = async (task: TodayTask) => {
+        const newCompleted = !task.completed;
+
+        try {
+            if (task.sourceType === 'meeting') {
+                const meeting = gorusmeler.find(m => m.id === task.sourceId);
+                if (meeting) {
+                    await onMeetingSave({
+                        ...meeting,
+                        status: newCompleted ? 'Tamamlandı' : 'Planlandı'
+                    });
+                    toast.success(newCompleted ? 'Görüşme tamamlandı!' : 'Görüşme aktif duruma alındı');
+                }
+            } else if (task.sourceType === 'order') {
+                const order = orders.find(o => o.id === task.sourceId);
+                if (order) {
+                    // Order status update will be handled by App.jsx handleOrderSave
+                    toast.info('Teslimat durumu siparişler sayfasından güncellenebilir');
+                }
+            } else if (task.sourceType === 'customTask') {
+                const customTask = customTasks.find(t => t.id === task.sourceId);
+                if (customTask) {
+                    await onCustomTaskSave({
+                        ...customTask,
+                        completed: newCompleted,
+                        completedAt: newCompleted ? new Date().toISOString() : undefined
+                    });
+                }
             }
-            return newSet;
-        });
+        } catch (error) {
+            console.error('Task toggle error:', error);
+            toast.error('Görev güncellenirken hata oluştu');
+        }
     };
 
     const completedTasksCount = todayTasks.filter(t => t.completed).length;
@@ -295,33 +351,15 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
         );
     }
 
-    const widgetGridClass = isCompactView
-        ? 'grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4'
-        : 'grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8';
-
-    const widgetPadding = isCompactView ? 'p-3 md:p-4' : 'p-4 md:p-6';
+    // Always use compact view
+    const widgetGridClass = 'grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4';
+    const widgetPadding = 'p-3 md:p-4';
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz! 👋</h1>
-                    <p className="text-gray-600 dark:text-gray-400">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
-                </div>
-                <button
-                    onClick={() => setIsCompactView(!isCompactView)}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    title={isCompactView ? 'Geniş Görünüm' : 'Kompakt Görünüm'}
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        {isCompactView ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                        ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        )}
-                    </svg>
-                    <span className="hidden lg:inline">{isCompactView ? 'Geniş' : 'Kompakt'}</span>
-                </button>
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Hoş Geldiniz! 👋</h1>
+                <p className="text-gray-600 dark:text-gray-400">İşletmenizin genel durumuna buradan göz atabilirsiniz.</p>
             </div>
 
             {/* Critical Alerts */}
@@ -449,6 +487,22 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                 )}
             </Modal>
 
+            {/* Custom Task Form Modal */}
+            <Modal
+                show={isTaskFormOpen}
+                onClose={() => setIsTaskFormOpen(false)}
+                title="Yeni Görev Ekle"
+                maxWidth="max-w-lg"
+            >
+                <CustomTaskForm
+                    onSave={(taskData) => {
+                        onCustomTaskSave(taskData);
+                        setIsTaskFormOpen(false);
+                    }}
+                    onCancel={() => setIsTaskFormOpen(false)}
+                />
+            </Modal>
+
             <div className={widgetGridClass}>
                 {/* Today's Tasks Widget */}
                 <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn`}>
@@ -457,12 +511,22 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                             <span>✅</span>
                             Bugünün Görevleri
                         </h3>
-                        {totalTasksCount > 0 && (
-                            <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                <span className="text-blue-600 dark:text-blue-400 font-semibold">{completedTasksCount}/{totalTasksCount}</span>
-                                <span className="hidden sm:inline ml-1">({completionPercentage}%)</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {totalTasksCount > 0 && (
+                                <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">{completedTasksCount}/{totalTasksCount}</span>
+                                    <span className="hidden sm:inline ml-1">({completionPercentage}%)</span>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => setIsTaskFormOpen(true)}
+                                className="px-3 py-1.5 text-xs font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-1"
+                                title="Yeni görev ekle"
+                            >
+                                <span>+</span>
+                                <span className="hidden sm:inline">Yeni Görev</span>
+                            </button>
+                        </div>
                     </div>
 
                     {totalTasksCount > 0 && (
@@ -476,10 +540,12 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         </div>
                     )}
 
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {todayTasks.length > 0 ? (
                             todayTasks.map(task => {
-                                const taskIcon = task.type === 'meeting' ? '📞' : task.type === 'delivery' ? '📦' : '📋';
+                                const taskIcon = task.type === 'meeting' ? '📞' : task.type === 'delivery' ? '📦' : task.type === 'custom' ? '📋' : '📋';
+                                const priorityIcon = task.priority === 'high' ? '🔴' : task.priority === 'low' ? '🟢' : task.priority === 'medium' ? '🟡' : '';
+
                                 return (
                                     <div
                                         key={task.id}
@@ -492,19 +558,22 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                                         <input
                                             type="checkbox"
                                             checked={task.completed}
-                                            onChange={() => toggleTask(task.id)}
+                                            onChange={() => toggleTask(task)}
                                             className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm">{taskIcon}</span>
+                                                {priorityIcon && <span className="text-xs">{priorityIcon}</span>}
                                                 <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                                                     {task.title}
                                                 </p>
                                             </div>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">
-                                                {task.subtitle}
-                                            </p>
+                                            {task.subtitle && (
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 truncate">
+                                                    {task.subtitle}
+                                                </p>
+                                            )}
                                         </div>
                                         {task.time && (
                                             <span className="text-xs font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
@@ -528,7 +597,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         <span>📅</span>
                         Yaklaşan Eylemler
                     </h3>
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {upcomingActions.length > 0 ? (
                             upcomingActions.map(gorusme => {
                                 const customer = customers.find(c => c.id === gorusme.customerId && !c.isDeleted);
@@ -573,7 +642,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         <span>📋</span>
                         Bekleyen Siparişler
                     </h3>
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {openOrders.length > 0 ? (
                             openOrders.slice(0, 5).map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
@@ -601,7 +670,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         <span>🏆</span>
                         En Çok Satılan Ürünler
                     </h3>
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {bestSellingProducts.length > 0 ? (
                             bestSellingProducts.map(product => (
                                 <MobileListItem
@@ -627,7 +696,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         <span>🔥</span>
                         En Çok Sorulan Ürünler
                     </h3>
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {mostInquiredProducts.length > 0 ? (
                             mostInquiredProducts.map(product => (
                                 <MobileListItem
@@ -657,7 +726,7 @@ const Dashboard = memo<DashboardProps>(({ customers, orders, teklifler, gorusmel
                         <span>🚚</span>
                         Yaklaşan Teslimatlar
                     </h3>
-                    <div className={`space-y-2 ${isCompactView ? 'md:space-y-2' : 'md:space-y-3'}`}>
+                    <div className="space-y-2 md:space-y-2">
                         {upcomingDeliveries.length > 0 ? (
                             upcomingDeliveries.map(order => {
                                 const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
