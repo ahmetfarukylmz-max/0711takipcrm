@@ -1,17 +1,20 @@
 import React, { memo, useMemo } from 'react';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
-import type { Customer, Meeting } from '../../types';
+import type { Customer, Meeting, Order, Quote } from '../../types';
 
 interface InactiveCustomer {
     customer: Customer;
-    lastMeetingDate: string | null;
+    lastInteractionDate: string | null;
+    lastInteractionType: 'meeting' | 'order' | 'quote' | null;
     daysSinceContact: number;
 }
 
 interface InactiveCustomersProps {
     customers: Customer[];
     meetings: Meeting[];
+    orders: Order[];
+    quotes: Quote[];
     setActivePage: (page: string) => void;
     onScheduleMeeting?: (customerId: string) => void;
 }
@@ -22,6 +25,8 @@ interface InactiveCustomersProps {
 const InactiveCustomers = memo<InactiveCustomersProps>(({
     customers,
     meetings,
+    orders,
+    quotes,
     setActivePage,
     onScheduleMeeting
 }) => {
@@ -32,24 +37,54 @@ const InactiveCustomers = memo<InactiveCustomersProps>(({
         return customers
             .filter(c => !c.isDeleted)
             .map(customer => {
+                // Get last meeting
                 const lastMeeting = meetings
                     .filter(m => m.customerId === customer.id && !m.isDeleted)
                     .sort((a, b) => new Date(b.meeting_date).getTime() - new Date(a.meeting_date).getTime())[0];
 
-                const lastMeetingDate = lastMeeting ? lastMeeting.meeting_date : null;
-                const daysSinceContact = lastMeetingDate
-                    ? Math.floor((today.getTime() - new Date(lastMeetingDate).getTime()) / (1000 * 60 * 60 * 24))
-                    : 999; // Never contacted
+                // Get last order
+                const lastOrder = orders
+                    .filter(o => o.customerId === customer.id && !o.isDeleted)
+                    .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())[0];
+
+                // Get last quote
+                const lastQuote = quotes
+                    .filter(q => q.customerId === customer.id && !q.isDeleted)
+                    .sort((a, b) => new Date(b.quote_date).getTime() - new Date(a.quote_date).getTime())[0];
+
+                // Find the most recent interaction
+                const interactions: Array<{ date: string; type: 'meeting' | 'order' | 'quote' }> = [];
+                if (lastMeeting) interactions.push({ date: lastMeeting.meeting_date, type: 'meeting' });
+                if (lastOrder) interactions.push({ date: lastOrder.order_date, type: 'order' });
+                if (lastQuote) interactions.push({ date: lastQuote.quote_date, type: 'quote' });
+
+                if (interactions.length === 0) {
+                    return {
+                        customer,
+                        lastInteractionDate: null,
+                        lastInteractionType: null,
+                        daysSinceContact: 999 // Never contacted
+                    };
+                }
+
+                const lastInteraction = interactions.sort((a, b) =>
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                )[0];
+
+                const daysSinceContact = Math.floor(
+                    (today.getTime() - new Date(lastInteraction.date).getTime()) / (1000 * 60 * 60 * 24)
+                );
 
                 return {
                     customer,
-                    lastMeetingDate,
+                    lastInteractionDate: lastInteraction.date,
+                    lastInteractionType: lastInteraction.type,
                     daysSinceContact
                 };
             })
-            .filter(item => !item.lastMeetingDate || new Date(item.lastMeetingDate) < twoWeeksAgo)
+            .filter(item => !item.lastInteractionDate || new Date(item.lastInteractionDate) < twoWeeksAgo)
             .sort((a, b) => b.daysSinceContact - a.daysSinceContact);
-    }, [customers, meetings]);
+    }, [customers, meetings, orders, quotes]);
 
     if (inactiveCustomersList.length === 0) {
         return (
@@ -80,10 +115,10 @@ const InactiveCustomers = memo<InactiveCustomersProps>(({
                 <div className="flex items-center justify-between text-sm">
                     <div>
                         <p className="font-semibold text-yellow-800 dark:text-yellow-200">
-                            Toplam {inactiveCustomersList.length} müşteriye ulaşılmadı
+                            Toplam {inactiveCustomersList.length} müşteriyle etkileşim yok
                         </p>
                         <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
-                            Son 2 haftada hiç görüşme kaydı bulunmuyor
+                            Son 2 haftada hiç görüşme, sipariş veya teklif kaydı bulunmuyor
                         </p>
                     </div>
                     <button
@@ -99,6 +134,22 @@ const InactiveCustomers = memo<InactiveCustomersProps>(({
                 {inactiveCustomersList.map((item) => {
                     const badge = getUrgencyBadge(item.daysSinceContact);
                     const urgencyColor = getUrgencyColor(item.daysSinceContact);
+
+                    // Get interaction type icon and label
+                    const getInteractionInfo = (type: 'meeting' | 'order' | 'quote' | null) => {
+                        switch (type) {
+                            case 'meeting':
+                                return { icon: '📞', label: 'Görüşme' };
+                            case 'order':
+                                return { icon: '🛒', label: 'Sipariş' };
+                            case 'quote':
+                                return { icon: '📄', label: 'Teklif' };
+                            default:
+                                return { icon: '❌', label: 'Etkileşim yok' };
+                        }
+                    };
+
+                    const interactionInfo = getInteractionInfo(item.lastInteractionType);
 
                     return (
                         <div
@@ -125,11 +176,11 @@ const InactiveCustomers = memo<InactiveCustomersProps>(({
                                         )}
 
                                         <div className="flex items-center gap-2">
-                                            <span>📅</span>
+                                            <span>{interactionInfo.icon}</span>
                                             <span className={urgencyColor}>
-                                                {item.lastMeetingDate
-                                                    ? `Son görüşme: ${formatDate(item.lastMeetingDate)} (${item.daysSinceContact} gün önce)`
-                                                    : 'Hiç görüşme kaydı yok'
+                                                {item.lastInteractionDate
+                                                    ? `Son ${interactionInfo.label}: ${formatDate(item.lastInteractionDate)} (${item.daysSinceContact} gün önce)`
+                                                    : 'Hiç etkileşim kaydı yok'
                                                 }
                                             </span>
                                         </div>

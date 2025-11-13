@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import type { Customer, Order, Meeting } from '../../types';
+import type { Customer, Order, Meeting, Quote } from '../../types';
 
 interface CriticalAlert {
   id: string;
@@ -14,6 +14,7 @@ interface CriticalAlertsProps {
   customers: Customer[];
   orders: Order[];
   meetings: Meeting[];
+  quotes: Quote[];
   setActivePage: (page: string) => void;
   onShowInactiveCustomers?: () => void;
 }
@@ -25,6 +26,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   customers,
   orders,
   meetings,
+  quotes,
   setActivePage,
   onShowInactiveCustomers
 }) => {
@@ -54,15 +56,36 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
     });
   }
 
-  // Customers not contacted in 2 weeks
+  // Customers with no interaction in 2 weeks (meetings, orders, or quotes)
   const inactiveCustomers = customers.filter(c => {
     if (c.isDeleted) return false;
+
+    // Get last meeting
     const lastMeeting = meetings
       .filter(m => m.customerId === c.id && !m.isDeleted)
       .sort((a, b) => new Date(b.meeting_date).getTime() - new Date(a.meeting_date).getTime())[0];
 
-    if (!lastMeeting) return true; // Never contacted
-    return new Date(lastMeeting.meeting_date) < twoWeeksAgo;
+    // Get last order
+    const lastOrder = orders
+      .filter(o => o.customerId === c.id && !o.isDeleted)
+      .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())[0];
+
+    // Get last quote
+    const lastQuote = quotes
+      .filter(q => q.customerId === c.id && !q.isDeleted)
+      .sort((a, b) => new Date(b.quote_date).getTime() - new Date(a.quote_date).getTime())[0];
+
+    // Find the most recent interaction
+    const interactions = [
+      lastMeeting?.meeting_date,
+      lastOrder?.order_date,
+      lastQuote?.quote_date
+    ].filter(Boolean);
+
+    if (interactions.length === 0) return true; // Never contacted
+
+    const lastInteractionDate = new Date(Math.max(...interactions.map(d => new Date(d!).getTime())));
+    return lastInteractionDate < twoWeeksAgo;
   });
 
   if (inactiveCustomers.length > 5) {
@@ -70,7 +93,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       id: 'inactive-customers',
       type: 'warning',
       icon: '👥',
-      message: `${inactiveCustomers.length} müşteriye 2 haftadır ulaşılmadı!`,
+      message: `${inactiveCustomers.length} müşteriyle 2 haftadır etkileşim yok!`,
       action: onShowInactiveCustomers || (() => setActivePage('Müşteriler')),
       actionLabel: 'İncele'
     });

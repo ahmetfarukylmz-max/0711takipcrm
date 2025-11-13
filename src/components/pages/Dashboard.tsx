@@ -369,6 +369,7 @@ const Dashboard = memo<DashboardProps>(({
                 customers={customers}
                 orders={orders}
                 meetings={gorusmeler}
+                quotes={teklifler}
                 setActivePage={setActivePage}
                 onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
@@ -516,6 +517,8 @@ const Dashboard = memo<DashboardProps>(({
                 <InactiveCustomers
                     customers={customers}
                     meetings={gorusmeler}
+                    orders={orders}
+                    quotes={teklifler}
                     setActivePage={setActivePage}
                 />
             </Modal>
