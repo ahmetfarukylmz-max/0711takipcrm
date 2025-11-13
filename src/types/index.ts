@@ -82,6 +82,8 @@ export interface Quote {
   teklif_tarihi: string; // YYYY-MM-DD
   valid_until?: string;
   status: QuoteStatus;
+  paymentType?: 'Peşin' | 'Vadeli';
+  paymentTerm?: number; // Days for vadeli
   notes?: string;
   isDeleted?: boolean;
   deletedAt?: Timestamp;
@@ -104,6 +106,8 @@ export interface Order {
   order_date: string; // YYYY-MM-DD
   delivery_date?: string;
   status: OrderStatus;
+  paymentType?: 'Peşin' | 'Vadeli';
+  paymentTerm?: number; // Days for vadeli
   notes?: string;
   isDeleted?: boolean;
   deletedAt?: Timestamp;

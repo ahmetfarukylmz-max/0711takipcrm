@@ -97,9 +97,19 @@ export const convertQuoteToOrder = async (userId, quote) => {
         total_amount: quote.total_amount,
         order_date: new Date().toISOString().slice(0, 10),
         status: 'Bekliyor',
+        paymentType: quote.paymentType || 'Peşin',
+        paymentTerm: quote.paymentTerm || null,
+        currency: quote.currency || 'TRY',
         shipmentId: null,
         quoteId: quote.id
     };
+
+    // Remove null/undefined values
+    Object.keys(newOrder).forEach(key => {
+        if (newOrder[key] === null || newOrder[key] === undefined) {
+            delete newOrder[key];
+        }
+    });
 
     const orderRef = await addDoc(collection(db, `users/${userId}/orders`), newOrder);
     await updateDoc(doc(db, `users/${userId}/teklifler`, quote.id), {
