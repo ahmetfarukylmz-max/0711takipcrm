@@ -15,6 +15,7 @@ interface CriticalAlertsProps {
   orders: Order[];
   meetings: Meeting[];
   setActivePage: (page: string) => void;
+  onShowInactiveCustomers?: () => void;
 }
 
 /**
@@ -24,7 +25,8 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   customers,
   orders,
   meetings,
-  setActivePage
+  setActivePage,
+  onShowInactiveCustomers
 }) => {
   const today = new Date();
   const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -69,7 +71,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       type: 'warning',
       icon: '👥',
       message: `${inactiveCustomers.length} müşteriye 2 haftadır ulaşılmadı!`,
-      action: () => setActivePage('Müşteriler'),
+      action: onShowInactiveCustomers || (() => setActivePage('Müşteriler')),
       actionLabel: 'İncele'
     });
   }

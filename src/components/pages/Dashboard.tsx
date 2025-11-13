@@ -4,6 +4,7 @@ import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppI
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
+import InactiveCustomers from '../dashboard/InactiveCustomers';
 import CustomTaskForm from '../forms/CustomTaskForm';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
@@ -81,6 +82,7 @@ const Dashboard = memo<DashboardProps>(({
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+    const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
@@ -368,6 +370,7 @@ const Dashboard = memo<DashboardProps>(({
                 orders={orders}
                 meetings={gorusmeler}
                 setActivePage={setActivePage}
+                onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
 
             {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
@@ -500,6 +503,20 @@ const Dashboard = memo<DashboardProps>(({
                         setIsTaskFormOpen(false);
                     }}
                     onCancel={() => setIsTaskFormOpen(false)}
+                />
+            </Modal>
+
+            {/* Inactive Customers Modal */}
+            <Modal
+                show={isInactiveCustomersModalOpen}
+                onClose={() => setIsInactiveCustomersModalOpen(false)}
+                title="İnaktif Müşteriler - İletişim Gerekli"
+                maxWidth="max-w-4xl"
+            >
+                <InactiveCustomers
+                    customers={customers}
+                    meetings={gorusmeler}
+                    setActivePage={setActivePage}
                 />
             </Modal>
 
