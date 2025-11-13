@@ -296,21 +296,26 @@ const Customers = memo<CustomersProps>(({
     const filteredCustomers = useMemo(() => {
         const activeCustomers = customers.filter(c => !c.isDeleted);
 
-        return activeCustomers.filter(customer => {
-            const query = searchQuery.toLowerCase();
-            const status = getCustomerStatus(customer.id);
+        return activeCustomers
+            .filter(customer => {
+                const query = searchQuery.toLowerCase();
+                const status = getCustomerStatus(customer.id);
 
-            const matchesSearch = !searchQuery.trim() ||
-                customer.name?.toLowerCase().includes(query) ||
-                customer.contact_person?.toLowerCase().includes(query) ||
-                customer.phone?.toLowerCase().includes(query) ||
-                customer.email?.toLowerCase().includes(query);
+                const matchesSearch = !searchQuery.trim() ||
+                    customer.name?.toLowerCase().includes(query) ||
+                    customer.contact_person?.toLowerCase().includes(query) ||
+                    customer.phone?.toLowerCase().includes(query) ||
+                    customer.email?.toLowerCase().includes(query);
 
-            const matchesStatus = statusFilter === 'Tümü' || status === statusFilter;
-            const matchesCity = cityFilter === 'Tümü' || customer.city === cityFilter;
+                const matchesStatus = statusFilter === 'Tümü' || status === statusFilter;
+                const matchesCity = cityFilter === 'Tümü' || customer.city === cityFilter;
 
-            return matchesSearch && matchesStatus && matchesCity;
-        });
+                return matchesSearch && matchesStatus && matchesCity;
+            })
+            .sort((a, b) => {
+                // Turkish locale-aware alphabetical sorting by name
+                return a.name.localeCompare(b.name, 'tr-TR');
+            });
     }, [customers, searchQuery, statusFilter, cityFilter, orders, shipments]);
 
     // Show skeleton when loading
