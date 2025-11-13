@@ -140,6 +140,8 @@ export const importCustomers = async (
     { header: 'E-posta', key: 'email', type: 'email' },
     { header: 'Adres', key: 'address', type: 'string' },
     { header: 'Şehir', key: 'city', type: 'string' },
+    { header: 'Vergi Dairesi', key: 'taxOffice', type: 'string' },
+    { header: 'Vergi No', key: 'taxNumber', type: 'string' },
   ];
 
   try {
@@ -321,6 +323,8 @@ export const downloadCustomerTemplate = (): void => {
       'E-posta': 'ahmet@ornek.com',
       'Adres': 'Örnek Mahalle No:1',
       'Şehir': 'İstanbul',
+      'Vergi Dairesi': 'Kadıköy Vergi Dairesi',
+      'Vergi No': '1234567890',
     },
     {
       'Müşteri Adı': 'Demo Ltd.',
@@ -329,6 +333,8 @@ export const downloadCustomerTemplate = (): void => {
       'E-posta': 'ayse@demo.com',
       'Adres': 'Demo Sokak No:5',
       'Şehir': 'Ankara',
+      'Vergi Dairesi': 'Çankaya Vergi Dairesi',
+      'Vergi No': '9876543210',
     },
   ];
 

@@ -88,9 +88,15 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 <section className="mt-4">
                     <div className="border p-3 text-xs" style={{ borderColor: themeColor }}>
                         <p className="font-bold text-gray-900">{customer?.name}</p>
-                        <p className="text-gray-600">{customer?.address || ''}, {customer?.sehir || ''}</p>
-                        <p className="text-gray-600">{customer?.phone || ''}</p>
-                        <p className="text-gray-600">{customer?.email || ''}</p>
+                        <p className="text-gray-600">{customer?.address || ''}, {customer?.city || ''}</p>
+                        <p className="text-gray-600">Tel: {customer?.phone || ''} {customer?.email ? `| E-posta: ${customer.email}` : ''}</p>
+                        {(customer?.taxOffice || customer?.taxNumber) && (
+                            <p className="text-gray-600 mt-1">
+                                {customer?.taxOffice ? `Vergi Dairesi: ${customer.taxOffice}` : ''}
+                                {customer?.taxOffice && customer?.taxNumber ? ' | ' : ''}
+                                {customer?.taxNumber ? `Vergi No: ${customer.taxNumber}` : ''}
+                            </p>
+                        )}
                     </div>
                 </section>
 

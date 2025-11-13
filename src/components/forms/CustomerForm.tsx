@@ -18,6 +18,8 @@ interface CustomerFormData {
     email: string;
     address: string;
     city: string;
+    taxOffice: string;
+    taxNumber: string;
 }
 
 /**
@@ -30,7 +32,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSave, onCancel 
         phone: customer?.phone || '',
         email: customer?.email || '',
         address: customer?.address || '',
-        city: customer?.city || ''
+        city: customer?.city || '',
+        taxOffice: customer?.taxOffice || '',
+        taxNumber: customer?.taxNumber || ''
     });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -83,11 +87,26 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSave, onCancel 
                 value={formData.address}
                 onChange={handleChange}
             />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormInput
+                    label="Şehir"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                />
+                <FormInput
+                    label="Vergi Dairesi"
+                    name="taxOffice"
+                    value={formData.taxOffice}
+                    onChange={handleChange}
+                />
+            </div>
             <FormInput
-                label="Şehir"
-                name="city"
-                value={formData.city}
+                label="Vergi No"
+                name="taxNumber"
+                value={formData.taxNumber}
                 onChange={handleChange}
+                placeholder="10 haneli vergi numarası"
             />
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
                 <button
