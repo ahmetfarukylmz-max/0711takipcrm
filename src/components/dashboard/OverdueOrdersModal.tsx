@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import type { Order, Customer } from '../../types';
 
@@ -178,26 +178,6 @@ const OverdueOrdersModal: React.FC<OverdueOrdersModalProps> = ({
                             {/* Quick Actions */}
                             {isExpanded && (
                                 <div className="space-y-3 pt-3 border-t border-gray-300 dark:border-gray-600">
-                                    {/* Contact Actions */}
-                                    {customer?.phone && (
-                                        <div className="flex flex-wrap gap-2">
-                                            <a
-                                                href={`tel:${customer.phone}`}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors"
-                                            >
-                                                📞 Ara
-                                            </a>
-                                            <a
-                                                href={`https://wa.me/${formatPhoneNumberForWhatsApp(customer.phone)}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded transition-colors"
-                                            >
-                                                💬 WhatsApp
-                                            </a>
-                                        </div>
-                                    )}
-
                                     {/* Date Update */}
                                     {onUpdateDeliveryDate && (
                                         <div>
