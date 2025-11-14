@@ -5,7 +5,6 @@ import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsAp
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
 import InactiveCustomers from '../dashboard/InactiveCustomers';
-import CustomTaskForm from '../forms/CustomTaskForm';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
@@ -81,7 +80,6 @@ const Dashboard = memo<DashboardProps>(({
 }) => {
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
-    const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
     const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
@@ -491,22 +489,6 @@ const Dashboard = memo<DashboardProps>(({
                 )}
             </Modal>
 
-            {/* Custom Task Form Modal */}
-            <Modal
-                show={isTaskFormOpen}
-                onClose={() => setIsTaskFormOpen(false)}
-                title="Yeni Görev Ekle"
-                maxWidth="max-w-lg"
-            >
-                <CustomTaskForm
-                    onSave={(taskData) => {
-                        onCustomTaskSave(taskData);
-                        setIsTaskFormOpen(false);
-                    }}
-                    onCancel={() => setIsTaskFormOpen(false)}
-                />
-            </Modal>
-
             {/* Inactive Customers Modal */}
             <Modal
                 show={isInactiveCustomersModalOpen}
@@ -531,22 +513,12 @@ const Dashboard = memo<DashboardProps>(({
                             <span>✅</span>
                             Bugünün Görevleri
                         </h3>
-                        <div className="flex items-center gap-2">
-                            {totalTasksCount > 0 && (
-                                <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">{completedTasksCount}/{totalTasksCount}</span>
-                                    <span className="hidden sm:inline ml-1">({completionPercentage}%)</span>
-                                </div>
-                            )}
-                            <button
-                                onClick={() => setIsTaskFormOpen(true)}
-                                className="px-3 py-1.5 text-xs font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-1"
-                                title="Yeni görev ekle"
-                            >
-                                <span>+</span>
-                                <span className="hidden sm:inline">Yeni Görev</span>
-                            </button>
-                        </div>
+                        {totalTasksCount > 0 && (
+                            <div className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400">
+                                <span className="text-blue-600 dark:text-blue-400 font-semibold">{completedTasksCount}/{totalTasksCount}</span>
+                                <span className="hidden sm:inline ml-1">({completionPercentage}%)</span>
+                            </div>
+                        )}
                     </div>
 
                     {totalTasksCount > 0 && (
