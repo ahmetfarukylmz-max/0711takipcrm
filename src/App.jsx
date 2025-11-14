@@ -504,6 +504,7 @@ const CrmApp = () => {
                         teklifler={teklifler}
                         gorusmeler={gorusmeler}
                         products={products}
+                        shipments={sevkiyatlar}
                         overdueItems={overdueItems}
                         customTasks={customTasks}
                         setActivePage={setActivePage}
@@ -601,9 +602,12 @@ const CrmApp = () => {
                         teklifler={teklifler}
                         gorusmeler={gorusmeler}
                         products={products}
+                        shipments={sevkiyatlar}
                         overdueItems={overdueItems}
+                        customTasks={customTasks}
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
+                        onCustomTaskSave={handleCustomTaskSave}
                         loading={dataLoading}
                     />
                 );

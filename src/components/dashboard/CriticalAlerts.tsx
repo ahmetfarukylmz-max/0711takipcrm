@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import Modal from '../common/Modal';
 import OverdueOrdersModal from './OverdueOrdersModal';
-import type { Customer, Order, Meeting, Quote } from '../../types';
+import type { Customer, Order, Meeting, Quote, Shipment } from '../../types';
 
 interface CriticalAlert {
   id: string;
@@ -17,6 +17,7 @@ interface CriticalAlertsProps {
   orders: Order[];
   meetings: Meeting[];
   quotes: Quote[];
+  shipments: Shipment[];
   setActivePage: (page: string) => void;
   onShowInactiveCustomers?: () => void;
 }
@@ -29,6 +30,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   orders,
   meetings,
   quotes,
+  shipments,
   setActivePage,
   onShowInactiveCustomers
 }) => {
@@ -118,6 +120,24 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       message: `${stalePendingQuotes.length} sipariş 1 haftadır bekliyor!`,
       action: () => setActivePage('Siparişler'),
       actionLabel: 'İncele'
+    });
+  }
+
+  // Uninvoiced shipments (Faturası kesilmemiş sevkiyatlar)
+  const uninvoicedShipments = shipments.filter(s =>
+    !s.isDeleted &&
+    !s.isInvoiced &&
+    s.status === 'Teslim Edildi'
+  );
+
+  if (uninvoicedShipments.length > 0) {
+    alerts.push({
+      id: 'uninvoiced-shipments',
+      type: 'warning',
+      icon: '📄',
+      message: `${uninvoicedShipments.length} sevkiyat yapıldı ancak faturası kesilmedi!`,
+      action: () => setActivePage('Sevkiyatlar'),
+      actionLabel: 'Görüntüle'
     });
   }
 
