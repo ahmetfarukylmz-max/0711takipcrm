@@ -4,6 +4,7 @@ import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import { currencies, DEFAULT_CURRENCY } from '../../constants';
 import type { Product, Currency } from '../../types';
+import { sanitizeText } from '../../utils/sanitize';
 
 interface ProductFormProps {
     /** Existing product to edit (undefined for new product) */
@@ -37,7 +38,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        let sanitizedValue = value;
+
+        // Apply sanitization for text fields
+        if (name === 'name' || name === 'code' || name === 'description') {
+            sanitizedValue = sanitizeText(value);
+        }
+
+        setFormData({ ...formData, [name]: sanitizedValue });
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
