@@ -12,7 +12,7 @@ import type { Shipment, Order, Product, Customer } from '../../types';
 
 interface ShipmentFormData {
     shipment_date: string;
-    transporter: string;
+    carrier: string;
     notes: string;
     isInvoiced: boolean;
     invoiceNotes: string;
@@ -30,7 +30,7 @@ interface ShipmentEditFormProps {
 const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = [], shipments = [], onSave, onCancel, readOnly = false }) => {
     const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: shipment.shipment_date || '',
-        transporter: shipment.transporter || '',
+        carrier: shipment.carrier || '',
         notes: shipment.notes || '',
         isInvoiced: shipment.isInvoiced || false,
         invoiceNotes: shipment.invoiceNotes || ''
@@ -52,7 +52,7 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!formData.transporter.trim()) {
+        if (!formData.carrier.trim()) {
             toast.error('Lütfen nakliye firması giriniz!');
             return;
         }
@@ -81,8 +81,8 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                         </label>
                         <input
                             type="text"
-                            name="transporter"
-                            value={formData.transporter}
+                            name="carrier"
+                            value={formData.carrier}
                             onChange={handleChange}
                             placeholder="Örn: MNG Kargo, Aras Kargo"
                             required
@@ -394,7 +394,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                 const query = searchQuery.toLowerCase();
                 const matchesSearch =
                     customer?.name?.toLowerCase().includes(query) ||
-                    shipment.transporter?.toLowerCase().includes(query) ||
+                    shipment.carrier?.toLowerCase().includes(query) ||
                     shipment.trackingNumber?.toLowerCase().includes(query);
 
                 if (!matchesSearch) return false;
@@ -606,7 +606,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         #{order?.id?.slice(-6) || 'N/A'}
                                     </td>
                                     <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.transporter}</td>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.carrier}</td>
                                     <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
                                     <td className="p-3 text-sm">
                                         <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
@@ -709,7 +709,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                 <div className="space-y-2 text-sm">
                                     <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                         <span className="text-gray-600 dark:text-gray-400">Nakliye Firması:</span>
-                                        <span className="text-gray-900 dark:text-gray-100 font-medium">{shipment.transporter}</span>
+                                        <span className="text-gray-900 dark:text-gray-100 font-medium">{shipment.carrier}</span>
                                     </div>
                                     {shipment.trackingNumber && (
                                         <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
