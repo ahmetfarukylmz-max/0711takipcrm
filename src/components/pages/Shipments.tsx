@@ -787,7 +787,6 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         shipments={shipments}
                         onSave={handleSave}
                         onCancel={() => setIsModalOpen(false)}
-                        readOnly={currentShipment.status === 'Teslim Edildi'}
                     />
                 )}
             </Modal>
