@@ -165,22 +165,21 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       </div>
 
       {/* Overdue Orders Modal */}
-      {showOverdueModal && (
-        <Modal
-          isOpen={showOverdueModal}
-          onClose={() => setShowOverdueModal(false)}
-          title="Teslim Tarihi Geçmiş Siparişler"
-        >
-          <OverdueOrdersModal
-            orders={overdueDeliveries}
-            customers={customers}
-            onViewAllOrders={() => {
-              setShowOverdueModal(false);
-              setActivePage('Siparişler');
-            }}
-          />
-        </Modal>
-      )}
+      <Modal
+        show={showOverdueModal}
+        onClose={() => setShowOverdueModal(false)}
+        title="Teslim Tarihi Geçmiş Siparişler"
+        maxWidth="max-w-4xl"
+      >
+        <OverdueOrdersModal
+          orders={overdueDeliveries}
+          customers={customers}
+          onViewAllOrders={() => {
+            setShowOverdueModal(false);
+            setActivePage('Siparişler');
+          }}
+        />
+      </Modal>
     </>
   );
 });
