@@ -1,6 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import type { Customer } from '../../types';
+import { sanitizeText, sanitizePhone, sanitizeEmail } from '../../utils/sanitize';
 
 interface CustomerFormProps {
     /** Existing customer to edit (undefined for new customer) */
@@ -38,7 +39,30 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ customer, onSave, onCancel 
     });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        let sanitizedValue = value;
+
+        // Apply appropriate sanitization based on field type
+        switch (name) {
+            case 'phone':
+                sanitizedValue = sanitizePhone(value);
+                break;
+            case 'email':
+                sanitizedValue = sanitizeEmail(value);
+                break;
+            case 'name':
+            case 'contact_person':
+            case 'address':
+            case 'city':
+            case 'taxOffice':
+            case 'taxNumber':
+                sanitizedValue = sanitizeText(value);
+                break;
+            default:
+                sanitizedValue = sanitizeText(value);
+        }
+
+        setFormData({ ...formData, [name]: sanitizedValue });
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {

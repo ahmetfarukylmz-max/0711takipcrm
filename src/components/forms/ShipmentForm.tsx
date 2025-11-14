@@ -1,6 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import type { Order, Product } from '../../types';
+import { sanitizeText } from '../../utils/sanitize';
 
 interface ShipmentItem {
     productId: string;
@@ -57,7 +58,9 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, on
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        // Sanitize text inputs
+        const sanitizedValue = (name === 'transporter' || name === 'notes') ? sanitizeText(value) : value;
+        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     };
 
     const handleItemQtyChange = (index: number, value: string) => {
