@@ -5,6 +5,7 @@ import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsAp
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
 import InactiveCustomers from '../dashboard/InactiveCustomers';
+import UpcomingActionsModal from '../dashboard/UpcomingActionsModal';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
@@ -84,6 +85,7 @@ const Dashboard = memo<DashboardProps>(({
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
+    const [showUpcomingModal, setShowUpcomingModal] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
@@ -411,7 +413,7 @@ const Dashboard = memo<DashboardProps>(({
                         value={upcomingActions.length}
                         icon={<CalendarIcon className="w-6 h-6" />}
                         color="green"
-                        onClick={() => setActivePage('Görüşmeler')}
+                        onClick={() => setShowUpcomingModal(true)}
                     />
                 </div>
                 <div className="animate-fadeIn animate-delay-400">
@@ -506,6 +508,23 @@ const Dashboard = memo<DashboardProps>(({
                     orders={orders}
                     quotes={teklifler}
                     setActivePage={setActivePage}
+                />
+            </Modal>
+
+            {/* Upcoming Actions Modal */}
+            <Modal
+                show={showUpcomingModal}
+                onClose={() => setShowUpcomingModal(false)}
+                title="Planlanan Eylemler"
+                maxWidth="max-w-4xl"
+            >
+                <UpcomingActionsModal
+                    meetings={upcomingActions}
+                    customers={customers}
+                    onViewAllMeetings={() => {
+                        setShowUpcomingModal(false);
+                        setActivePage('Görüşmeler');
+                    }}
                 />
             </Modal>
 
