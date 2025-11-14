@@ -163,6 +163,10 @@ export interface Shipment {
   carrier?: string;
   tracking_number?: string;
   notes?: string;
+  // Invoice tracking
+  isInvoiced?: boolean; // Fatura kesildi mi?
+  invoicedAt?: Timestamp; // Fatura kesim tarihi
+  invoiceNotes?: string; // Fatura notu
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;

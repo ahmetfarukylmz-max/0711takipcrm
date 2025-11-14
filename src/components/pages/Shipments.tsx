@@ -14,6 +14,8 @@ interface ShipmentFormData {
     shipment_date: string;
     transporter: string;
     notes: string;
+    isInvoiced: boolean;
+    invoiceNotes: string;
 }
 
 interface ShipmentEditFormProps {
@@ -29,7 +31,9 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
     const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: shipment.shipment_date || '',
         transporter: shipment.transporter || '',
-        notes: shipment.notes || ''
+        notes: shipment.notes || '',
+        isInvoiced: shipment.isInvoiced || false,
+        invoiceNotes: shipment.invoiceNotes || ''
     });
 
     // Find the order related to this shipment
@@ -40,6 +44,11 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { name, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: checked }));
+    };
+
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
@@ -48,10 +57,16 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
             return;
         }
 
-        onSave({
+        const updatedShipment: Partial<Shipment> = {
             ...shipment,
-            ...formData
-        });
+            ...formData,
+            // Fatura kesildi işaretlenmişse ve daha önce işaretlenmemişse, tarihi kaydet
+            invoicedAt: formData.isInvoiced && !shipment.isInvoiced
+                ? new Date().toISOString()
+                : shipment.invoicedAt
+        };
+
+        onSave(updatedShipment);
     };
 
     return (
@@ -104,6 +119,46 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                             disabled={readOnly}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
                         />
+                    </div>
+
+                    {/* Fatura Durumu */}
+                    <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="isInvoiced"
+                                name="isInvoiced"
+                                checked={formData.isInvoiced}
+                                onChange={handleCheckboxChange}
+                                disabled={readOnly}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                            />
+                            <label htmlFor="isInvoiced" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Fatura kesildi
+                            </label>
+                            {formData.isInvoiced && shipment.invoicedAt && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    ({formatDate(shipment.invoicedAt)})
+                                </span>
+                            )}
+                        </div>
+
+                        {formData.isInvoiced && (
+                            <div className="mt-3">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Fatura Notu
+                                </label>
+                                <input
+                                    type="text"
+                                    name="invoiceNotes"
+                                    value={formData.invoiceNotes}
+                                    onChange={handleChange}
+                                    placeholder="Fatura no, ek bilgiler..."
+                                    disabled={readOnly}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -528,6 +583,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Nakliye Firması</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sevk Tarihi</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Durum</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Fatura</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">İşlemler</th>
                         </tr>
                     </thead>
@@ -556,6 +612,24 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
                                             {shipment.status}
                                         </span>
+                                    </td>
+                                    <td className="p-3 text-sm text-center">
+                                        {shipment.isInvoiced ? (
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded">
+                                                    ✅ Kesildi
+                                                </span>
+                                                {shipment.invoiceNotes && (
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400" title={shipment.invoiceNotes}>
+                                                        {shipment.invoiceNotes.length > 15 ? shipment.invoiceNotes.substring(0, 15) + '...' : shipment.invoiceNotes}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded">
+                                                ❌ Yok
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="p-3 text-sm">
                                         <div className="flex items-center justify-end gap-2">

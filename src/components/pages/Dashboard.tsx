@@ -10,7 +10,7 @@ import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
-import type { Customer, Order, Quote, Meeting, Product, CustomTask } from '../../types';
+import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
 
 interface BestSellingProduct {
     id: string;
@@ -48,6 +48,8 @@ interface DashboardProps {
     gorusmeler: Meeting[];
     /** List of products */
     products: Product[];
+    /** List of shipments */
+    shipments: Shipment[];
     /** List of overdue items */
     overdueItems: Meeting[];
     /** List of custom tasks */
@@ -71,6 +73,7 @@ const Dashboard = memo<DashboardProps>(({
     teklifler,
     gorusmeler,
     products,
+    shipments,
     overdueItems,
     customTasks,
     setActivePage,
@@ -368,6 +371,7 @@ const Dashboard = memo<DashboardProps>(({
                 orders={orders}
                 meetings={gorusmeler}
                 quotes={teklifler}
+                shipments={shipments}
                 setActivePage={setActivePage}
                 onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
