@@ -136,7 +136,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       type: 'warning',
       icon: '📄',
       message: `${uninvoicedShipments.length} sevkiyat yapıldı ancak faturası kesilmedi!`,
-      action: () => setActivePage('Sevkiyatlar'),
+      action: () => setActivePage('Sevkiyat'),
       actionLabel: 'Görüntüle'
     });
   }
