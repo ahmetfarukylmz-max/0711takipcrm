@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
 import Modal from '../common/Modal';
 import OverdueOrdersModal from './OverdueOrdersModal';
+import UninvoicedShipmentsModal from './UninvoicedShipmentsModal';
 import type { Customer, Order, Meeting, Quote, Shipment } from '../../types';
 
 interface CriticalAlert {
@@ -35,6 +36,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   onShowInactiveCustomers
 }) => {
   const [showOverdueModal, setShowOverdueModal] = useState(false);
+  const [showUninvoicedModal, setShowUninvoicedModal] = useState(false);
   const today = new Date();
   const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
 
@@ -136,7 +138,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       type: 'warning',
       icon: '📄',
       message: `${uninvoicedShipments.length} sevkiyat yapıldı ancak faturası kesilmedi!`,
-      action: () => setActivePage('Sevkiyat'),
+      action: () => setShowUninvoicedModal(true),
       actionLabel: 'Görüntüle'
     });
   }
@@ -197,6 +199,24 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
           onViewAllOrders={() => {
             setShowOverdueModal(false);
             setActivePage('Siparişler');
+          }}
+        />
+      </Modal>
+
+      {/* Uninvoiced Shipments Modal */}
+      <Modal
+        show={showUninvoicedModal}
+        onClose={() => setShowUninvoicedModal(false)}
+        title="Faturası Kesilmemiş Sevkiyatlar"
+        maxWidth="max-w-4xl"
+      >
+        <UninvoicedShipmentsModal
+          shipments={uninvoicedShipments}
+          orders={orders}
+          customers={customers}
+          onViewAllShipments={() => {
+            setShowUninvoicedModal(false);
+            setActivePage('Sevkiyat');
           }}
         />
       </Modal>
