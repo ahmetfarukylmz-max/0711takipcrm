@@ -504,7 +504,7 @@ const CrmApp = () => {
                         teklifler={teklifler}
                         gorusmeler={gorusmeler}
                         products={products}
-                        shipments={sevkiyatlar}
+                        shipments={shipments}
                         overdueItems={overdueItems}
                         customTasks={customTasks}
                         setActivePage={setActivePage}
@@ -602,7 +602,7 @@ const CrmApp = () => {
                         teklifler={teklifler}
                         gorusmeler={gorusmeler}
                         products={products}
-                        shipments={sevkiyatlar}
+                        shipments={shipments}
                         overdueItems={overdueItems}
                         customTasks={customTasks}
                         setActivePage={setActivePage}
