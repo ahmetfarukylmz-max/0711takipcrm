@@ -1,4 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
+import Modal from '../common/Modal';
+import OverdueOrdersModal from './OverdueOrdersModal';
 import type { Customer, Order, Meeting, Quote } from '../../types';
 
 interface CriticalAlert {
@@ -30,6 +32,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   setActivePage,
   onShowInactiveCustomers
 }) => {
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
   const today = new Date();
   const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
 
@@ -51,7 +54,7 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
       type: 'danger',
       icon: '📦',
       message: `${overdueDeliveries.length} sipariş teslim tarihi geçti!`,
-      action: () => setActivePage('Siparişler'),
+      action: () => setShowOverdueModal(true),
       actionLabel: 'Görüntüle'
     });
   }
@@ -136,29 +139,49 @@ const CriticalAlerts = memo<CriticalAlertsProps>(({
   };
 
   return (
-    <div className="space-y-3 mb-6 animate-fadeIn">
-      {alerts.map((alert) => (
-        <div
-          key={alert.id}
-          className={`flex items-center justify-between p-4 border-l-4 rounded-lg ${getAlertStyles(alert.type)} transition-all hover:shadow-md`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl" role="img" aria-label="alert icon">
-              {alert.icon}
-            </span>
-            <p className="font-medium text-sm md:text-base">{alert.message}</p>
+    <>
+      <div className="space-y-3 mb-6 animate-fadeIn">
+        {alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`flex items-center justify-between p-4 border-l-4 rounded-lg ${getAlertStyles(alert.type)} transition-all hover:shadow-md`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" role="img" aria-label="alert icon">
+                {alert.icon}
+              </span>
+              <p className="font-medium text-sm md:text-base">{alert.message}</p>
+            </div>
+            {alert.action && alert.actionLabel && (
+              <button
+                onClick={alert.action}
+                className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
+              >
+                {alert.actionLabel}
+              </button>
+            )}
           </div>
-          {alert.action && alert.actionLabel && (
-            <button
-              onClick={alert.action}
-              className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
-            >
-              {alert.actionLabel}
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Overdue Orders Modal */}
+      {showOverdueModal && (
+        <Modal
+          isOpen={showOverdueModal}
+          onClose={() => setShowOverdueModal(false)}
+          title="Teslim Tarihi Geçmiş Siparişler"
+        >
+          <OverdueOrdersModal
+            orders={overdueDeliveries}
+            customers={customers}
+            onViewAllOrders={() => {
+              setShowOverdueModal(false);
+              setActivePage('Siparişler');
+            }}
+          />
+        </Modal>
+      )}
+    </>
   );
 });
 
