@@ -351,26 +351,24 @@ const CrmApp = () => {
     };
 
     const handlePaymentSave = async (data) => {
-        try {
-            const action = data.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
-            const customerName = customers.find(c => c.id === data.customerId)?.name || '';
-            const details = {
-                message: `${customerName} için ödeme ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
-                paymentId: data.id,
-                amount: data.amount
-            };
-            // Add createdBy for new records
-            if (!data.id) {
-                data.createdBy = user.uid;
-                data.createdByEmail = user.email;
-            }
-            await saveDocument(user.uid, 'payments', data);
-            logUserActivity(action, details);
-            toast.success(`Ödeme başarıyla ${data.id ? 'güncellendi' : 'kaydedildi'}!`);
-        } catch (error) {
-            console.error('Ödeme kaydedilemedi:', error);
-            toast.error('Ödeme kaydedilemedi!');
+        console.log('💰 Saving payment:', data);
+        const action = data.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
+        const customerName = customers.find(c => c.id === data.customerId)?.name || '';
+        const details = {
+            message: `${customerName} için ödeme ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
+            paymentId: data.id,
+            amount: data.amount
+        };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
         }
+        console.log('💾 Calling saveDocument for payments...');
+        await saveDocument(user.uid, 'payments', data);
+        console.log('✅ Payment saved successfully');
+        logUserActivity(action, details);
+        toast.success(`Ödeme başarıyla ${data.id ? 'güncellendi' : 'kaydedildi'}!`);
     };
 
     const handlePaymentDelete = (id) => {
