@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 
 const AuthContext = createContext();
@@ -32,11 +32,7 @@ export const AuthProvider = ({ children }) => {
                         setUserRole(userData.role || 'user');
                     } else {
                         // Kullanıcı ilk kez giriş yapıyorsa, varsayılan role ile oluştur
-                        // İlk kullanıcı otomatik admin olur
-                        const usersSnapshot = await getDocs(collection(db, 'users'));
-                        const isFirstUser = usersSnapshot.empty;
-                        const defaultRole = isFirstUser ? 'admin' : 'user';
-
+                        const defaultRole = 'user';
                         await setDoc(doc(db, 'users', currentUser.uid), {
                             email: currentUser.email,
                             role: defaultRole,
