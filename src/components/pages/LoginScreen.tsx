@@ -2,6 +2,7 @@ import React, { useState, memo, FormEvent, ChangeEvent } from 'react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import FormInput from '../common/FormInput';
+import { logUserActivity } from '../../utils/loginTracking';
 
 /**
  * LoginScreen component - Handles user authentication (login and registration)
@@ -16,10 +17,20 @@ const LoginScreen = memo(() => {
         e.preventDefault();
         setError('');
         try {
+            let userCredential;
             if (isRegistering) {
-                await createUserWithEmailAndPassword(auth, email, password);
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
-                await signInWithEmailAndPassword(auth, email, password);
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
+            }
+
+            // Log the login activity
+            if (userCredential.user) {
+                await logUserActivity(
+                    userCredential.user.uid,
+                    userCredential.user.email || email,
+                    'login'
+                );
             }
         } catch (err) {
             setError('Bir hata oluştu. Lütfen bilgilerinizi kontrol edin.');

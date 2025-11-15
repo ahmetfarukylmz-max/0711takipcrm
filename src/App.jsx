@@ -36,6 +36,7 @@ const Quotes = lazy(() => import('./components/pages/Quotes'));
 const Meetings = lazy(() => import('./components/pages/Meetings'));
 const Shipments = lazy(() => import('./components/pages/Shipments'));
 const Reports = lazy(() => import('./components/pages/Reports'));
+const Admin = lazy(() => import('./components/pages/Admin'));
 const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
 
 const LoadingScreen = () => (
@@ -592,6 +593,8 @@ const CrmApp = () => {
                         onGuideClick={handleToggleGuide}
                     />
                 );
+            case 'Admin':
+                return <Admin />;
             case 'belge-hazirla':
                 return <PdfGenerator doc={editingDocument} customers={customers} products={products} />;
             default:

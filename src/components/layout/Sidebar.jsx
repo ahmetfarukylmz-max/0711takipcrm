@@ -1,5 +1,7 @@
 import { signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
+import { useAuth } from '../../context/AuthContext';
+import { logUserActivity } from '../../utils/loginTracking';
 import ConnectionStatusIndicator from '../common/ConnectionStatusIndicator';
 
 import {
@@ -11,7 +13,8 @@ import {
     CalendarIcon,
     TruckIcon,
     LogoutIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    ShieldIcon
 } from '../icons';
 
 const ChartBarIcon = (props) => (
@@ -35,7 +38,13 @@ const NavLink = ({ page, children, Icon, activePage, onNavigate }) => (
 );
 
 const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, overdueItems, isOpen, onClose }) => {
+    const { user, isAdmin } = useAuth();
+
     const handleLogout = async () => {
+        // Log logout activity before signing out
+        if (user) {
+            await logUserActivity(user.uid, user.email, 'logout');
+        }
         await signOut(auth);
     };
 
@@ -93,6 +102,11 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                     <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Raporlar
                     </NavLink>
+                    {isAdmin() && (
+                        <NavLink page="Admin" Icon={ShieldIcon} activePage={activePage} onNavigate={handleNavClick}>
+                            Admin Paneli
+                        </NavLink>
+                    )}
                     <button
                         onClick={onToggleGuide}
                         className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"

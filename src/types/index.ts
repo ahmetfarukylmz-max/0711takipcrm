@@ -24,9 +24,22 @@ export interface User {
   email: string;
   role: UserRole;
   displayName?: string;
+  isActive?: boolean; // Kullanıcı aktif mi?
+  lastLogin?: Timestamp; // Son giriş zamanı
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   isInitialAdmin?: boolean;
+}
+
+// Login Log Interface
+export interface LoginLog {
+  id: string;
+  userId: string;
+  email: string;
+  action: 'login' | 'logout';
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: Timestamp;
 }
 
 // Customer Interface
