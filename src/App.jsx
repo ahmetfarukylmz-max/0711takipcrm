@@ -354,11 +354,17 @@ const CrmApp = () => {
         console.log('💰 Saving payment:', data);
         const action = data.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
+
+        // Build activity details - only include defined values
         const details = {
             message: `${customerName} için ödeme ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
-            paymentId: data.id,
             amount: data.amount
         };
+        // Only add paymentId if it exists (update case)
+        if (data.id) {
+            details.paymentId = data.id;
+        }
+
         // Add createdBy for new records
         if (!data.id) {
             data.createdBy = user.uid;
