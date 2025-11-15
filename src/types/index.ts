@@ -17,6 +17,8 @@ export type OrderStatus = 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı';
 export type QuoteStatus = 'Hazırlandı' | 'Onaylandı' | 'Reddedildi';
 export type MeetingOutcome = 'İlgileniyor' | 'İlgilenmiyor' | 'Teklif Bekliyor';
 export type ShipmentStatus = 'Hazırlanıyor' | 'Gönderildi' | 'Yolda' | 'Teslim Edildi';
+export type PaymentStatus = 'Bekliyor' | 'Tahsil Edildi' | 'Gecikti' | 'İptal';
+export type PaymentMethod = 'Nakit' | 'Havale/EFT' | 'Kredi Kartı' | 'Çek' | 'Senet' | 'Belirtilmemiş';
 
 // User Interface
 export interface User {
@@ -249,6 +251,44 @@ export interface CustomTask {
   completed: boolean;
   completedAt?: Timestamp;
   priority?: 'low' | 'medium' | 'high';
+  isDeleted?: boolean;
+  deletedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Payment Interface (for payment tracking)
+export interface Payment {
+  id: string;
+
+  // İlişkiler
+  orderId?: string; // Hangi siparişe ait
+  orderNumber?: string; // Denormalized
+  customerId: string; // Müşteri
+  customerName?: string; // Denormalized
+
+  // Ödeme Bilgileri
+  amount: number; // Ödeme tutarı
+  currency?: Currency;
+  paymentMethod: PaymentMethod;
+
+  // Vade ve Tarih Bilgileri
+  dueDate: string; // Vade tarihi (YYYY-MM-DD)
+
+  // Çek/Senet Bilgileri
+  checkNumber?: string; // Çek/Senet numarası
+  checkBank?: string; // Banka adı
+
+  // Durum
+  status: PaymentStatus;
+  paidDate?: string; // Tahsil tarihi (YYYY-MM-DD)
+
+  // Notlar
+  notes?: string;
+
+  // Metadata
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
