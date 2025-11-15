@@ -1,15 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import FormInput from '../common/FormInput';
 import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency } from '../../types';
-
-// Helper function - must be defined before use
-function formatCurrency(amount: number, currency: Currency = 'TRY'): string {
-  const symbols: Record<Currency, string> = {
-    TRY: '₺',
-    USD: '$',
-    EUR: '€'
-  };
-  return `${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbols[currency]}`;
-}
 
 interface PaymentFormProps {
   payment: Payment | null;
@@ -34,10 +25,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     notes: payment?.notes || ''
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Müşteri seçildiğinde ilgili siparişleri filtrele
-  const customerOrders = orders.filter(order => order.customerId === formData.customerId);
+  // Müşteri seçildiğinde, o müşteriye ait siparişleri filtrele
+  const customerOrders = formData.customerId
+    ? orders.filter(o => o.customerId === formData.customerId)
+    : orders;
 
   // Sipariş seçildiğinde tutarı otomatik doldur
   useEffect(() => {
@@ -46,263 +37,219 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
       if (selectedOrder) {
         setFormData(prev => ({
           ...prev,
-          amount: selectedOrder.total_amount,
-          currency: selectedOrder.currency || 'TRY'
+          amount: selectedOrder.total || 0,
+          currency: selectedOrder.currency || 'TRY',
+          customerId: selectedOrder.customerId
         }));
       }
     }
   }, [formData.orderId, orders, payment]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
   };
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.customerId) newErrors.customerId = 'Müşteri seçiniz';
-    if (formData.amount <= 0) newErrors.amount = 'Geçerli bir tutar giriniz';
-    if (!formData.dueDate) newErrors.dueDate = 'Vade tarihi giriniz';
-    if (formData.status === 'Tahsil Edildi' && !formData.paidDate) {
-      newErrors.paidDate = 'Tahsil tarihi giriniz';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!validate()) return;
+    // Müşteri bilgilerini denormalize et
+    const customer = customers.find(c => c.id === formData.customerId);
+    const order = orders.find(o => o.id === formData.orderId);
 
-    const selectedCustomer = customers.find(c => c.id === formData.customerId);
-    const selectedOrder = orders.find(o => o.id === formData.orderId);
-
-    const paymentData: Partial<Payment> = {
-      ...formData,
-      customerName: selectedCustomer?.name,
-      orderNumber: selectedOrder ? `#${selectedOrder.id.slice(-6)}` : undefined,
-      id: payment?.id
+    // Undefined ve boş değerleri temizle - Firestore hatası çözer
+    const cleanData: any = {
+      customerId: formData.customerId,
+      amount: Number(formData.amount),
+      currency: formData.currency,
+      paymentMethod: formData.paymentMethod,
+      dueDate: formData.dueDate,
+      status: formData.status
     };
 
-    // Çek/Senet değilse ilgili alanları temizle
-    if (formData.paymentMethod !== 'Çek' && formData.paymentMethod !== 'Senet') {
-      paymentData.checkNumber = undefined;
-      paymentData.checkBank = undefined;
+    // Opsiyonel alanları sadece dolu ise ekle
+    if (customer?.name) cleanData.customerName = customer.name;
+    if (formData.orderId) cleanData.orderId = formData.orderId;
+    if (order?.orderNumber) cleanData.orderNumber = order.orderNumber;
+    if (formData.checkNumber) cleanData.checkNumber = formData.checkNumber;
+    if (formData.checkBank) cleanData.checkBank = formData.checkBank;
+    if (formData.paidDate) cleanData.paidDate = formData.paidDate;
+    if (formData.notes) cleanData.notes = formData.notes;
+
+    // Mevcut ödeme düzenleme ise id'yi ekle
+    if (payment?.id) {
+      cleanData.id = payment.id;
     }
 
-    // Tahsil edilmediyse tahsil tarihini temizle
-    if (formData.status !== 'Tahsil Edildi') {
-      paymentData.paidDate = undefined;
-    }
-
-    onSave(paymentData);
+    onSave(cleanData);
   };
 
+  // Ödeme yöntemi çek veya senet ise ekstra alanlar göster
   const showCheckFields = formData.paymentMethod === 'Çek' || formData.paymentMethod === 'Senet';
-  const showPaidDate = formData.status === 'Tahsil Edildi';
+  const requirePaidDate = formData.status === 'Tahsil Edildi';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Müşteri Seçimi */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Müşteri *
-        </label>
-        <select
-          name="customerId"
-          value={formData.customerId}
-          onChange={handleChange}
-          className={`input-field ${errors.customerId ? 'border-red-500' : ''}`}
-          required
-        >
-          <option value="">Müşteri seçiniz</option>
-          {customers.map(customer => (
-            <option key={customer.id} value={customer.id}>
-              {customer.name}
-            </option>
-          ))}
-        </select>
-        {errors.customerId && <p className="text-red-500 text-xs mt-1">{errors.customerId}</p>}
-      </div>
-
-      {/* Sipariş Seçimi (Opsiyonel) */}
-      {formData.customerId && (
+      {/* Müşteri ve Sipariş */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Müşteri <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="customerId"
+            value={formData.customerId}
+            onChange={handleChange}
+            required
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+          >
+            <option value="">Müşteri Seçin</option>
+            {customers.map(customer => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Sipariş (Opsiyonel)
           </label>
           <select
             name="orderId"
             value={formData.orderId}
             onChange={handleChange}
-            className="input-field"
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
           >
-            <option value="">Sipariş seçiniz</option>
+            <option value="">Sipariş Seçin</option>
             {customerOrders.map(order => (
               <option key={order.id} value={order.id}>
-                #{order.id.slice(-6)} - {formatCurrency(order.total_amount, order.currency)}
+                {order.orderNumber} - {order.total?.toLocaleString('tr-TR')} {order.currency}
               </option>
             ))}
           </select>
         </div>
-      )}
+      </div>
 
       {/* Tutar ve Para Birimi */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Tutar *
-          </label>
-          <input
-            type="number"
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-2">
+          <FormInput
+            label="Tutar"
             name="amount"
-            value={formData.amount}
-            onChange={handleNumberChange}
+            type="number"
+            inputMode="decimal"
             step="0.01"
-            min="0"
-            className={`input-field ${errors.amount ? 'border-red-500' : ''}`}
+            value={formData.amount}
+            onChange={handleChange}
             required
+            placeholder="0.00"
           />
-          {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Para Birimi
           </label>
           <select
             name="currency"
             value={formData.currency}
             onChange={handleChange}
-            className="input-field"
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
           >
-            <option value="TRY">TRY</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
+            <option value="TRY">TRY (₺)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
           </select>
         </div>
       </div>
 
-      {/* Ödeme Yöntemi */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Ödeme Yöntemi *
-        </label>
-        <select
-          name="paymentMethod"
-          value={formData.paymentMethod}
-          onChange={handleChange}
-          className="input-field"
-          required
-        >
-          <option value="Belirtilmemiş">Belirtilmemiş</option>
-          <option value="Nakit">Nakit</option>
-          <option value="Havale/EFT">Havale/EFT</option>
-          <option value="Kredi Kartı">Kredi Kartı</option>
-          <option value="Çek">Çek</option>
-          <option value="Senet">Senet</option>
-        </select>
-      </div>
-
-      {/* Çek/Senet Bilgileri */}
-      {showCheckFields && (
-        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {formData.paymentMethod} Numarası
-            </label>
-            <input
-              type="text"
-              name="checkNumber"
-              value={formData.checkNumber}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="Örn: 123456"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Banka
-            </label>
-            <input
-              type="text"
-              name="checkBank"
-              value={formData.checkBank}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="Örn: Akbank"
-            />
-          </div>
+      {/* Ödeme Yöntemi ve Vade Tarihi */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Ödeme Yöntemi <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="paymentMethod"
+            value={formData.paymentMethod}
+            onChange={handleChange}
+            required
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+          >
+            <option value="Belirtilmemiş">Belirtilmemiş</option>
+            <option value="Nakit">Nakit</option>
+            <option value="Havale/EFT">Havale/EFT</option>
+            <option value="Kredi Kartı">Kredi Kartı</option>
+            <option value="Çek">Çek</option>
+            <option value="Senet">Senet</option>
+          </select>
         </div>
-      )}
 
-      {/* Vade Tarihi */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Vade Tarihi *
-        </label>
-        <input
-          type="date"
+        <FormInput
+          label="Vade Tarihi"
           name="dueDate"
+          type="date"
           value={formData.dueDate}
           onChange={handleChange}
-          className={`input-field ${errors.dueDate ? 'border-red-500' : ''}`}
           required
         />
-        {errors.dueDate && <p className="text-red-500 text-xs mt-1">{errors.dueDate}</p>}
       </div>
 
-      {/* Durum */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Durum
-        </label>
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className="input-field"
-        >
-          <option value="Bekliyor">Bekliyor</option>
-          <option value="Tahsil Edildi">Tahsil Edildi</option>
-          <option value="Gecikti">Gecikti</option>
-          <option value="İptal">İptal</option>
-        </select>
-      </div>
-
-      {/* Tahsil Tarihi */}
-      {showPaidDate && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Tahsil Tarihi *
-          </label>
-          <input
-            type="date"
-            name="paidDate"
-            value={formData.paidDate}
+      {/* Çek/Senet Bilgileri (Conditional) */}
+      {showCheckFields && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+          <FormInput
+            label={`${formData.paymentMethod} Numarası`}
+            name="checkNumber"
+            value={formData.checkNumber}
             onChange={handleChange}
-            className={`input-field ${errors.paidDate ? 'border-red-500' : ''}`}
-            required
+            placeholder="Numara girin"
           />
-          {errors.paidDate && <p className="text-red-500 text-xs mt-1">{errors.paidDate}</p>}
+          <FormInput
+            label="Banka"
+            name="checkBank"
+            value={formData.checkBank}
+            onChange={handleChange}
+            placeholder="Banka adı"
+          />
         </div>
       )}
+
+      {/* Durum ve Tahsil Tarihi */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Durum
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+          >
+            <option value="Bekliyor">Bekliyor</option>
+            <option value="Tahsil Edildi">Tahsil Edildi</option>
+            <option value="Gecikti">Gecikti</option>
+            <option value="İptal">İptal</option>
+          </select>
+        </div>
+
+        {requirePaidDate && (
+          <FormInput
+            label="Tahsil Tarihi"
+            name="paidDate"
+            type="date"
+            value={formData.paidDate}
+            onChange={handleChange}
+            required
+          />
+        )}
+      </div>
 
       {/* Notlar */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Notlar
         </label>
         <textarea
@@ -310,18 +257,25 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
           value={formData.notes}
           onChange={handleChange}
           rows={3}
-          className="input-field"
           placeholder="Ödeme ile ilgili notlar..."
+          className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
         />
       </div>
 
       {/* Buttons */}
-      <div className="flex gap-3 pt-4">
-        <button type="submit" className="btn-primary flex-1">
-          {payment ? 'Güncelle' : 'Kaydet'}
-        </button>
-        <button type="button" onClick={onCancel} className="btn-secondary flex-1">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2.5 min-h-[44px] bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 active:scale-[0.98] transition-transform"
+        >
           İptal
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-[0.98] transition-transform"
+        >
+          Kaydet
         </button>
       </div>
     </form>
