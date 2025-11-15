@@ -52,7 +52,7 @@ export const useFirestoreCollections = (collectionNames) => {
     const [collections, setCollections] = useState({});
     const [connectionStatus, setConnectionStatus] = useState('Bağlanılıyor...');
     const [loading, setLoading] = useState(true);
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
 
     useEffect(() => {
         if (!user) {
@@ -80,9 +80,22 @@ export const useFirestoreCollections = (collectionNames) => {
             return onSnapshot(
                 collectionRef,
                 (snapshot) => {
+                    let documents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    // Apply user-based filtering for non-admin users
+                    // Exceptions: customTasks already filtered by userId, don't double filter
+                    if (!isAdmin() && collectionName !== 'customTasks') {
+                        documents = documents.filter(doc => {
+                            // Show document if:
+                            // 1. It was created by this user, OR
+                            // 2. It has no createdBy field (legacy data, visible to all)
+                            return !doc.createdBy || doc.createdBy === user.uid;
+                        });
+                    }
+
                     setCollections(prev => ({
                         ...prev,
-                        [collectionName]: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                        [collectionName]: documents
                     }));
                     setConnectionStatus('Bağlandı');
                     setLoading(false);

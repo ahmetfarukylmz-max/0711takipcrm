@@ -187,36 +187,56 @@ const CrmApp = () => {
     // Handler functions
     const handleCustomerSave = async (data) => {
         const action = data.id ? 'UPDATE_CUSTOMER' : 'CREATE_CUSTOMER';
-        const details = { 
+        const details = {
             message: `Müşteri ${data.id ? 'güncellendi': 'oluşturuldu'}: ${data.name}`,
             customerId: data.id
         };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
+        }
         await saveDocument(user.uid, 'customers', data);
         logUserActivity(action, details);
     };
     const handleProductSave = async (data) => {
         const action = data.id ? 'UPDATE_PRODUCT' : 'CREATE_PRODUCT';
         const details = { message: `Ürün ${data.id ? 'güncellendi': 'oluşturuldu'}: ${data.name}` };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
+        }
         await saveDocument(user.uid, 'products', data);
         logUserActivity(action, details);
     };
     const handleOrderSave = async (data) => {
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
         const action = data.id ? 'UPDATE_ORDER' : 'CREATE_ORDER';
-        const details = { 
+        const details = {
             message: `${customerName} için sipariş ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
             amount: data.total_amount
         };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
+        }
         await saveOrder(user.uid, data);
         logUserActivity(action, details);
     };
     const handleQuoteSave = async (data) => {
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
         const action = data.id ? 'UPDATE_QUOTE' : 'CREATE_QUOTE';
-        const details = { 
+        const details = {
             message: `${customerName} için teklif ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
             amount: data.total_amount
         };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
+        }
         await saveQuote(user.uid, data);
         logUserActivity(action, details);
     };
@@ -224,6 +244,11 @@ const CrmApp = () => {
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
         const action = data.id ? 'UPDATE_MEETING' : 'CREATE_MEETING';
         const details = { message: `${customerName} ile görüşme ${data.id ? 'güncellendi' : 'oluşturuldu'}` };
+        // Add createdBy for new records
+        if (!data.id) {
+            data.createdBy = user.uid;
+            data.createdByEmail = user.email;
+        }
         await saveDocument(user.uid, 'gorusmeler', data);
         logUserActivity(action, details);
     };
@@ -231,6 +256,10 @@ const CrmApp = () => {
     const handleCustomTaskSave = async (data) => {
         const action = data.id ? 'UPDATE_CUSTOM_TASK' : 'CREATE_CUSTOM_TASK';
         const details = { message: `Görev ${data.id ? 'güncellendi' : 'oluşturuldu'}: ${data.title}` };
+        // Add createdByEmail for new records (userId already set by component)
+        if (!data.id) {
+            data.createdByEmail = user.email;
+        }
         await saveDocument(user.uid, 'customTasks', data);
         logUserActivity(action, details);
         toast.success(data.id ? 'Görev güncellendi!' : 'Görev eklendi!');
@@ -289,6 +318,11 @@ const CrmApp = () => {
     // Shipment handler
     const handleShipmentSave = async (shipmentData) => {
         try {
+            // Add createdBy for new shipments
+            if (!shipmentData.id) {
+                shipmentData.createdBy = user.uid;
+                shipmentData.createdByEmail = user.email;
+            }
             await saveDocument(user.uid, 'shipments', shipmentData);
             const order = orders.find(o => o.id === shipmentData.orderId);
             const customerName = customers.find(c => c.id === order?.customerId)?.name || '';

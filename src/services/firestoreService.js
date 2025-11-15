@@ -101,7 +101,10 @@ export const convertQuoteToOrder = async (userId, quote) => {
         paymentTerm: quote.paymentTerm || null,
         currency: quote.currency || 'TRY',
         shipmentId: null,
-        quoteId: quote.id
+        quoteId: quote.id,
+        // Preserve ownership from quote
+        createdBy: quote.createdBy || userId,
+        createdByEmail: quote.createdByEmail
     };
 
     // Remove null/undefined values
