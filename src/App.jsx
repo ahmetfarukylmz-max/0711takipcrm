@@ -235,16 +235,20 @@ const CrmApp = () => {
         // Otomatik ödeme oluştur (sadece yeni sipariş için)
         if (isNewOrder && data.paymentType) {
             try {
-                // Vade tarihini hesapla
+                // Vade tarihini hesapla (timezone safe)
                 const baseDate = data.delivery_date || data.order_date;
-                const dueDateObj = new Date(baseDate);
+                const [year, month, day] = baseDate.split('-').map(Number);
+                const dueDateObj = new Date(year, month - 1, day); // month is 0-indexed
 
                 // Vadeli ise paymentTerm kadar gün ekle
                 if (data.paymentType === 'Vadeli' && data.paymentTerm) {
-                    dueDateObj.setDate(dueDateObj.getDate() + data.paymentTerm);
+                    dueDateObj.setDate(dueDateObj.getDate() + parseInt(data.paymentTerm));
                 }
 
-                const dueDate = dueDateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+                // Format: YYYY-MM-DD
+                const dueDate = dueDateObj.getFullYear() + '-' +
+                    String(dueDateObj.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(dueDateObj.getDate()).padStart(2, '0');
 
                 // Otomatik payment kaydı oluştur (sadece dolu alanlar)
                 const paymentData = {
@@ -267,7 +271,15 @@ const CrmApp = () => {
                 }
 
                 await saveDocument(user.uid, 'payments', paymentData);
-                console.log('✅ Otomatik ödeme oluşturuldu:', paymentData);
+                console.log('✅ Otomatik ödeme oluşturuldu:', {
+                    ...paymentData,
+                    debug: {
+                        baseDate,
+                        paymentType: data.paymentType,
+                        paymentTerm: data.paymentTerm,
+                        calculatedDueDate: dueDate
+                    }
+                });
             } catch (error) {
                 console.error('❌ Otomatik ödeme oluşturulamadı:', error);
                 // Hata olsa bile sipariş kaydedildi, sadece log'la
