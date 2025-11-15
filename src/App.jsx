@@ -35,6 +35,7 @@ const Orders = lazy(() => import('./components/pages/Orders'));
 const Quotes = lazy(() => import('./components/pages/Quotes'));
 const Meetings = lazy(() => import('./components/pages/Meetings'));
 const Shipments = lazy(() => import('./components/pages/Shipments'));
+const Payments = lazy(() => import('./components/pages/Payments'));
 const Reports = lazy(() => import('./components/pages/Reports'));
 const Admin = lazy(() => import('./components/pages/Admin'));
 const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
@@ -149,7 +150,8 @@ const CrmApp = () => {
         'shipments',
         'teklifler',
         'gorusmeler',
-        'customTasks'
+        'customTasks',
+        'payments'
     ]);
 
     const customers = collections.customers || [];
@@ -159,6 +161,7 @@ const CrmApp = () => {
     const teklifler = collections.teklifler || [];
     const gorusmeler = collections.gorusmeler || [];
     const customTasks = collections.customTasks || [];
+    const payments = collections.payments || [];
 
     const logUserActivity = (action, details) => {
         logActivity(user.uid, action, details);
@@ -345,6 +348,38 @@ const CrmApp = () => {
             console.error('Sevkiyat güncellenemedi:', error);
             toast.error('Sevkiyat güncellenemedi!');
         }
+    };
+
+    const handlePaymentSave = async (data) => {
+        try {
+            const action = data.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
+            const customerName = customers.find(c => c.id === data.customerId)?.name || '';
+            const details = {
+                message: `${customerName} için ödeme ${data.id ? 'güncellendi' : 'oluşturuldu'}`,
+                paymentId: data.id,
+                amount: data.amount
+            };
+            // Add createdBy for new records
+            if (!data.id) {
+                data.createdBy = user.uid;
+                data.createdByEmail = user.email;
+            }
+            await saveDocument(user.uid, 'payments', data);
+            logUserActivity(action, details);
+            toast.success(`Ödeme başarıyla ${data.id ? 'güncellendi' : 'kaydedildi'}!`);
+        } catch (error) {
+            console.error('Ödeme kaydedilemedi:', error);
+            toast.error('Ödeme kaydedilemedi!');
+        }
+    };
+
+    const handlePaymentDelete = (id) => {
+        const payment = payments.find(p => p.id === id);
+        if (!payment) return;
+
+        deleteDocument(user.uid, 'payments', id).then(() => {
+            logUserActivity('DELETE_PAYMENT', { message: `Ödeme silindi: ${payment.customerName} - ${payment.amount}` });
+        });
     };
 
     // Delete handler functions
@@ -615,6 +650,8 @@ const CrmApp = () => {
                 );
             case 'Sevkiyat':
                 return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
+            case 'Ödemeler':
+                return <Payments payments={payments} customers={customers} orders={orders} onSave={handlePaymentSave} onDelete={handlePaymentDelete} loading={dataLoading} />;
             case 'Raporlar':
                 return (
                     <Reports
