@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -73,39 +73,91 @@ export const useFirestoreCollections = (collectionNames) => {
             setConnectionStatus('Bağlantı Hatası');
         };
 
-        const unsubscribers = collectionNames.map(collectionName => {
-            const collectionPath = `users/${user.uid}/${collectionName}`;
-            const collectionRef = collection(db, collectionPath);
+        // Admin mode: Subscribe to all users' data
+        if (isAdmin()) {
+            // First, get all users
+            const setupAdminSubscriptions = async () => {
+                try {
+                    const usersSnapshot = await getDocs(collection(db, 'users'));
+                    const allUserIds = usersSnapshot.docs.map(doc => doc.id);
 
-            return onSnapshot(
-                collectionRef,
-                (snapshot) => {
-                    let documents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const allUnsubscribers = [];
 
-                    // Apply user-based filtering for non-admin users
-                    // Exceptions: customTasks already filtered by userId, don't double filter
-                    if (!isAdmin() && collectionName !== 'customTasks') {
-                        documents = documents.filter(doc => {
-                            // Show document if:
-                            // 1. It was created by this user, OR
-                            // 2. It has no createdBy field (legacy data, visible to all)
-                            return !doc.createdBy || doc.createdBy === user.uid;
+                    // For each collection type
+                    collectionNames.forEach(collectionName => {
+                        // Subscribe to data from ALL users
+                        allUserIds.forEach(userId => {
+                            const collectionPath = `users/${userId}/${collectionName}`;
+                            const collectionRef = collection(db, collectionPath);
+
+                            const unsubscribe = onSnapshot(
+                                collectionRef,
+                                (snapshot) => {
+                                    const documents = snapshot.docs.map(doc => ({
+                                        id: doc.id,
+                                        ...doc.data(),
+                                        _userId: userId // Track which user owns this data
+                                    }));
+
+                                    // Merge with existing data from other users
+                                    setCollections(prev => {
+                                        const existingDocs = prev[collectionName] || [];
+                                        // Remove old docs from this specific user
+                                        const otherUsersDocs = existingDocs.filter(d => d._userId !== userId);
+                                        // Add new docs from this user
+                                        return {
+                                            ...prev,
+                                            [collectionName]: [...otherUsersDocs, ...documents]
+                                        };
+                                    });
+
+                                    setConnectionStatus('Bağlandı');
+                                    setLoading(false);
+                                },
+                                handleSnapshotError
+                            );
+
+                            allUnsubscribers.push(unsubscribe);
                         });
-                    }
+                    });
 
-                    setCollections(prev => ({
-                        ...prev,
-                        [collectionName]: documents
-                    }));
-                    setConnectionStatus('Bağlandı');
-                    setLoading(false);
-                },
-                handleSnapshotError
-            );
-        });
+                    return () => allUnsubscribers.forEach(unsub => unsub());
+                } catch (error) {
+                    console.error('Error setting up admin subscriptions:', error);
+                    handleSnapshotError(error);
+                }
+            };
 
-        return () => unsubscribers.forEach(unsub => unsub());
-    }, [user, JSON.stringify(collectionNames)]);
+            const cleanupPromise = setupAdminSubscriptions();
+
+            return () => {
+                cleanupPromise.then(cleanup => cleanup && cleanup());
+            };
+        } else {
+            // Normal user mode: Only subscribe to their own data
+            const unsubscribers = collectionNames.map(collectionName => {
+                const collectionPath = `users/${user.uid}/${collectionName}`;
+                const collectionRef = collection(db, collectionPath);
+
+                return onSnapshot(
+                    collectionRef,
+                    (snapshot) => {
+                        const documents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                        setCollections(prev => ({
+                            ...prev,
+                            [collectionName]: documents
+                        }));
+                        setConnectionStatus('Bağlandı');
+                        setLoading(false);
+                    },
+                    handleSnapshotError
+                );
+            });
+
+            return () => unsubscribers.forEach(unsub => unsub());
+        }
+    }, [user, isAdmin, JSON.stringify(collectionNames)]);
 
     return { collections, connectionStatus, loading };
 };
