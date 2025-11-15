@@ -6,6 +6,8 @@ import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
 import InactiveCustomers from '../dashboard/InactiveCustomers';
 import UpcomingActionsModal from '../dashboard/UpcomingActionsModal';
+import OpenOrdersModal from '../dashboard/OpenOrdersModal';
+import PendingQuotesModal from '../dashboard/PendingQuotesModal';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
@@ -86,6 +88,8 @@ const Dashboard = memo<DashboardProps>(({
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
     const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+    const [showOpenOrdersModal, setShowOpenOrdersModal] = useState(false);
+    const [showPendingQuotesModal, setShowPendingQuotesModal] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
     const today = new Date().toISOString().slice(0, 10);
@@ -395,7 +399,7 @@ const Dashboard = memo<DashboardProps>(({
                         value={openOrders.length}
                         icon={<ClipboardListIcon className="w-6 h-6" />}
                         color="yellow"
-                        onClick={() => setActivePage('Siparişler')}
+                        onClick={() => setShowOpenOrdersModal(true)}
                     />
                 </div>
                 <div className="animate-fadeIn animate-delay-200">
@@ -404,7 +408,7 @@ const Dashboard = memo<DashboardProps>(({
                         value={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı').length}
                         icon={<DocumentTextIcon className="w-6 h-6" />}
                         color="indigo"
-                        onClick={() => setActivePage('Teklifler')}
+                        onClick={() => setShowPendingQuotesModal(true)}
                     />
                 </div>
                 <div className="animate-fadeIn animate-delay-300">
@@ -524,6 +528,40 @@ const Dashboard = memo<DashboardProps>(({
                     onViewAllMeetings={() => {
                         setShowUpcomingModal(false);
                         setActivePage('Görüşmeler');
+                    }}
+                />
+            </Modal>
+
+            {/* Open Orders Modal */}
+            <Modal
+                show={showOpenOrdersModal}
+                onClose={() => setShowOpenOrdersModal(false)}
+                title="Açık Siparişler"
+                maxWidth="max-w-4xl"
+            >
+                <OpenOrdersModal
+                    orders={openOrders}
+                    customers={customers}
+                    onViewAllOrders={() => {
+                        setShowOpenOrdersModal(false);
+                        setActivePage('Siparişler');
+                    }}
+                />
+            </Modal>
+
+            {/* Pending Quotes Modal */}
+            <Modal
+                show={showPendingQuotesModal}
+                onClose={() => setShowPendingQuotesModal(false)}
+                title="Bekleyen Teklifler"
+                maxWidth="max-w-4xl"
+            >
+                <PendingQuotesModal
+                    quotes={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı')}
+                    customers={customers}
+                    onViewAllQuotes={() => {
+                        setShowPendingQuotesModal(false);
+                        setActivePage('Teklifler');
                     }}
                 />
             </Modal>
