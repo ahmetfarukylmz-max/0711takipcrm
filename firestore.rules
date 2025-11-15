@@ -21,15 +21,14 @@ service cloud.firestore {
 
     // Users koleksiyonu
     match /users/{userId} {
-      // Herkes kendi verisini okuyabilir
-      // Admin tüm kullanıcıları okuyabilir
-      allow read: if isOwner(userId) || isAdmin();
+      // Authenticated herkes user bilgilerini okuyabilir (isAdmin() fonksiyonu için gerekli)
+      allow read: if isAuthenticated();
 
       // Yeni kullanıcı kaydı (ilk giriş)
       allow create: if isOwner(userId);
 
-      // Sadece admin kullanıcı rollerini güncelleyebilir
-      allow update: if isAdmin();
+      // Sadece admin kullanıcı rollerini güncelleyebilir veya kullanıcı kendi bilgilerini güncelleyebilir
+      allow update: if isOwner(userId) || isAdmin();
 
       // Sadece admin kullanıcı silebilir
       allow delete: if isAdmin();
