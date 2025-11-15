@@ -246,12 +246,11 @@ const CrmApp = () => {
 
                 const dueDate = dueDateObj.toISOString().split('T')[0]; // YYYY-MM-DD
 
-                // Otomatik payment kaydı oluştur
+                // Otomatik payment kaydı oluştur (sadece dolu alanlar)
                 const paymentData = {
                     customerId: data.customerId,
                     customerName: customerName,
                     orderId: orderId, // saveOrder'dan dönen ID
-                    orderNumber: data.orderNumber, // Order numarası varsa ekle
                     amount: data.total_amount,
                     currency: data.currency || 'TRY',
                     paymentMethod: 'Belirtilmemiş',
@@ -261,6 +260,11 @@ const CrmApp = () => {
                     createdBy: user.uid,
                     createdByEmail: user.email
                 };
+
+                // Opsiyonel alanları sadece dolu ise ekle
+                if (data.orderNumber) {
+                    paymentData.orderNumber = data.orderNumber;
+                }
 
                 await saveDocument(user.uid, 'payments', paymentData);
                 console.log('✅ Otomatik ödeme oluşturuldu:', paymentData);
