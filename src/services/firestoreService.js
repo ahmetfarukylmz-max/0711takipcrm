@@ -44,8 +44,18 @@ export const saveDocument = async (userId, collectionName, data) => {
 
     if (id) {
         // Update existing document
-        await updateDoc(doc(db, collectionPath, id), dataToSave);
-        return id;
+        try {
+            await updateDoc(doc(db, collectionPath, id), dataToSave);
+            return id;
+        } catch (error) {
+            // If document doesn't exist, create it instead
+            if (error.code === 'not-found') {
+                console.warn(`Document ${id} not found, creating new document instead`);
+                const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+                return newDocRef.id;
+            }
+            throw error; // Re-throw other errors
+        }
     } else {
         // Create new document
         const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
