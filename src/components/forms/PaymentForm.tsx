@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency } from '../../types';
 
@@ -24,26 +24,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     paidDate: payment?.paidDate || '',
     notes: payment?.notes || ''
   });
-
-  // Müşteri seçildiğinde, o müşteriye ait siparişleri filtrele
-  const customerOrders = formData.customerId
-    ? orders.filter(o => o.customerId === formData.customerId)
-    : orders;
-
-  // Sipariş seçildiğinde tutarı otomatik doldur
-  useEffect(() => {
-    if (formData.orderId && !payment) {
-      const selectedOrder = orders.find(o => o.id === formData.orderId);
-      if (selectedOrder) {
-        setFormData(prev => ({
-          ...prev,
-          amount: selectedOrder.total || 0,
-          currency: selectedOrder.currency || 'TRY',
-          customerId: selectedOrder.customerId
-        }));
-      }
-    }
-  }, [formData.orderId, orders, payment]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -90,46 +70,25 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Müşteri ve Sipariş */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Müşteri <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="customerId"
-            value={formData.customerId}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
-          >
-            <option value="">Müşteri Seçin</option>
-            {customers.map(customer => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Sipariş (Opsiyonel)
-          </label>
-          <select
-            name="orderId"
-            value={formData.orderId}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
-          >
-            <option value="">Sipariş Seçin</option>
-            {customerOrders.map(order => (
-              <option key={order.id} value={order.id}>
-                {order.orderNumber} - {order.total?.toLocaleString('tr-TR')} {order.currency}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Müşteri */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Müşteri <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="customerId"
+          value={formData.customerId}
+          onChange={handleChange}
+          required
+          className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+        >
+          <option value="">Müşteri Seçin</option>
+          {customers.map(customer => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Tutar ve Para Birimi */}
