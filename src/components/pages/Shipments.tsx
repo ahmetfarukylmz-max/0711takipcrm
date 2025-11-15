@@ -30,7 +30,7 @@ interface ShipmentEditFormProps {
 const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = [], shipments = [], onSave, onCancel, readOnly = false }) => {
     const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: shipment.shipment_date || '',
-        carrier: shipment.carrier || '',
+        carrier: shipment.carrier || (shipment as any).transporter || '',
         notes: shipment.notes || '',
         isInvoiced: shipment.isInvoiced || false,
         invoiceNotes: shipment.invoiceNotes || ''
@@ -392,9 +392,10 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
             // Search filter
             if (searchQuery.trim()) {
                 const query = searchQuery.toLowerCase();
+                const carrierField = shipment.carrier || (shipment as any).transporter || '';
                 const matchesSearch =
                     customer?.name?.toLowerCase().includes(query) ||
-                    shipment.carrier?.toLowerCase().includes(query) ||
+                    carrierField.toLowerCase().includes(query) ||
                     shipment.trackingNumber?.toLowerCase().includes(query);
 
                 if (!matchesSearch) return false;
@@ -606,7 +607,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         #{order?.id?.slice(-6) || 'N/A'}
                                     </td>
                                     <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.carrier}</td>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
                                     <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
                                     <td className="p-3 text-sm">
                                         <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
@@ -709,7 +710,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                 <div className="space-y-2 text-sm">
                                     <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                         <span className="text-gray-600 dark:text-gray-400">Nakliye Firması:</span>
-                                        <span className="text-gray-900 dark:text-gray-100 font-medium">{shipment.carrier}</span>
+                                        <span className="text-gray-900 dark:text-gray-100 font-medium">{shipment.carrier || (shipment as any).transporter}</span>
                                     </div>
                                     {shipment.trackingNumber && (
                                         <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">

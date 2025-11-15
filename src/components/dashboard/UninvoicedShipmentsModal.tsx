@@ -143,7 +143,7 @@ const UninvoicedShipmentsModal: React.FC<UninvoicedShipmentsModalProps> = ({
 
                             {/* Shipment Info */}
                             <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <p><span className="font-medium">Nakliye:</span> {shipment.carrier || 'Belirtilmemiş'}</p>
+                                <p><span className="font-medium">Nakliye:</span> {shipment.carrier || (shipment as any).transporter || 'Belirtilmemiş'}</p>
                                 {shipment.tracking_number && (
                                     <p><span className="font-medium">Takip No:</span> {shipment.tracking_number}</p>
                                 )}
