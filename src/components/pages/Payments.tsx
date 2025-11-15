@@ -335,7 +335,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
       {/* Payment Form Modal */}
       <Modal
-        isOpen={isModalOpen}
+        show={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={currentPayment ? 'Ödeme Düzenle' : 'Yeni Ödeme'}
       >
