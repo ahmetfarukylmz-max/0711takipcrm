@@ -85,8 +85,13 @@ const Payments: React.FC<PaymentsProps> = ({
   };
 
   const handleSave = async (paymentData: Partial<Payment>) => {
-    await onSave(paymentData);
-    setIsModalOpen(false);
+    try {
+      await onSave(paymentData);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Payment save error:', error);
+      toast.error('Ödeme kaydedilemedi. Lütfen tekrar deneyin.');
+    }
   };
 
   const handleDelete = (payment: Payment) => {

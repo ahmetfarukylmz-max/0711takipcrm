@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency } from '../../types';
 
+// Helper function - must be defined before use
+function formatCurrency(amount: number, currency: Currency = 'TRY'): string {
+  const symbols: Record<Currency, string> = {
+    TRY: '₺',
+    USD: '$',
+    EUR: '€'
+  };
+  return `${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbols[currency]}`;
+}
+
 interface PaymentFormProps {
   payment: Payment | null;
   customers: Customer[];
@@ -317,15 +327,5 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     </form>
   );
 };
-
-// Helper function
-function formatCurrency(amount: number, currency: Currency = 'TRY'): string {
-  const symbols: Record<Currency, string> = {
-    TRY: '₺',
-    USD: '$',
-    EUR: '€'
-  };
-  return `${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbols[currency]}`;
-}
 
 export default PaymentForm;
