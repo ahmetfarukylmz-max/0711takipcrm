@@ -53,6 +53,8 @@ export interface Customer {
   city?: string;
   taxOffice?: string; // Vergi Dairesi
   taxNumber?: string; // Vergi No
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -67,6 +69,8 @@ export interface Product {
   selling_price: number;
   unit: string;
   description?: string;
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -100,6 +104,8 @@ export interface Quote {
   paymentType?: 'Peşin' | 'Vadeli';
   paymentTerm?: number; // Days for vadeli
   notes?: string;
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -124,6 +130,8 @@ export interface Order {
   paymentType?: 'Peşin' | 'Vadeli';
   paymentTerm?: number; // Days for vadeli
   notes?: string;
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -157,6 +165,8 @@ export interface Meeting {
   next_action_notes?: string;
   status?: string;
   inquiredProducts?: InquiredProduct[]; // Products customer asked about
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -180,6 +190,8 @@ export interface Shipment {
   isInvoiced?: boolean; // Fatura kesildi mi?
   invoicedAt?: Timestamp; // Fatura kesim tarihi
   invoiceNotes?: string; // Fatura notu
+  createdBy?: string; // User ID who created this
+  createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
   deletedAt?: Timestamp;
   createdAt: Timestamp;
@@ -228,7 +240,8 @@ export interface ExcelColumn {
 // Custom Task Interface (for manual tasks on dashboard)
 export interface CustomTask {
   id: string;
-  userId: string;
+  userId: string; // Same as createdBy for consistency
+  createdByEmail?: string; // Email of creator (for display)
   title: string;
   notes?: string;
   date: string; // YYYY-MM-DD format

@@ -3,21 +3,24 @@ import { collection, getDocs, doc, updateDoc, query, orderBy, limit } from 'fire
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/formatters';
+import { migrateExistingData } from '../../utils/dataMigration';
 import toast from 'react-hot-toast';
 import type { User, LoginLog } from '../../types';
 
-type TabType = 'users' | 'logs';
+type TabType = 'users' | 'logs' | 'migration';
 
 /**
  * Admin Page - User management and login logs
  * Only accessible by users with admin role
  */
 const Admin: React.FC = () => {
-    const { isAdmin } = useAuth();
+    const { isAdmin, user } = useAuth();
     const [activeTab, setActiveTab] = useState<TabType>('users');
     const [users, setUsers] = useState<User[]>([]);
     const [loginLogs, setLoginLogs] = useState<LoginLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [migrating, setMigrating] = useState(false);
+    const [migrationProgress, setMigrationProgress] = useState<string>('');
 
     // Fetch users
     const fetchUsers = async () => {
@@ -95,6 +98,48 @@ const Admin: React.FC = () => {
         }
     };
 
+    // Run data migration
+    const handleMigration = async () => {
+        if (!user) return;
+
+        const confirmed = window.confirm(
+            'Mevcut tüm kayıtlara sahiplik bilgisi eklenecek. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?'
+        );
+
+        if (!confirmed) return;
+
+        setMigrating(true);
+        setMigrationProgress('Migration başlatılıyor...');
+
+        try {
+            const results = await migrateExistingData(
+                user.uid,
+                user.email || '',
+                (progress) => setMigrationProgress(progress)
+            );
+
+            if (results.success) {
+                toast.success(
+                    `Migration tamamlandı! ${results.totalUpdated}/${results.totalProcessed} kayıt güncellendi.`
+                );
+                setMigrationProgress(
+                    `✅ Tamamlandı: ${results.totalUpdated} kayıt güncellendi`
+                );
+            } else {
+                toast.error(`Migration tamamlandı ancak ${results.errors.length} hata oluştu.`);
+                setMigrationProgress(
+                    `⚠️ ${results.totalUpdated} kayıt güncellendi, ${results.errors.length} hata`
+                );
+            }
+        } catch (error) {
+            console.error('Migration error:', error);
+            toast.error('Migration başarısız oldu!');
+            setMigrationProgress('❌ Migration başarısız');
+        } finally {
+            setMigrating(false);
+        }
+    };
+
     // Check admin access
     if (!isAdmin()) {
         return (
@@ -152,6 +197,16 @@ const Admin: React.FC = () => {
                         }`}
                     >
                         📊 Giriş Logları ({loginLogs.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('migration')}
+                        className={`pb-3 px-2 font-semibold transition-colors ${
+                            activeTab === 'migration'
+                                ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        }`}
+                    >
+                        🔄 Veri Aktarımı
                     </button>
                 </nav>
             </div>
@@ -416,6 +471,58 @@ const Admin: React.FC = () => {
                                 </div>
                             ))
                         )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'migration' && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="text-center mb-6">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                                Veri Aktarımı
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                Mevcut kayıtlara sahiplik bilgisi ekleyin. Bu işlem createdBy field'ı olmayan
+                                tüm kayıtları admin kullanıcıya atar.
+                            </p>
+                        </div>
+
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
+                            <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+                                ⚠️ Önemli Uyarı
+                            </h4>
+                            <ul className="text-sm text-yellow-700 dark:text-yellow-400 space-y-1 list-disc list-inside">
+                                <li>Bu işlem geri alınamaz</li>
+                                <li>Tüm mevcut kayıtlar size atanacak</li>
+                                <li>Yeni kayıtlar normal şekilde ekleyen kullanıcıya atanacak</li>
+                                <li>İşlem birkaç saniye sürebilir</li>
+                            </ul>
+                        </div>
+
+                        {migrationProgress && (
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+                                <p className="text-sm text-blue-800 dark:text-blue-300 font-mono">
+                                    {migrationProgress}
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleMigration}
+                            disabled={migrating}
+                            className={`w-full px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+                                migrating
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                            }`}
+                        >
+                            {migrating ? '🔄 İşlem Devam Ediyor...' : '🚀 Veri Aktarımını Başlat'}
+                        </button>
+
+                        <div className="mt-6 text-xs text-gray-500 dark:text-gray-400 text-center">
+                            <p>Son güncelleme: {new Date().toLocaleDateString('tr-TR')}</p>
+                        </div>
                     </div>
                 </div>
             )}
