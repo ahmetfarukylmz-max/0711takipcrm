@@ -33,62 +33,23 @@ service cloud.firestore {
 
       // Sadece admin kullanıcı silebilir
       allow delete: if isAdmin();
+
+      // User-based koleksiyonlar (users/{userId}/customers, products, vb.)
+      match /{collection}/{documentId} {
+        // Kullanıcı kendi verilerini okuyup yazabilir
+        // Admin tüm kullanıcıların verilerini okuyup yazabilir
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
-    // Customers koleksiyonu
-    match /customers/{customerId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Products koleksiyonu
-    match /products/{productId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Orders koleksiyonu
-    match /orders/{orderId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Quotes koleksiyonu
-    match /quotes/{quoteId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Meetings koleksiyonu
-    match /meetings/{meetingId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Shipments koleksiyonu
-    match /shipments/{shipmentId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Reports koleksiyonu
-    match /reports/{reportId} {
-      // Giriş yapmış herkes okuyabilir
-      // Sadece admin yazabilir
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+    // Login Logs koleksiyonu (root seviyede)
+    match /loginLogs/{logId} {
+      // Sadece admin okuyabilir
+      allow read: if isAdmin();
+      // Giriş yapan herkes login/logout kaydı yazabilir
+      allow create: if isAuthenticated();
+      // Update ve delete yasak
+      allow update, delete: if false;
     }
 
     // Diğer tüm koleksiyonlar
