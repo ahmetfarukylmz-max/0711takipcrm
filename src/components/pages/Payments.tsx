@@ -4,7 +4,7 @@ import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import PaymentForm from '../forms/PaymentForm';
 import SearchBar from '../common/SearchBar';
-import { PlusIcon, EditIcon, TrashIcon, CreditCardIcon, BellIcon } from '../icons';
+import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Payment, Customer, Order } from '../../types';
 
@@ -190,112 +190,59 @@ const Payments: React.FC<PaymentsProps> = ({
         </button>
       </div>
 
-      {/* Payment Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* Upcoming Payments Card */}
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl shadow-sm border-2 border-yellow-200 dark:border-yellow-700 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
-              <CreditCardIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {paymentStats.upcoming.length}
-            </span>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            ⏰ Vadesi Yaklaşan Ödemeler
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(7 gün içinde)</p>
-          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
-          </div>
-          {paymentStats.upcoming.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700">
-              {paymentStats.upcoming.slice(0, 2).map(p => (
-                <div key={p.id} className="text-xs text-gray-700 dark:text-gray-300 flex justify-between mb-1">
-                  <span className="truncate">{p.customerName}</span>
-                  <span className="font-medium">{formatCurrency(p.amount, p.currency)}</span>
-                </div>
-              ))}
-              {paymentStats.upcoming.length > 2 && (
-                <div className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-2">
-                  +{paymentStats.upcoming.length - 2} daha...
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Overdue Payments Card */}
-        <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 p-6 rounded-xl shadow-sm border-2 border-red-200 dark:border-red-700 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-lg">
-              <BellIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <span className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {paymentStats.overdue.length}
-            </span>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            ⚠️ Gecikmiş Ödemeler
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(Vadesi geçmiş)</p>
-          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {formatCurrency(paymentStats.overdueTotal, 'TRY')}
-          </div>
+      {/* Payment Alerts - Compact banners like CriticalAlerts */}
+      {(paymentStats.overdue.length > 0 || paymentStats.upcoming.length > 0) && (
+        <div className="space-y-3 mb-6 animate-fadeIn">
+          {/* Overdue Payments Banner */}
           {paymentStats.overdue.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-700">
-              {paymentStats.overdue.slice(0, 2).map(p => (
-                <div key={p.id} className="text-xs text-gray-700 dark:text-gray-300 flex justify-between mb-1">
-                  <span className="truncate">{p.customerName}</span>
-                  <span className="font-medium">{formatCurrency(p.amount, p.currency)}</span>
-                </div>
-              ))}
-              {paymentStats.overdue.length > 2 && (
-                <div className="text-xs text-red-600 dark:text-red-400 font-medium mt-2">
-                  +{paymentStats.overdue.length - 2} daha...
-                </div>
-              )}
+            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 transition-all hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <p className="font-medium text-sm md:text-base">
+                  {paymentStats.overdue.length} gecikmiş ödeme - Toplam {formatCurrency(paymentStats.overdueTotal, 'TRY')}
+                </p>
+              </div>
+              <button
+                onClick={() => setStatusFilter('Bekliyor')}
+                className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
+              >
+                Görüntüle
+              </button>
+            </div>
+          )}
+
+          {/* Upcoming Payments Banner */}
+          {paymentStats.upcoming.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 transition-all hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⏰</span>
+                <p className="font-medium text-sm md:text-base">
+                  {paymentStats.upcoming.length} ödeme 7 gün içinde vadesi dolacak - Toplam {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
+                </p>
+              </div>
+              <button
+                onClick={() => setStatusFilter('Bekliyor')}
+                className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
+              >
+                Görüntüle
+              </button>
+            </div>
+          )}
+
+          {/* Monthly Collection Info Banner */}
+          {paymentStats.totalThisMonth > 0 && (
+            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-200 transition-all hover:shadow-md">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💰</span>
+                <p className="font-medium text-sm md:text-base">
+                  Bu ay tahsilat: {formatCurrency(paymentStats.collectedThisMonth, 'TRY')} / {formatCurrency(paymentStats.totalThisMonth, 'TRY')}
+                  <span className="ml-2 text-xs md:text-sm">(%{Math.round(paymentStats.collectionRate)} tamamlandı)</span>
+                </p>
+              </div>
             </div>
           )}
         </div>
-
-        {/* This Month Collection Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl shadow-sm border-2 border-blue-200 dark:border-blue-700 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
-              <CreditCardIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-              %{Math.round(paymentStats.collectionRate)}
-            </span>
-          </div>
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-            💰 Bu Ay Tahsilat
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(Tahsilat oranı)</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Tahsil Edilen:</span>
-              <span className="font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(paymentStats.collectedThisMonth, 'TRY')}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Bekleyen:</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">
-                {formatCurrency(paymentStats.pendingThisMonth, 'TRY')}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-3">
-              <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(paymentStats.collectionRate, 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="mb-6 flex flex-col md:flex-row gap-4">
