@@ -637,7 +637,6 @@ const CrmApp = () => {
                         gorusmeler={gorusmeler}
                         products={products}
                         shipments={shipments}
-                        payments={payments}
                         overdueItems={overdueItems}
                         customTasks={customTasks}
                         setActivePage={setActivePage}
@@ -753,7 +752,6 @@ const CrmApp = () => {
                         gorusmeler={gorusmeler}
                         products={products}
                         shipments={shipments}
-                        payments={payments}
                         overdueItems={overdueItems}
                         customTasks={customTasks}
                         setActivePage={setActivePage}
