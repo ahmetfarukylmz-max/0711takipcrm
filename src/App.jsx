@@ -692,6 +692,19 @@ const CrmApp = () => {
                         onShipment={handleShipmentSave}
                         customers={customers}
                         products={products}
+                        payments={payments}
+                        onMarkAsPaid={(paymentId) => {
+                            const payment = payments.find(p => p.id === paymentId);
+                            if (payment) {
+                                const today = new Date().toISOString().split('T')[0];
+                                handlePaymentSave({ ...payment, status: 'Tahsil Edildi', paidDate: today });
+                                toast.success('Ödeme tahsil edildi olarak işaretlendi!');
+                            }
+                        }}
+                        onGoToPayment={(paymentId) => {
+                            setActivePage('Ödemeler');
+                            // TODO: Filter to specific payment
+                        }}
                         onGeneratePdf={handleGeneratePdf}
                         loading={dataLoading}
                     />
