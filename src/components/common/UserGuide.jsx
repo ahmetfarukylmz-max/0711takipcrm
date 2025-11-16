@@ -730,7 +730,7 @@ const UserGuide = () => {
             {/* Overlay for mobile when sidebar is open */}
             {sidebarOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+                    className="lg:hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-30"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
