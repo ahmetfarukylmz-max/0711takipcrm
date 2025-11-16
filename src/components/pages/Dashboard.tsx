@@ -1,6 +1,6 @@
 import React, { useMemo, memo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppIcon, BellIcon, CreditCardIcon } from '../icons';
+import { UsersIcon, ClipboardListIcon, DocumentTextIcon, CalendarIcon, WhatsAppIcon, BellIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
@@ -13,7 +13,7 @@ import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
-import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment, Payment } from '../../types';
+import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
 
 interface BestSellingProduct {
     id: string;
@@ -53,8 +53,6 @@ interface DashboardProps {
     products: Product[];
     /** List of shipments */
     shipments: Shipment[];
-    /** List of payments */
-    payments?: Payment[];
     /** List of overdue items */
     overdueItems: Meeting[];
     /** List of custom tasks */
@@ -79,7 +77,6 @@ const Dashboard = memo<DashboardProps>(({
     gorusmeler,
     products,
     shipments,
-    payments = [],
     overdueItems,
     customTasks,
     setActivePage,
@@ -100,58 +97,6 @@ const Dashboard = memo<DashboardProps>(({
         .filter(g => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
         .sort((a, b) => new Date(a.next_action_date!).getTime() - new Date(b.next_action_date!).getTime())
         .slice(0, 5);
-
-    // Payment statistics
-    const paymentStats = useMemo(() => {
-        const todayDate = new Date();
-        const sevenDaysLater = new Date();
-        sevenDaysLater.setDate(todayDate.getDate() + 7);
-
-        // Upcoming payments (due within 7 days)
-        const upcomingPayments = payments.filter(p => {
-            if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
-            const dueDate = new Date(p.dueDate);
-            return dueDate >= todayDate && dueDate <= sevenDaysLater;
-        });
-
-        // Overdue payments
-        const overduePayments = payments.filter(p => {
-            if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
-            const dueDate = new Date(p.dueDate);
-            return dueDate < todayDate;
-        });
-
-        // This month's collection
-        const thisMonthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-        const thisMonthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
-
-        const thisMonthPayments = payments.filter(p => {
-            const dueDate = new Date(p.dueDate);
-            return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
-        });
-
-        const collectedThisMonth = thisMonthPayments
-            .filter(p => p.status === 'Tahsil Edildi')
-            .reduce((sum, p) => sum + p.amount, 0);
-
-        const pendingThisMonth = thisMonthPayments
-            .filter(p => p.status === 'Bekliyor' || p.status === 'Gecikti')
-            .reduce((sum, p) => sum + p.amount, 0);
-
-        const totalThisMonth = collectedThisMonth + pendingThisMonth;
-        const collectionRate = totalThisMonth > 0 ? (collectedThisMonth / totalThisMonth) * 100 : 0;
-
-        return {
-            upcoming: upcomingPayments,
-            upcomingTotal: upcomingPayments.reduce((sum, p) => sum + p.amount, 0),
-            overdue: overduePayments,
-            overdueTotal: overduePayments.reduce((sum, p) => sum + p.amount, 0),
-            collectedThisMonth,
-            pendingThisMonth,
-            totalThisMonth,
-            collectionRate
-        };
-    }, [payments]);
 
     // Calculate today's tasks
     const todayTasks = useMemo<TodayTask[]>(() => {
@@ -483,116 +428,6 @@ const Dashboard = memo<DashboardProps>(({
                         color="red"
                         onClick={() => setIsOverdueModalOpen(true)}
                     />
-                </div>
-            </div>
-
-            {/* Payment Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                {/* Upcoming Payments Card */}
-                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl shadow-sm border-2 border-yellow-200 dark:border-yellow-700 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setActivePage('Ödemeler')}>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
-                            <CreditCardIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                        </div>
-                        <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                            {paymentStats.upcoming.length}
-                        </span>
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        ⏰ Vadesi Yaklaşan Ödemeler
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(7 gün içinde)</p>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
-                    </div>
-                    {paymentStats.upcoming.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700">
-                            {paymentStats.upcoming.slice(0, 2).map(p => (
-                                <div key={p.id} className="text-xs text-gray-700 dark:text-gray-300 flex justify-between mb-1">
-                                    <span className="truncate">{p.customerName}</span>
-                                    <span className="font-medium">{formatCurrency(p.amount, p.currency)}</span>
-                                </div>
-                            ))}
-                            {paymentStats.upcoming.length > 2 && (
-                                <div className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-2">
-                                    +{paymentStats.upcoming.length - 2} daha...
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Overdue Payments Card */}
-                <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 p-6 rounded-xl shadow-sm border-2 border-red-200 dark:border-red-700 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setActivePage('Ödemeler')}>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-lg">
-                            <BellIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
-                        </div>
-                        <span className="text-2xl font-bold text-red-600 dark:text-red-400">
-                            {paymentStats.overdue.length}
-                        </span>
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        ⚠️ Gecikmiş Ödemeler
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(Vadesi geçmiş)</p>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(paymentStats.overdueTotal, 'TRY')}
-                    </div>
-                    {paymentStats.overdue.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-700">
-                            {paymentStats.overdue.slice(0, 2).map(p => (
-                                <div key={p.id} className="text-xs text-gray-700 dark:text-gray-300 flex justify-between mb-1">
-                                    <span className="truncate">{p.customerName}</span>
-                                    <span className="font-medium">{formatCurrency(p.amount, p.currency)}</span>
-                                </div>
-                            ))}
-                            {paymentStats.overdue.length > 2 && (
-                                <div className="text-xs text-red-600 dark:text-red-400 font-medium mt-2">
-                                    +{paymentStats.overdue.length - 2} daha...
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* This Month Collection Card */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl shadow-sm border-2 border-blue-200 dark:border-blue-700 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setActivePage('Ödemeler')}>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
-                            <CreditCardIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            %{Math.round(paymentStats.collectionRate)}
-                        </span>
-                    </div>
-                    <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        💰 Bu Ay Tahsilat
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">(Tahsilat oranı)</p>
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Tahsil Edilen:</span>
-                            <span className="font-bold text-green-600 dark:text-green-400">
-                                {formatCurrency(paymentStats.collectedThisMonth, 'TRY')}
-                            </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Bekleyen:</span>
-                            <span className="font-bold text-gray-900 dark:text-gray-100">
-                                {formatCurrency(paymentStats.pendingThisMonth, 'TRY')}
-                            </span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-3">
-                            <div
-                                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all"
-                                style={{ width: `${Math.min(paymentStats.collectionRate, 100)}%` }}
-                            />
-                        </div>
-                    </div>
                 </div>
             </div>
 
