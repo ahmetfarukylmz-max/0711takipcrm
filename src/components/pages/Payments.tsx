@@ -33,6 +33,7 @@ const Payments: React.FC<PaymentsProps> = ({
     isOpen: false,
     payment: null
   });
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
 
@@ -154,10 +155,45 @@ const Payments: React.FC<PaymentsProps> = ({
 
   const confirmDelete = () => {
     if (deleteConfirm.payment) {
-      onDelete(deleteConfirm.payment.id);
-      toast.success('Ödeme kaydı silindi');
-      setDeleteConfirm({ isOpen: false, payment: null });
+      if ((deleteConfirm.payment as any).id === 'batch') {
+        confirmBatchDelete();
+      } else {
+        onDelete(deleteConfirm.payment.id);
+        setDeleteConfirm({ isOpen: false, payment: null });
+      }
     }
+  };
+
+  // Batch delete functions
+  const handleSelectItem = (id: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === filteredPayments.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(filteredPayments.map(p => p.id)));
+    }
+  };
+
+  const handleBatchDelete = () => {
+    setDeleteConfirm({
+      isOpen: true,
+      payment: { id: 'batch', count: selectedItems.size } as any
+    });
+  };
+
+  const confirmBatchDelete = () => {
+    selectedItems.forEach(id => onDelete(id));
+    setSelectedItems(new Set());
+    setDeleteConfirm({ isOpen: false, payment: null });
   };
 
   if (loading) {
@@ -183,13 +219,25 @@ const Payments: React.FC<PaymentsProps> = ({
             Toplam {filteredPayments.length} ödeme
           </p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="btn-primary flex items-center gap-2 justify-center"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Yeni Ödeme
-        </button>
+        <div className="flex gap-2">
+          {selectedItems.size > 0 && (
+            <button
+              onClick={handleBatchDelete}
+              className="btn-danger flex items-center gap-2 justify-center"
+            >
+              <TrashIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Seçili {selectedItems.size} Ödemeyi Sil</span>
+              <span className="sm:hidden">Sil ({selectedItems.size})</span>
+            </button>
+          )}
+          <button
+            onClick={() => handleOpenModal()}
+            className="btn-primary flex items-center gap-2 justify-center"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Yeni Ödeme
+          </button>
+        </div>
       </div>
 
       {/* Payment Alerts - Compact banners like CriticalAlerts */}
@@ -273,6 +321,14 @@ const Payments: React.FC<PaymentsProps> = ({
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
+              <th className="px-6 py-3 text-left">
+                <input
+                  type="checkbox"
+                  checked={filteredPayments.length > 0 && selectedItems.size === filteredPayments.length}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Müşteri
               </th>
@@ -299,7 +355,7 @@ const Payments: React.FC<PaymentsProps> = ({
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredPayments.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   {searchQuery || statusFilter !== 'Tümü'
                     ? 'Filtreye uygun ödeme bulunamadı'
                     : 'Henüz ödeme kaydı yok. Yeni ödeme eklemek için yukarıdaki butonu kullanın.'}
@@ -309,23 +365,30 @@ const Payments: React.FC<PaymentsProps> = ({
               filteredPayments.map((payment) => (
                 <tr
                   key={payment.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                  onClick={() => handleOpenModal(payment)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.has(payment.id)}
+                      onChange={() => handleSelectItem(payment.id)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {payment.customerName || '-'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     {payment.orderNumber || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {formatCurrency(payment.amount, payment.currency)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     <div className="text-sm text-gray-900 dark:text-gray-100">
                       {payment.paymentMethod}
                     </div>
@@ -335,10 +398,10 @@ const Payments: React.FC<PaymentsProps> = ({
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     {formatDate(payment.dueDate)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}>
                       {getStatusText(payment)}
                     </span>
@@ -560,8 +623,12 @@ const Payments: React.FC<PaymentsProps> = ({
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm({ isOpen: false, payment: null })}
         onConfirm={confirmDelete}
-        title="Ödeme Kaydını Sil"
-        message={`${deleteConfirm.payment?.customerName} müşterisine ait ${formatCurrency(deleteConfirm.payment?.amount || 0, deleteConfirm.payment?.currency)} tutarındaki ödeme kaydını silmek istediğinizden emin misiniz?`}
+        title={(deleteConfirm.payment as any)?.id === 'batch' ? 'Toplu Silme' : 'Ödeme Kaydını Sil'}
+        message={
+          (deleteConfirm.payment as any)?.id === 'batch'
+            ? `${(deleteConfirm.payment as any)?.count} ödeme kaydını silmek istediğinizden emin misiniz?`
+            : `${deleteConfirm.payment?.customerName} müşterisine ait ${formatCurrency(deleteConfirm.payment?.amount || 0, deleteConfirm.payment?.currency)} tutarındaki ödeme kaydını silmek istediğinizden emin misiniz?`
+        }
         confirmText="Sil"
         cancelText="İptal"
       />
