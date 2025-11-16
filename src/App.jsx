@@ -439,8 +439,26 @@ const CrmApp = () => {
         const payment = payments.find(p => p.id === id);
         if (!payment) return;
 
-        deleteDocument(user.uid, 'payments', id).then(() => {
-            logUserActivity('DELETE_PAYMENT', { message: `Ödeme silindi: ${payment.customerName} - ${payment.amount}` });
+        const customerName = payment.customerName || 'Bilinmeyen müşteri';
+        const relatedOrder = payment.orderId ? orders.find(o => o.id === payment.orderId) : null;
+
+        showSmartConfirm({
+            itemName: `${customerName} - Ödeme`,
+            itemType: 'ödeme',
+            relatedCount: relatedOrder ? 1 : 0,
+            relatedType: relatedOrder ? 'sipariş ile ilişkili' : '',
+            onConfirm: () => {
+                deleteDocument(user.uid, 'payments', id).then(() => {
+                    logUserActivity('DELETE_PAYMENT', { message: `Ödeme silindi: ${customerName} - ${payment.amount}` });
+                    showUndoableDelete(
+                        `${customerName} müşterisinin ödemesi silindi`,
+                        () => {
+                            undoDelete(user.uid, 'payments', id);
+                            logUserActivity('UNDO_DELETE_PAYMENT', { message: `Ödeme geri alındı: ${customerName}` });
+                        }
+                    );
+                });
+            }
         });
     };
 
