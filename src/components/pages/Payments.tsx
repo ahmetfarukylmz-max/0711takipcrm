@@ -33,6 +33,8 @@ const Payments: React.FC<PaymentsProps> = ({
     isOpen: false,
     payment: null
   });
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
+  const [showUpcomingModal, setShowUpcomingModal] = useState(false);
 
   // Filtreleme ve arama
   const filteredPayments = useMemo(() => {
@@ -203,7 +205,7 @@ const Payments: React.FC<PaymentsProps> = ({
                 </p>
               </div>
               <button
-                onClick={() => setStatusFilter('Bekliyor')}
+                onClick={() => setShowOverdueModal(true)}
                 className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
               >
                 Görüntüle
@@ -221,7 +223,7 @@ const Payments: React.FC<PaymentsProps> = ({
                 </p>
               </div>
               <button
-                onClick={() => setStatusFilter('Bekliyor')}
+                onClick={() => setShowUpcomingModal(true)}
                 className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
               >
                 Görüntüle
@@ -452,6 +454,105 @@ const Payments: React.FC<PaymentsProps> = ({
           onSave={handleSave}
           onCancel={() => setIsModalOpen(false)}
         />
+      </Modal>
+
+      {/* Overdue Payments Modal */}
+      <Modal
+        show={showOverdueModal}
+        onClose={() => setShowOverdueModal(false)}
+        title="Gecikmiş Ödemeler"
+        maxWidth="max-w-4xl"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+            <p className="text-sm text-red-800 dark:text-red-200">
+              <span className="font-semibold">{paymentStats.overdue.length} gecikmiş ödeme</span> - Toplam {formatCurrency(paymentStats.overdueTotal, 'TRY')}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {paymentStats.overdue.map((payment) => {
+              const today = new Date();
+              const dueDate = new Date(payment.dueDate);
+              const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+              return (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setShowOverdueModal(false);
+                    handleOpenModal(payment);
+                  }}
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{payment.customerName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Vade: {formatDate(payment.dueDate)} • <span className="text-red-600 dark:text-red-400 font-medium">{daysOverdue} gün gecikmiş</span>
+                    </p>
+                    {payment.orderNumber && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Sipariş: {payment.orderNumber}</p>
+                    )}
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payment.amount, payment.currency)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{payment.paymentMethod}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Upcoming Payments Modal */}
+      <Modal
+        show={showUpcomingModal}
+        onClose={() => setShowUpcomingModal(false)}
+        title="Vadesi Yaklaşan Ödemeler (7 Gün İçinde)"
+        maxWidth="max-w-4xl"
+      >
+        <div className="space-y-4">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              <span className="font-semibold">{paymentStats.upcoming.length} ödeme</span> 7 gün içinde vadesi dolacak - Toplam {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
+            </p>
+          </div>
+          <div className="space-y-2">
+            {paymentStats.upcoming.map((payment) => {
+              const today = new Date();
+              const dueDate = new Date(payment.dueDate);
+              const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+              return (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-yellow-300 dark:hover:border-yellow-700 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setShowUpcomingModal(false);
+                    handleOpenModal(payment);
+                  }}
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">{payment.customerName}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Vade: {formatDate(payment.dueDate)} •
+                      <span className="text-yellow-600 dark:text-yellow-400 font-medium ml-1">
+                        {daysUntilDue === 0 ? 'Bugün' : daysUntilDue === 1 ? 'Yarın' : `${daysUntilDue} gün kaldı`}
+                      </span>
+                    </p>
+                    {payment.orderNumber && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Sipariş: {payment.orderNumber}</p>
+                    )}
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payment.amount, payment.currency)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{payment.paymentMethod}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </Modal>
 
       {/* Delete Confirmation */}
