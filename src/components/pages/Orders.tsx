@@ -13,7 +13,7 @@ import SkeletonTable from '../common/SkeletonTable';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
-import type { Order, Customer, Product, Shipment } from '../../types';
+import type { Order, Customer, Product, Shipment, Payment } from '../../types';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -33,6 +33,12 @@ interface OrdersProps {
     customers: Customer[];
     /** List of products */
     products: Product[];
+    /** List of payments */
+    payments?: Payment[];
+    /** Callback when marking payment as paid */
+    onMarkAsPaid?: (paymentId: string) => void;
+    /** Callback to navigate to payment page */
+    onGoToPayment?: (paymentId: string) => void;
     /** Callback to generate custom PDF */
     onGeneratePdf: (order: Order) => void;
     /** Loading state */
@@ -42,7 +48,7 @@ interface OrdersProps {
 /**
  * Orders component - Order management page
  */
-const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, onGeneratePdf, loading = false }) => {
+const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, payments = [], onMarkAsPaid, onGoToPayment, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -608,6 +614,9 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                     order={currentOrder}
                     customer={customers.find(c => c.id === currentOrder?.customerId)}
                     products={products}
+                    payment={payments.find(p => p.orderId === currentOrder?.id)}
+                    onMarkAsPaid={onMarkAsPaid}
+                    onGoToPayment={onGoToPayment}
                 />
             </Modal>
 
