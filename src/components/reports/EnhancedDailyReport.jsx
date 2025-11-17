@@ -10,7 +10,8 @@ import {
     TruckIcon,
     CheckCircleIcon,
     PrinterIcon,
-    DownloadIcon
+    DownloadIcon,
+    CurrencyDollarIcon
 } from '../icons';
 import { MetricCard } from './shared';
 
@@ -54,7 +55,7 @@ const SummaryRow = memo(({ label, value, subvalue, change, icon: Icon }) => {
     );
 });
 
-const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
+const EnhancedDailyReport = ({ orders, quotes, meetings, shipments, payments }) => {
     const reportRef = useRef();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
     const [dateRange, setDateRange] = useState('today');
@@ -62,6 +63,16 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
     // Veri filtreleme ve hesaplama fonksiyonu
     const getDataForDate = (date) => {
         const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
+
+        // Tahsilat hesaplamaları
+        const dailyPayments = payments ? payments.filter(p => !p.isDeleted && p.paidDate === dateStr && p.status === 'Tahsil Edildi') : [];
+        const dailyPaymentsValue = dailyPayments.reduce((sum, p) => {
+            const amount = p.amount || 0;
+            const inTRY = p.currency === 'USD' ? amount * 35 :
+                         p.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
 
         return {
             newMeetings: meetings.filter(m => !m.isDeleted && m.date === dateStr).length,
@@ -81,19 +92,21 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
                 .reduce((sum, o) => sum + (o.total_amount || 0), 0),
             newShipments: shipments.filter(s => !s.isDeleted && s.shipment_date === dateStr).length,
             completedDeliveries: shipments.filter(s => !s.isDeleted && s.delivery_date === dateStr).length,
+            collectedPayments: dailyPayments.length,
+            collectedPaymentsValue: dailyPaymentsValue,
         };
     };
 
     // Bugün ve dün verilerini hesapla
     const todayData = useMemo(() => getDataForDate(selectedDate), [
-        orders, quotes, meetings, shipments, selectedDate
+        orders, quotes, meetings, shipments, payments, selectedDate
     ]);
 
     const yesterdayData = useMemo(() => {
         const yesterday = new Date(selectedDate);
         yesterday.setDate(yesterday.getDate() - 1);
         return getDataForDate(yesterday);
-    }, [orders, quotes, meetings, shipments, selectedDate]);
+    }, [orders, quotes, meetings, shipments, payments, selectedDate]);
 
     // Dönüşüm oranı
     const conversionRate = todayData.newQuotes > 0
@@ -347,6 +360,29 @@ const EnhancedDailyReport = ({ orders, quotes, meetings, shipments }) => {
                             change={yesterdayData.completedDeliveries ?
                                 ((todayData.completedDeliveries - yesterdayData.completedDeliveries) / yesterdayData.completedDeliveries * 100).toFixed(1) : null}
                             icon={CheckCircleIcon}
+                        />
+                    </div>
+                </div>
+
+                {/* Tahsilat */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+                    <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <CurrencyDollarIcon className="w-5 h-5 text-emerald-500" />
+                        Tahsilat
+                    </h4>
+                    <div className="space-y-2">
+                        <SummaryRow
+                            label="Tahsil Edilen Ödeme"
+                            value={`${todayData.collectedPayments} adet`}
+                            subvalue={formatCurrency(todayData.collectedPaymentsValue)}
+                            change={yesterdayData.collectedPayments ?
+                                ((todayData.collectedPayments - yesterdayData.collectedPayments) / yesterdayData.collectedPayments * 100).toFixed(1) : null}
+                            icon={CurrencyDollarIcon}
+                        />
+                        <SummaryRow
+                            label="Ortalama Tahsilat"
+                            value={todayData.collectedPayments > 0 ? formatCurrency(todayData.collectedPaymentsValue / todayData.collectedPayments) : formatCurrency(0)}
+                            icon={null}
                         />
                     </div>
                 </div>

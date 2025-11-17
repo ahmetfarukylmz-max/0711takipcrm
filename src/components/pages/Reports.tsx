@@ -6,7 +6,7 @@ import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDe
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { ChartBarIcon } from '../icons';
-import type { Order, Customer, Quote, Meeting, Shipment, Product } from '../../types';
+import type { Order, Customer, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 
 interface CustomerStats {
     name: string;
@@ -45,6 +45,8 @@ interface ReportsProps {
     shipments: Shipment[];
     /** List of products */
     products: Product[];
+    /** List of payments */
+    payments: Payment[];
     /** Callback to open user guide */
     onGuideClick?: () => void;
 }
@@ -52,7 +54,7 @@ interface ReportsProps {
 /**
  * Reports component - Analytics and reporting page
  */
-const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, shipments, products, onGuideClick }) => {
+const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, shipments, products, payments, onGuideClick }) => {
     const [dateRange, setDateRange] = useState<string>('30'); // days
     const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
 
@@ -155,6 +157,112 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
         };
     }, [orders, customers, teklifler, gorusmeler]);
 
+    // Cari Hesap Özeti
+    const cariHesapSummary = useMemo(() => {
+        const activeCustomers = customers.filter(c => !c.isDeleted);
+
+        let totalAlacak = 0;
+        let totalBorc = 0;
+        let dengedeCount = 0;
+        let alacakCount = 0;
+        let borcCount = 0;
+
+        activeCustomers.forEach(customer => {
+            const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
+            const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi');
+
+            const totalOrders = customerOrders.reduce((sum, order) => {
+                const amount = order.total_amount || 0;
+                const inTRY = order.currency === 'USD' ? amount * 35 :
+                             order.currency === 'EUR' ? amount * 38 :
+                             amount;
+                return sum + inTRY;
+            }, 0);
+
+            const totalPayments = customerPayments.reduce((sum, payment) => {
+                const amount = payment.amount || 0;
+                const inTRY = payment.currency === 'USD' ? amount * 35 :
+                             payment.currency === 'EUR' ? amount * 38 :
+                             amount;
+                return sum + inTRY;
+            }, 0);
+
+            const balance = totalPayments - totalOrders;
+
+            if (Math.abs(balance) < 100) {
+                dengedeCount++;
+            } else if (balance > 0) {
+                totalAlacak += balance;
+                alacakCount++;
+            } else {
+                totalBorc += Math.abs(balance);
+                borcCount++;
+            }
+        });
+
+        return {
+            totalAlacak,
+            totalBorc,
+            netBalance: totalAlacak - totalBorc,
+            dengedeCount,
+            alacakCount,
+            borcCount
+        };
+    }, [customers, orders, payments]);
+
+    // Ödeme İstatistikleri
+    const paymentStats = useMemo(() => {
+        const activePayments = payments.filter(p => !p.isDeleted);
+        const tahsilEdilen = activePayments.filter(p => p.status === 'Tahsil Edildi');
+        const bekleyen = activePayments.filter(p => p.status === 'Bekliyor');
+
+        const tahsilEdilenTutar = tahsilEdilen.reduce((sum, p) => {
+            const amount = p.amount || 0;
+            const inTRY = p.currency === 'USD' ? amount * 35 :
+                         p.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+
+        const bekleyenTutar = bekleyen.reduce((sum, p) => {
+            const amount = p.amount || 0;
+            const inTRY = p.currency === 'USD' ? amount * 35 :
+                         p.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+
+        // Çek bilgileri - siparişlerden çek ödeme tipindekileri say
+        const cekOrders = orders.filter(o => !o.isDeleted && o.paymentType === 'Çek');
+        const today = new Date();
+        const vadesiYaklasanCekler = cekOrders.filter(o => {
+            if (o.checkDate) {
+                const checkDate = new Date(o.checkDate);
+                const daysUntilDue = Math.ceil((checkDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                return daysUntilDue >= 0 && daysUntilDue <= 30;
+            }
+            return false;
+        });
+
+        const vadesiGecmisCekler = cekOrders.filter(o => {
+            if (o.checkDate) {
+                const checkDate = new Date(o.checkDate);
+                return checkDate < today;
+            }
+            return false;
+        });
+
+        return {
+            tahsilEdilenCount: tahsilEdilen.length,
+            tahsilEdilenTutar,
+            bekleyenCount: bekleyen.length,
+            bekleyenTutar,
+            toplamCekSayisi: cekOrders.length,
+            vadesiYaklasanCekler: vadesiYaklasanCekler.length,
+            vadesiGecmisCekler: vadesiGecmisCekler.length
+        };
+    }, [payments, orders]);
+
     const handleDateRangeChange = (e: ChangeEvent<HTMLSelectElement>) => {
         setDateRange(e.target.value);
     };
@@ -193,6 +301,7 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
                     shipments={shipments}
                     customers={customers}
                     products={products}
+                    payments={payments}
                 />
             </Modal>
 
@@ -248,6 +357,62 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
                     <h3 className="text-sm font-medium opacity-90">Dönüşüm Oranı</h3>
                     <p className="text-3xl font-bold mt-2">{stats.conversionRate.toFixed(1)}%</p>
                     <p className="text-sm mt-2 opacity-75">Teklif → Sipariş</p>
+                </div>
+            </div>
+
+            {/* Cari Hesap Özeti */}
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">Cari Hesap Özeti</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Toplam Alacak</h3>
+                    <p className="text-3xl font-bold mt-2">{formatCurrency(cariHesapSummary.totalAlacak)}</p>
+                    <p className="text-sm mt-2 opacity-75">{cariHesapSummary.alacakCount} müşteri</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-red-500 to-red-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Toplam Borç</h3>
+                    <p className="text-3xl font-bold mt-2">{formatCurrency(cariHesapSummary.totalBorc)}</p>
+                    <p className="text-sm mt-2 opacity-75">{cariHesapSummary.borcCount} müşteri</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Net Bakiye</h3>
+                    <p className="text-3xl font-bold mt-2">{formatCurrency(cariHesapSummary.netBalance)}</p>
+                    <p className="text-sm mt-2 opacity-75">Alacak - Borç</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-500 to-gray-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Dengede</h3>
+                    <p className="text-3xl font-bold mt-2">{cariHesapSummary.dengedeCount}</p>
+                    <p className="text-sm mt-2 opacity-75">Müşteri hesabı dengede</p>
+                </div>
+            </div>
+
+            {/* Ödeme & Tahsilat */}
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">Ödeme & Tahsilat</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Tahsil Edilen</h3>
+                    <p className="text-3xl font-bold mt-2">{formatCurrency(paymentStats.tahsilEdilenTutar)}</p>
+                    <p className="text-sm mt-2 opacity-75">{paymentStats.tahsilEdilenCount} ödeme</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Bekleyen Tahsilat</h3>
+                    <p className="text-3xl font-bold mt-2">{formatCurrency(paymentStats.bekleyenTutar)}</p>
+                    <p className="text-sm mt-2 opacity-75">{paymentStats.bekleyenCount} ödeme</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Vadesi Yaklaşan Çekler</h3>
+                    <p className="text-3xl font-bold mt-2">{paymentStats.vadesiYaklasanCekler}</p>
+                    <p className="text-sm mt-2 opacity-75">30 gün içinde</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-lg shadow-lg text-white">
+                    <h3 className="text-sm font-medium opacity-90">Vadesi Geçmiş Çekler</h3>
+                    <p className="text-3xl font-bold mt-2">{paymentStats.vadesiGecmisCekler}</p>
+                    <p className="text-sm mt-2 opacity-75">{paymentStats.toplamCekSayisi} toplam çek</p>
                 </div>
             </div>
 

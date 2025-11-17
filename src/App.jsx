@@ -717,6 +717,7 @@ const CrmApp = () => {
                         gorusmeler={gorusmeler}
                         shipments={shipments}
                         products={products}
+                        payments={payments}
                         onGuideClick={handleToggleGuide}
                     />
                 );

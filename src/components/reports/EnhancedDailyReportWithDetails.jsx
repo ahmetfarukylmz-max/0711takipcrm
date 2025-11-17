@@ -86,7 +86,7 @@ const DetailListItem = ({ customer, items, total, date, notes, type, getProductN
     );
 };
 
-const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, customers, products }) => {
+const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, customers, products, payments }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
     const [dateRange, setDateRange] = useState('today');
     const [openAccordion, setOpenAccordion] = useState(null);
@@ -130,6 +130,16 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
         const dayShipments = shipments.filter(s => !s.isDeleted && s.shipment_date === dateStr);
         const dayDeliveries = shipments.filter(s => !s.isDeleted && s.delivery_date === dateStr);
 
+        // Tahsilat hesaplamaları
+        const dailyPayments = payments ? payments.filter(p => !p.isDeleted && p.paidDate === dateStr && p.status === 'Tahsil Edildi') : [];
+        const dailyPaymentsValue = dailyPayments.reduce((sum, p) => {
+            const amount = p.amount || 0;
+            const inTRY = p.currency === 'USD' ? amount * 35 :
+                         p.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+
         return {
             meetings: dayMeetings,
             quotes: dayQuotes,
@@ -137,6 +147,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             convertedOrders: convertedOrders,
             shipments: dayShipments,
             deliveries: dayDeliveries,
+            payments: dailyPayments,
             stats: {
                 newMeetings: dayMeetings.length,
                 newQuotes: dayQuotes.length,
@@ -147,20 +158,22 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                 allOrdersValue: dayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
                 newShipments: dayShipments.length,
                 completedDeliveries: dayDeliveries.length,
+                collectedPayments: dailyPayments.length,
+                collectedPaymentsValue: dailyPaymentsValue,
             }
         };
     };
 
     // Bugün ve dün verilerini hesapla
     const todayData = useMemo(() => getDetailedDataForDate(selectedDate), [
-        orders, quotes, meetings, shipments, selectedDate
+        orders, quotes, meetings, shipments, payments, selectedDate
     ]);
 
     const yesterdayData = useMemo(() => {
         const yesterday = new Date(selectedDate);
         yesterday.setDate(yesterday.getDate() - 1);
         return getDetailedDataForDate(yesterday);
-    }, [orders, quotes, meetings, shipments, selectedDate]);
+    }, [orders, quotes, meetings, shipments, payments, selectedDate]);
 
     // Dönüşüm oranı
     const conversionRate = todayData.stats.newQuotes > 0
