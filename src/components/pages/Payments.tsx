@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
-import ConfirmDialog from '../common/ConfirmDialog';
 import PaymentForm from '../forms/PaymentForm';
 import SearchBar from '../common/SearchBar';
 import EmptyState from '../common/EmptyState';
@@ -30,10 +29,6 @@ const Payments: React.FC<PaymentsProps> = ({
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tümü');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; payment: Payment | null }>({
-    isOpen: false,
-    payment: null
-  });
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
@@ -151,18 +146,8 @@ const Payments: React.FC<PaymentsProps> = ({
   };
 
   const handleDelete = (payment: Payment) => {
-    setDeleteConfirm({ isOpen: true, payment });
-  };
-
-  const confirmDelete = () => {
-    if (deleteConfirm.payment) {
-      if ((deleteConfirm.payment as any).id === 'batch') {
-        confirmBatchDelete();
-      } else {
-        onDelete(deleteConfirm.payment.id);
-        setDeleteConfirm({ isOpen: false, payment: null });
-      }
-    }
+    // Directly call onDelete - App.jsx will handle smart confirmation
+    onDelete(payment.id);
   };
 
   // Batch delete functions
@@ -185,16 +170,9 @@ const Payments: React.FC<PaymentsProps> = ({
   };
 
   const handleBatchDelete = () => {
-    setDeleteConfirm({
-      isOpen: true,
-      payment: { id: 'batch', count: selectedItems.size } as any
-    });
-  };
-
-  const confirmBatchDelete = () => {
+    // Delete all selected items
     selectedItems.forEach(id => onDelete(id));
     setSelectedItems(new Set());
-    setDeleteConfirm({ isOpen: false, payment: null });
   };
 
   if (loading) {
@@ -630,23 +608,6 @@ const Payments: React.FC<PaymentsProps> = ({
           </div>
         </div>
       </Modal>
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        isOpen={deleteConfirm.isOpen}
-        onClose={() => setDeleteConfirm({ isOpen: false, payment: null })}
-        onConfirm={confirmDelete}
-        title={(deleteConfirm.payment as any)?.id === 'batch' ? 'Toplu Silme' : 'Ödeme Kaydını Sil'}
-        message={
-          (deleteConfirm.payment as any)?.id === 'batch'
-            ? `Seçili ${(deleteConfirm.payment as any)?.count} ödeme kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
-            : deleteConfirm.payment
-              ? `"${deleteConfirm.payment.customerName}" müşterisine ait ${formatCurrency(deleteConfirm.payment.amount || 0, deleteConfirm.payment.currency || 'TRY')} tutarındaki ödeme kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
-              : 'Bu ödeme kaydını silmek istediğinizden emin misiniz?'
-        }
-        confirmText="Sil"
-        cancelText="İptal"
-      />
     </div>
   );
 };
