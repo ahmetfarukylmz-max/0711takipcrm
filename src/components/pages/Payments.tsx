@@ -209,7 +209,7 @@ const Payments: React.FC<PaymentsProps> = ({
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div>
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -224,7 +224,8 @@ const Payments: React.FC<PaymentsProps> = ({
           {selectedItems.size > 0 && (
             <button
               onClick={handleBatchDelete}
-              className="btn-danger flex items-center gap-2 justify-center"
+              className="flex items-center gap-2 justify-center px-4 py-2 min-h-[44px] bg-red-500 text-white rounded-lg hover:bg-red-600 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
+              aria-label={`Seçili ${selectedItems.size} ödeme kaydını sil`}
             >
               <TrashIcon className="w-5 h-5" />
               <span className="hidden sm:inline">Seçili {selectedItems.size} Ödemeyi Sil</span>
@@ -233,7 +234,8 @@ const Payments: React.FC<PaymentsProps> = ({
           )}
           <button
             onClick={() => handleOpenModal()}
-            className="btn-primary flex items-center gap-2 justify-center"
+            className="flex items-center gap-2 justify-center px-4 py-2 min-h-[44px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Yeni ödeme ekle"
           >
             <PlusIcon className="w-5 h-5" />
             Yeni Ödeme
@@ -414,15 +416,17 @@ const Payments: React.FC<PaymentsProps> = ({
                     <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleOpenModal(payment)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         title="Düzenle"
+                        aria-label={`${payment.customerName} ödeme kaydını düzenle`}
                       >
                         <EditIcon className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDelete(payment)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         title="Sil"
+                        aria-label={`${payment.customerName} ödeme kaydını sil`}
                       >
                         <TrashIcon className="w-5 h-5" />
                       </button>
@@ -495,13 +499,15 @@ const Payments: React.FC<PaymentsProps> = ({
               <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => handleOpenModal(payment)}
-                  className="flex-1 px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100"
+                  className="flex-1 px-3 py-2 min-h-[44px] text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label={`${payment.customerName} ödeme kaydını düzenle`}
                 >
                   Düzenle
                 </button>
                 <button
                   onClick={() => handleDelete(payment)}
-                  className="flex-1 px-3 py-2 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100"
+                  className="flex-1 px-3 py-2 min-h-[44px] text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                  aria-label={`${payment.customerName} ödeme kaydını sil`}
                 >
                   Sil
                 </button>
@@ -633,8 +639,10 @@ const Payments: React.FC<PaymentsProps> = ({
         title={(deleteConfirm.payment as any)?.id === 'batch' ? 'Toplu Silme' : 'Ödeme Kaydını Sil'}
         message={
           (deleteConfirm.payment as any)?.id === 'batch'
-            ? `${(deleteConfirm.payment as any)?.count} ödeme kaydını silmek istediğinizden emin misiniz?`
-            : `${deleteConfirm.payment?.customerName} müşterisine ait ${formatCurrency(deleteConfirm.payment?.amount || 0, deleteConfirm.payment?.currency)} tutarındaki ödeme kaydını silmek istediğinizden emin misiniz?`
+            ? `Seçili ${(deleteConfirm.payment as any)?.count} ödeme kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+            : deleteConfirm.payment
+              ? `"${deleteConfirm.payment.customerName}" müşterisine ait ${formatCurrency(deleteConfirm.payment.amount || 0, deleteConfirm.payment.currency || 'TRY')} tutarındaki ödeme kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+              : 'Bu ödeme kaydını silmek istediğinizden emin misiniz?'
         }
         confirmText="Sil"
         cancelText="İptal"
