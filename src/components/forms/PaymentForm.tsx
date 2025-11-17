@@ -14,6 +14,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
   const [formData, setFormData] = useState({
     customerId: payment?.customerId || '',
     orderId: payment?.orderId || '',
+    paymentType: (payment as any)?.paymentType || 'Cari Hesap Ödemesi',
     amount: payment?.amount || 0,
     currency: (payment?.currency || 'TRY') as Currency,
     paymentMethod: (payment?.paymentMethod || 'Belirtilmemiş') as PaymentMethod,
@@ -24,6 +25,11 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     paidDate: payment?.paidDate || '',
     notes: payment?.notes || ''
   });
+
+  // Filter orders by selected customer
+  const customerOrders = formData.customerId
+    ? orders.filter(o => o.customerId === formData.customerId && !o.isDeleted)
+    : [];
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -40,6 +46,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     // Undefined ve boş değerleri temizle - Firestore hatası çözer
     const cleanData: any = {
       customerId: formData.customerId,
+      paymentType: formData.paymentType,
       amount: Number(formData.amount),
       currency: formData.currency,
       paymentMethod: formData.paymentMethod,
@@ -90,6 +97,70 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
           ))}
         </select>
       </div>
+
+      {/* Ödeme Tipi */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Ödeme Tipi <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="paymentType"
+          value={formData.paymentType}
+          onChange={handleChange}
+          required
+          className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+        >
+          <option value="Cari Hesap Ödemesi">💰 Cari Hesap Ödemesi</option>
+          <option value="Sipariş Ödemesi">📦 Sipariş Ödemesi</option>
+          <option value="Avans/Önödeme">💵 Avans / Önödeme</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {formData.paymentType === 'Cari Hesap Ödemesi' && '→ Sipariş ile ilişkilendirilmemiş genel ödeme'}
+          {formData.paymentType === 'Sipariş Ödemesi' && '→ Belirli bir siparişe ait ödeme'}
+          {formData.paymentType === 'Avans/Önödeme' && '→ Gelecek siparişler için alınan önödeme'}
+        </p>
+      </div>
+
+      {/* Sipariş Seçimi (Opsiyonel - Sadece Sipariş Ödemesi seçiliyse) */}
+      {formData.customerId && formData.paymentType === 'Sipariş Ödemesi' && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Sipariş Seçin {formData.paymentType === 'Sipariş Ödemesi' && <span className="text-red-500">*</span>}
+          </label>
+          <select
+            name="orderId"
+            value={formData.orderId}
+            onChange={handleChange}
+            required={formData.paymentType === 'Sipariş Ödemesi'}
+            className="block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100 sm:text-sm"
+          >
+            <option value="">Sipariş ile ilişkilendirme (Opsiyonel)</option>
+            {customerOrders.length > 0 ? (
+              customerOrders.map(order => (
+                <option key={order.id} value={order.id}>
+                  {order.orderNumber} - {order.total_amount?.toLocaleString('tr-TR')} {order.currency} ({order.status})
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>Bu müşteriye ait sipariş bulunamadı</option>
+            )}
+          </select>
+          {customerOrders.length === 0 && (
+            <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+              ⚠️ Bu müşteriye ait sipariş bulunamadı. Önce sipariş oluşturun veya "Cari Hesap Ödemesi" seçin.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Avans Bilgilendirmesi */}
+      {formData.paymentType === 'Avans/Önödeme' && (
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
+          <p className="text-sm text-green-800 dark:text-green-200">
+            💡 <strong>Avans/Önödeme:</strong> Bu ödeme müşterinin cari hesabına avans olarak kaydedilecek ve gelecekte siparişlerden düşülebilecektir.
+          </p>
+        </div>
+      )}
 
       {/* Tutar ve Para Birimi */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
