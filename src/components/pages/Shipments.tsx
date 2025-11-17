@@ -7,6 +7,8 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
+import { PlusIcon } from '../icons';
 import { formatDate, getStatusClass } from '../../utils/formatters';
 import type { Shipment, Order, Product, Customer } from '../../types';
 
@@ -678,10 +680,12 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                             );
                         }) : (
                             <tr>
-                                <td colSpan={7} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    {searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü'
-                                        ? 'Arama kriterine uygun sevkiyat bulunamadı.'
-                                        : 'Henüz sevkiyat eklenmemiş.'}
+                                <td colSpan={7} className="p-0">
+                                    <EmptyState
+                                        icon={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'search' : 'shipments'}
+                                        title={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'Sevkiyat Bulunamadı' : 'Henüz Sevkiyat Yok'}
+                                        description={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'Arama kriterine uygun sevkiyat bulunamadı.' : undefined}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -765,12 +769,12 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         />
                     );
                 }) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü'
-                                ? 'Arama kriterine uygun sevkiyat bulunamadı.'
-                                : 'Henüz sevkiyat eklenmemiş.'}
-                        </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <EmptyState
+                            icon={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'search' : 'shipments'}
+                            title={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'Sevkiyat Bulunamadı' : 'Henüz Sevkiyat Yok'}
+                            description={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'Arama kriterine uygun sevkiyat bulunamadı.' : undefined}
+                        />
                     </div>
                 )}
             </div>

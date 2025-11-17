@@ -4,6 +4,7 @@ import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import PaymentForm from '../forms/PaymentForm';
 import SearchBar from '../common/SearchBar';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Payment, Customer, Order } from '../../types';
@@ -355,10 +356,13 @@ const Payments: React.FC<PaymentsProps> = ({
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredPayments.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                  {searchQuery || statusFilter !== 'Tümü'
-                    ? 'Filtreye uygun ödeme bulunamadı'
-                    : 'Henüz ödeme kaydı yok. Yeni ödeme eklemek için yukarıdaki butonu kullanın.'}
+                <td colSpan={8} className="px-0 py-0">
+                  <EmptyState
+                    icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
+                    title={searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'}
+                    description={searchQuery || statusFilter !== 'Tümü' ? 'Filtreye uygun ödeme bulunamadı.' : undefined}
+                    action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Ödeme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                  />
                 </td>
               </tr>
             ) : (
@@ -434,10 +438,13 @@ const Payments: React.FC<PaymentsProps> = ({
       {/* Payments List - Mobile */}
       <div className="md:hidden space-y-4">
         {filteredPayments.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 text-center text-gray-500 dark:text-gray-400">
-            {searchQuery || statusFilter !== 'Tümü'
-              ? 'Filtreye uygun ödeme bulunamadı'
-              : 'Henüz ödeme kaydı yok. Yeni ödeme eklemek için yukarıdaki butonu kullanın.'}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <EmptyState
+              icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
+              title={searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'}
+              description={searchQuery || statusFilter !== 'Tümü' ? 'Filtreye uygun ödeme bulunamadı.' : undefined}
+              action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Ödeme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+            />
           </div>
         ) : (
           filteredPayments.map((payment) => (

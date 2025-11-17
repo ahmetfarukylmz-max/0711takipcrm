@@ -27,13 +27,16 @@ const ChartBarIcon = (props) => (
 const NavLink = ({ page, children, Icon, activePage, onNavigate }) => (
     <button
         onClick={() => onNavigate(page)}
-        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] ${
+        aria-label={children}
+        aria-current={activePage === page ? 'page' : undefined}
+        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
             activePage === page
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
         }`}
+        title={`${children}${activePage === page ? ' (Şu anda aktif)' : ''}`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5" aria-hidden="true" />
         <span>{children}</span>
     </button>
 );
@@ -63,7 +66,7 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
             fixed md:relative h-full z-50
             transform transition-transform duration-300 ease-in-out
             ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}>
+        `} role="navigation" aria-label="Ana menü">
             <div className="flex flex-col flex-grow">
                 <div className="mb-10 border-b border-gray-700 pb-4 flex justify-between items-center">
                     <h1 className="text-2xl font-semibold text-white">Takip CRM</h1>
@@ -78,7 +81,7 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                         </svg>
                     </button>
                 </div>
-                <nav className="flex flex-col gap-3">
+                <nav className="flex flex-col gap-3" role="navigation" aria-label="Sayfalar">
                     <NavLink page="Anasayfa" Icon={HomeIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Anasayfa
                     </NavLink>
@@ -113,9 +116,11 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                     )}
                     <button
                         onClick={onToggleGuide}
-                        className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"
+                        aria-label="Kullanıcı rehberi"
+                        className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                        title="Rehberi aç"
                     >
-                        <QuestionMarkCircleIcon className="w-5 h-5" />
+                        <QuestionMarkCircleIcon className="w-5 h-5" aria-hidden="true" />
                         <span>Rehber</span>
                     </button>
                 </nav>
@@ -123,9 +128,11 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
             <div className="flex-shrink-0">
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white"
+                    aria-label="Çıkış yap"
+                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset"
+                    title="Uygulamadan çıkış yap"
                 >
-                    <LogoutIcon className="w-5 h-5" />
+                    <LogoutIcon className="w-5 h-5" aria-hidden="true" />
                     <span>Çıkış Yap</span>
                 </button>
                 <ConnectionStatusIndicator status={connectionStatus} />

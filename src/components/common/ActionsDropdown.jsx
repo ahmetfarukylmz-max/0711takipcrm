@@ -41,23 +41,33 @@ const ActionsDropdown = ({ actions }) => {
         setIsOpen(!isOpen);
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            setIsOpen(false);
+        }
+    };
+
     const dropdownClasses = `
         absolute right-0 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10
         ${position === 'top' ? 'bottom-full mb-2 origin-bottom-right' : 'mt-2 origin-top-right'}
     `;
 
     return (
-        <div className="relative inline-block text-left" ref={dropdownRef}>
+        <div className="relative inline-block text-left" ref={dropdownRef} onKeyDown={handleKeyDown}>
             <button
                 onClick={handleToggle}
+                aria-label="İşlemler menüsü"
+                aria-haspopup="true"
+                aria-expanded={isOpen}
                 className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
+                title="Ek işlemleri açmak için tıklayın (Escape to close)"
             >
                 İşlemler
-                <ChevronDownIcon className="-mr-1 ml-2 h-5 w-5" />
+                <ChevronDownIcon className="-mr-1 ml-2 h-5 w-5" aria-hidden="true" />
             </button>
 
             {isOpen && (
-                <div className={dropdownClasses}>
+                <div className={dropdownClasses} role="menu">
                     <div className="py-1">
                         {actions.map((action, index) => (
                             <button
@@ -66,7 +76,15 @@ const ActionsDropdown = ({ actions }) => {
                                     action.onClick();
                                     setIsOpen(false);
                                 }}
-                                className={`block w-full text-left px-4 py-2 text-sm ${
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        action.onClick();
+                                        setIsOpen(false);
+                                    }
+                                }}
+                                role="menuitem"
+                                className={`block w-full text-left px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
                                     action.destructive
                                         ? 'text-red-700 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900'
                                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

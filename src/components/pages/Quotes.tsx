@@ -8,6 +8,7 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import type { Quote, Order, Shipment, Customer, Product } from '../../types';
@@ -489,10 +490,13 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                             )})
                         ) : (
                             <tr>
-                                <td colSpan={8} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    {searchQuery || statusFilter !== 'Tümü'
-                                        ? 'Arama kriterlerine uygun teklif bulunamadı.'
-                                        : 'Henüz teklif eklenmemiş.'}
+                                <td colSpan={8} className="p-0">
+                                    <EmptyState
+                                        icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'quotes'}
+                                        title={searchQuery || statusFilter !== 'Tümü' ? 'Teklif Bulunamadı' : 'Henüz Teklif Yok'}
+                                        description={searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun teklif bulunamadı.' : undefined}
+                                        action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Teklif Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -567,10 +571,13 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                         />
                     );
                 }) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun teklif bulunamadı.' : 'Henüz teklif eklenmemiş.'}
-                        </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <EmptyState
+                            icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'quotes'}
+                            title={searchQuery || statusFilter !== 'Tümü' ? 'Teklif Bulunamadı' : 'Henüz Teklif Yok'}
+                            description={searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun teklif bulunamadı.' : undefined}
+                            action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Teklif Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                        />
                     </div>
                 )}
             </div>

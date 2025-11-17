@@ -12,6 +12,7 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon, WhatsAppIcon, EditIcon, TrashIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
@@ -501,10 +502,21 @@ const Customers = memo<CustomersProps>(({
                             })
                         ) : (
                             <tr>
-                                <td colSpan={7} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    {searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
-                                        ? 'Arama kriterlerine uygun müşteri bulunamadı.'
-                                        : 'Henüz müşteri eklenmemiş.'}
+                                <td colSpan={7} className="p-0">
+                                    <EmptyState
+                                        icon={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü' ? 'search' : 'customers'}
+                                        title={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
+                                            ? 'Müşteri Bulunamadı'
+                                            : 'Henüz Müşteri Yok'}
+                                        description={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
+                                            ? 'Arama kriterlerine uygun müşteri bulunamadı. Lütfen farklı filtreler deneyin.'
+                                            : 'Müşteri ekleyerek başlayın. Müşterilerinizi buradan yönetebilir ve takip edebilirsiniz.'}
+                                        action={!(searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü') ? {
+                                            label: 'İlk Müşteriyi Ekle',
+                                            onClick: () => handleOpenModal(),
+                                            icon: <PlusIcon />
+                                        } : undefined}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -577,12 +589,21 @@ const Customers = memo<CustomersProps>(({
                         );
                     })
                 ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
-                                ? 'Arama kriterlerine uygun müşteri bulunamadı.'
-                                : 'Henüz müşteri eklenmemiş.'}
-                        </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <EmptyState
+                            icon={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü' ? 'search' : 'customers'}
+                            title={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
+                                ? 'Müşteri Bulunamadı'
+                                : 'Henüz Müşteri Yok'}
+                            description={searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü'
+                                ? 'Arama kriterlerine uygun müşteri bulunamadı. Lütfen farklı filtreler deneyin.'
+                                : 'Müşteri ekleyerek başlayın. Müşterilerinizi buradan yönetebilir ve takip edebilirsiniz.'}
+                            action={!(searchQuery || statusFilter !== 'Tümü' || cityFilter !== 'Tümü') ? {
+                                label: 'İlk Müşteriyi Ekle',
+                                onClick: () => handleOpenModal(),
+                                icon: <PlusIcon />
+                            } : undefined}
+                        />
                     </div>
                 )}
             </div>
