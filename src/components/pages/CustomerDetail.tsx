@@ -539,81 +539,71 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 />
             </Modal>
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">Toplam Sipariş</div>
-                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalOrders}</div>
-                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.totalOrderAmount)}</div>
-                </div>
-
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <div className="text-sm text-purple-600 dark:text-purple-400 font-semibold mb-1">Toplam Teklif</div>
-                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{stats.totalQuotes}</div>
-                    <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(stats.totalQuoteAmount)}</div>
-                </div>
-
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-1">Tamamlanan</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.completedOrders}</div>
-                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">Sipariş</div>
-                </div>
-
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-                    <div className="text-sm text-orange-600 dark:text-orange-400 font-semibold mb-1">Toplam Görüşme</div>
-                    <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.totalMeetings}</div>
-                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Kayıt</div>
-                </div>
-
-                {/* Bakiye Kartı */}
-                <div
-                    className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-2 ${balance.color} relative overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-105`}
-                    onClick={() => onNavigate?.('Cari Hesaplar')}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onNavigate?.('Cari Hesaplar');
-                        }
-                    }}
-                    title="Tüm cari hesapları görmek için tıklayın"
-                >
-                    <div className="absolute top-2 right-2 text-3xl opacity-20">{balance.icon}</div>
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-1">
-                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Bakiye</div>
-                            <span className="text-xl">{balance.icon}</span>
-                        </div>
-                        <div className={`text-2xl font-bold ${
-                            balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
-                            balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
-                            'text-gray-600 dark:text-gray-400'
-                        }`}>
-                            {balance.balance >= 0 ? '+' : ''}{formatCurrency(balance.balance, 'TRY')}
-                        </div>
-                        <div className={`text-xs font-medium mt-1 ${
-                            balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
-                            balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
-                            'text-gray-600 dark:text-gray-400'
-                        }`}>
-                            {balance.status}
-                        </div>
+            {/* Statistics Cards - Compact Version */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    {/* Sipariş */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Sipariş</div>
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.totalOrders}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{formatCurrency(stats.totalOrderAmount)}</div>
                     </div>
-                </div>
 
-                {/* Tahsilat Kartı */}
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                    <div className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-1">Tahsil Edilen</div>
-                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{stats.totalPayments}</div>
-                    <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(stats.totalPaymentAmount)}</div>
-                </div>
+                    {/* Teklif */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Teklif</div>
+                        <div className="text-xl font-bold text-purple-600 dark:text-purple-400">{stats.totalQuotes}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{formatCurrency(stats.totalQuoteAmount)}</div>
+                    </div>
 
-                {/* Bekleyen Ödemeler Kartı */}
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                    <div className="text-sm text-amber-600 dark:text-amber-400 font-semibold mb-1">Bekleyen Ödeme</div>
-                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.pendingPayments}</div>
-                    <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">Tahsilat</div>
+                    {/* Tamamlanan */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tamamlanan</div>
+                        <div className="text-xl font-bold text-green-600 dark:text-green-400">{stats.completedOrders}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">sipariş</div>
+                    </div>
+
+                    {/* Görüşme */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Görüşme</div>
+                        <div className="text-xl font-bold text-orange-600 dark:text-orange-400">{stats.totalMeetings}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">kayıt</div>
+                    </div>
+
+                    {/* Bakiye */}
+                    <div
+                        className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-2 -m-2 transition-colors"
+                        onClick={() => onNavigate?.('Cari Hesaplar')}
+                        role="button"
+                        tabIndex={0}
+                        title="Cari hesaplara git"
+                    >
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-center gap-1">
+                            Bakiye {balance.icon}
+                        </div>
+                        <div className={`text-xl font-bold ${
+                            balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
+                            balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
+                            'text-gray-600 dark:text-gray-400'
+                        }`}>
+                            {formatCurrency(balance.balance, 'TRY')}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{balance.status}</div>
+                    </div>
+
+                    {/* Tahsilat */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tahsilat</div>
+                        <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{stats.totalPayments}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{formatCurrency(stats.totalPaymentAmount)}</div>
+                    </div>
+
+                    {/* Bekleyen */}
+                    <div className="text-center">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Bekleyen</div>
+                        <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.pendingPayments}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">ödeme</div>
+                    </div>
                 </div>
             </div>
 
