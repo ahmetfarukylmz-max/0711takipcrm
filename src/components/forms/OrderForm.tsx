@@ -14,6 +14,9 @@ interface OrderFormData {
     vatRate: VATRate;
     paymentType: string;
     paymentTerm: string | number;
+    checkBank?: string;
+    checkNumber?: string;
+    checkDate?: string;
     currency: Currency;
     notes: string;
 }
@@ -42,6 +45,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
         vatRate: 20,
         paymentType: 'Peşin',
         paymentTerm: '',
+        checkBank: '',
+        checkNumber: '',
+        checkDate: '',
         currency: DEFAULT_CURRENCY,
         notes: ''
     });
@@ -110,10 +116,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                     label="Ödeme Tipi"
                     name="paymentType"
                     value={formData.paymentType}
-                    onChange={e => setFormData({ ...formData, paymentType: e.target.value, paymentTerm: e.target.value === 'Peşin' ? '' : formData.paymentTerm })}
+                    onChange={e => setFormData({
+                        ...formData,
+                        paymentType: e.target.value,
+                        paymentTerm: e.target.value === 'Peşin' ? '' : formData.paymentTerm,
+                        checkBank: e.target.value === 'Çek' ? formData.checkBank : '',
+                        checkNumber: e.target.value === 'Çek' ? formData.checkNumber : '',
+                        checkDate: e.target.value === 'Çek' ? formData.checkDate : ''
+                    })}
                 >
                     <option value="Peşin">Peşin</option>
                     <option value="Vadeli">Vadeli</option>
+                    <option value="Çek">Çek</option>
                 </FormSelect>
                 {formData.paymentType === 'Vadeli' && (
                     <FormInput
@@ -127,6 +141,33 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                         onChange={e => setFormData({ ...formData, paymentTerm: e.target.value })}
                         required
                     />
+                )}
+                {formData.paymentType === 'Çek' && (
+                    <>
+                        <FormInput
+                            label="Banka Adı"
+                            name="checkBank"
+                            type="text"
+                            placeholder="Örn: İş Bankası, Garanti"
+                            value={formData.checkBank || ''}
+                            onChange={e => setFormData({ ...formData, checkBank: e.target.value })}
+                        />
+                        <FormInput
+                            label="Çek Numarası"
+                            name="checkNumber"
+                            type="text"
+                            placeholder="Örn: 123456"
+                            value={formData.checkNumber || ''}
+                            onChange={e => setFormData({ ...formData, checkNumber: e.target.value })}
+                        />
+                        <FormInput
+                            label="Çek Vadesi"
+                            name="checkDate"
+                            type="date"
+                            value={formData.checkDate || ''}
+                            onChange={e => setFormData({ ...formData, checkDate: e.target.value })}
+                        />
+                    </>
                 )}
             </div>
 

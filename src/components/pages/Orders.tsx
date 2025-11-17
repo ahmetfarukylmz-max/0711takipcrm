@@ -625,9 +625,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                     order={currentOrder}
                     customer={customers.find(c => c.id === currentOrder?.customerId)}
                     products={products}
-                    payment={payments.find(p => p.orderId === currentOrder?.id && !p.isDeleted)}
-                    onMarkAsPaid={onMarkAsPaid}
-                    onGoToPayment={onGoToPayment}
+                    payments={payments}
                 />
             </Modal>
 

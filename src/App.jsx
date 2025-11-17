@@ -230,62 +230,8 @@ const CrmApp = () => {
             data.createdByEmail = user.email;
         }
 
-        const orderId = await saveOrder(user.uid, data);
+        await saveOrder(user.uid, data);
         logUserActivity(action, details);
-
-        // Otomatik ödeme oluştur (sadece yeni sipariş için)
-        if (isNewOrder && data.paymentType) {
-            try {
-                // Vade tarihini hesapla (timezone safe)
-                const baseDate = data.delivery_date || data.order_date;
-                const [year, month, day] = baseDate.split('-').map(Number);
-                const dueDateObj = new Date(year, month - 1, day); // month is 0-indexed
-
-                // Vadeli ise paymentTerm kadar gün ekle
-                if (data.paymentType === 'Vadeli' && data.paymentTerm) {
-                    dueDateObj.setDate(dueDateObj.getDate() + parseInt(data.paymentTerm));
-                }
-
-                // Format: YYYY-MM-DD
-                const dueDate = dueDateObj.getFullYear() + '-' +
-                    String(dueDateObj.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(dueDateObj.getDate()).padStart(2, '0');
-
-                // Otomatik payment kaydı oluştur (sadece dolu alanlar)
-                const paymentData = {
-                    customerId: data.customerId,
-                    customerName: customerName,
-                    orderId: orderId, // saveOrder'dan dönen ID
-                    amount: data.total_amount,
-                    currency: data.currency || 'TRY',
-                    paymentMethod: 'Belirtilmemiş',
-                    dueDate: dueDate,
-                    status: 'Bekliyor',
-                    notes: `${data.paymentType} sipariş için otomatik oluşturuldu`,
-                    createdBy: user.uid,
-                    createdByEmail: user.email
-                };
-
-                // Opsiyonel alanları sadece dolu ise ekle
-                if (data.orderNumber) {
-                    paymentData.orderNumber = data.orderNumber;
-                }
-
-                await saveDocument(user.uid, 'payments', paymentData);
-                console.log('✅ Otomatik ödeme oluşturuldu:', {
-                    ...paymentData,
-                    debug: {
-                        baseDate,
-                        paymentType: data.paymentType,
-                        paymentTerm: data.paymentTerm,
-                        calculatedDueDate: dueDate
-                    }
-                });
-            } catch (error) {
-                console.error('❌ Otomatik ödeme oluşturulamadı:', error);
-                // Hata olsa bile sipariş kaydedildi, sadece log'la
-            }
-        }
     };
     const handleQuoteSave = async (data) => {
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
