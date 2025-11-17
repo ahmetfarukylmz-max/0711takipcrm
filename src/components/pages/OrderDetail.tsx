@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Order, Customer, Product, Payment } from '../../types';
 
@@ -9,18 +9,14 @@ interface OrderDetailProps {
     customer?: Customer | null;
     /** List of products for lookup */
     products: Product[];
-    /** Payment associated with this order */
-    payment?: Payment | null;
-    /** Callback when marking payment as paid */
-    onMarkAsPaid?: (paymentId: string) => void;
-    /** Callback to navigate to payment details */
-    onGoToPayment?: (paymentId: string) => void;
+    /** All payments for checking order-related payments */
+    payments?: Payment[];
 }
 
 /**
  * OrderDetail component - Displays detailed information about an order
  */
-const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment, onMarkAsPaid, onGoToPayment }) => {
+const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payments = [] }) => {
     if (!order) return null;
 
     const getProductName = (productId: string): string => {
@@ -28,38 +24,51 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment
         return product?.name || 'Bilinmeyen Ürün';
     };
 
-    // Payment status helpers
-    const getPaymentStatusColor = (payment: Payment | null | undefined): string => {
-        if (!payment) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-        if (payment.status === 'Tahsil Edildi') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-        if (payment.status === 'İptal') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-        if (payment.status === 'Gecikti') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    // Find payments related to this order
+    const relatedPayments = useMemo(() => {
+        return payments.filter(p =>
+            p.orderId === order.id &&
+            !p.isDeleted &&
+            p.status === 'Tahsil Edildi'
+        );
+    }, [payments, order.id]);
 
-        // Bekliyor durumu için vade kontrolü
-        const today = new Date();
-        const due = new Date(payment.dueDate);
-        const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    // Calculate total paid amount
+    const totalPaid = useMemo(() => {
+        return relatedPayments.reduce((sum, p) => {
+            const amount = p.amount || 0;
+            // Convert to TRY for consistency
+            const inTRY = p.currency === 'USD' ? amount * 35 :
+                         p.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+    }, [relatedPayments]);
 
-        if (daysUntilDue < 0) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'; // Gecikmiş
-        if (daysUntilDue <= 7) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'; // Yaklaşan
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'; // Normal
+    // Calculate order total in TRY
+    const orderTotalInTRY = useMemo(() => {
+        const amount = order.total_amount || 0;
+        return order.currency === 'USD' ? amount * 35 :
+               order.currency === 'EUR' ? amount * 38 :
+               amount;
+    }, [order.total_amount, order.currency]);
+
+    const remainingAmount = orderTotalInTRY - totalPaid;
+
+    // Calculate expected payment date
+    const calculatePaymentDate = () => {
+        if (!order.paymentType) return null;
+
+        const baseDate = new Date(order.delivery_date || order.order_date);
+
+        if (order.paymentType === 'Vadeli' && order.paymentTerm) {
+            baseDate.setDate(baseDate.getDate() + parseInt(order.paymentTerm.toString()));
+        }
+
+        return baseDate.toISOString().split('T')[0];
     };
 
-    const getPaymentStatusText = (payment: Payment | null | undefined): string => {
-        if (!payment) return 'Ödeme Bekleniyor';
-        if (payment.status === 'Tahsil Edildi') return '✅ Tahsil Edildi';
-        if (payment.status === 'İptal') return '❌ İptal';
-        if (payment.status === 'Gecikti') return '⚠️ Gecikti';
-
-        const today = new Date();
-        const due = new Date(payment.dueDate);
-        const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (daysUntilDue < 0) return `⚠️ ${Math.abs(daysUntilDue)} gün gecikti`;
-        if (daysUntilDue === 0) return '⏰ Bugün vade';
-        if (daysUntilDue <= 7) return `⏰ ${daysUntilDue} gün kaldı`;
-        return '📅 Bekliyor';
-    };
+    const expectedPaymentDate = calculatePaymentDate();
 
     return (
         <div className="p-6 bg-white dark:bg-gray-800 rounded-lg">
@@ -150,71 +159,115 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment
                 </div>
             </div>
 
-            {/* Payment Status Card */}
+            {/* Payment Plan Card */}
             <div className="mt-6">
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">💰 Ödeme Durumu</h3>
-                {payment ? (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Vade Tarihi</p>
-                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatDate(payment.dueDate)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Tutar</p>
-                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(payment.amount, payment.currency)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Ödeme Yöntemi</p>
-                                <p className="text-base font-medium text-gray-900 dark:text-gray-100">{payment.paymentMethod}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Durum</p>
-                                <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${getPaymentStatusColor(payment)}`}>
-                                    {getPaymentStatusText(payment)}
-                                </span>
-                            </div>
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">💳 Ödeme Planı</h3>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Ödeme Tipi</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {order.paymentType || 'Belirtilmemiş'}
+                            </p>
                         </div>
-
-                        {payment.checkNumber && (
-                            <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Çek/Senet Bilgisi</p>
-                                <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                                    {payment.checkNumber} {payment.checkBank && `- ${payment.checkBank}`}
+                        {order.paymentTerm && (
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Vade Süresi</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {order.paymentTerm} gün
                                 </p>
                             </div>
                         )}
-
-                        {payment.notes && (
-                            <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700">
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Not</p>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">{payment.notes}</p>
+                        {expectedPaymentDate && (
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Beklenen Ödeme Tarihi</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {formatDate(expectedPaymentDate)}
+                                </p>
                             </div>
                         )}
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Beklenen Tutar</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {formatCurrency(order.total_amount, order.currency)}
+                            </p>
+                        </div>
+                    </div>
 
-                        <div className="flex gap-3 pt-4 border-t border-blue-200 dark:border-blue-700">
-                            {payment.status !== 'Tahsil Edildi' && payment.status !== 'İptal' && onMarkAsPaid && (
-                                <button
-                                    onClick={() => onMarkAsPaid(payment.id)}
-                                    className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 active:scale-[0.98] transition-all font-medium"
-                                >
-                                    ✅ Tahsil Edildi İşaretle
-                                </button>
-                            )}
-                            {onGoToPayment && (
-                                <button
-                                    onClick={() => onGoToPayment(payment.id)}
-                                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:scale-[0.98] transition-all font-medium"
-                                >
-                                    📄 Ödeme Detayına Git
-                                </button>
-                            )}
+                    {order.checkBank && (
+                        <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Çek/Senet Bilgisi</p>
+                            <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
+                                {order.checkBank && <p><span className="font-medium">Banka:</span> {order.checkBank}</p>}
+                                {order.checkNumber && <p><span className="font-medium">Çek No:</span> {order.checkNumber}</p>}
+                                {order.checkDate && <p><span className="font-medium">Çek Vadesi:</span> {formatDate(order.checkDate)}</p>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Related Payments Card */}
+            <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">💰 Alınan Ödemeler</h3>
+                    {remainingAmount > 0 && (
+                        <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            Kalan: {formatCurrency(remainingAmount, 'TRY')}
+                        </span>
+                    )}
+                    {remainingAmount <= 0 && totalPaid > 0 && (
+                        <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            ✅ Tamamlandı
+                        </span>
+                    )}
+                </div>
+
+                {relatedPayments.length > 0 ? (
+                    <div className="space-y-2">
+                        {relatedPayments.map((payment) => (
+                            <div
+                                key={payment.id}
+                                className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg font-bold text-green-700 dark:text-green-400">
+                                                {formatCurrency(payment.amount, payment.currency)}
+                                            </span>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                                                ✅ Tahsil Edildi
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            {formatDate(payment.paidDate || payment.dueDate)} • {payment.paymentMethod}
+                                        </div>
+                                        {payment.notes && (
+                                            <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                                                {payment.notes}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Toplam Tahsil Edilen:</span>
+                                <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
+                                    {formatCurrency(totalPaid, 'TRY')}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 ) : (
                     <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
                         <p className="text-gray-600 dark:text-gray-400">
-                            Bu sipariş için henüz ödeme kaydı oluşturulmamış.
+                            ⚠️ Bu sipariş için henüz ödeme alınmamış.
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                            Ödeme alındığında "Ödemeler" sayfasından kayıt oluşturun.
                         </p>
                     </div>
                 )}

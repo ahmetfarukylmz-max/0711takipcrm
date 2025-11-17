@@ -129,8 +129,11 @@ export interface Order {
   order_date: string; // YYYY-MM-DD
   delivery_date?: string;
   status: OrderStatus;
-  paymentType?: 'Peşin' | 'Vadeli';
+  paymentType?: 'Peşin' | 'Vadeli' | 'Çek';
   paymentTerm?: number; // Days for vadeli
+  checkBank?: string; // Banka adı (çek için)
+  checkNumber?: string; // Çek numarası (çek için)
+  checkDate?: string; // Çek vadesi (YYYY-MM-DD)
   notes?: string;
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
@@ -139,6 +142,7 @@ export interface Order {
   createdAt: Timestamp;
   updatedAt?: Timestamp;
   quoteId?: string; // If created from quote
+  orderNumber?: string; // Sipariş numarası
 }
 
 // Inquired Product Interface (Products asked about during meetings)
