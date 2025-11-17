@@ -8,6 +8,7 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, getStatusClass } from '../../utils/formatters';
 import { Calendar, momentLocalizer, View } from 'react-big-calendar';
@@ -410,7 +411,7 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {filteredAndSortedMeetings.map(meeting => {
+                                {filteredAndSortedMeetings.length > 0 ? filteredAndSortedMeetings.map(meeting => {
                                     const customer = customers.find(c => c.id === meeting.customerId);
                                     const meetingActions = [
                                         { label: 'Detay', onClick: () => handleOpenDetailModal(meeting) },
@@ -468,14 +469,25 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                             </td>
                                         </tr>
                                     );
-                                })}
+                                }) : (
+                                    <tr>
+                                        <td colSpan={9} className="p-0">
+                                            <EmptyState
+                                                icon={Object.values(filters).some(f => f !== 'Tümü') ? 'search' : 'meetings'}
+                                                title={Object.values(filters).some(f => f !== 'Tümü') ? 'Görüşme Bulunamadı' : 'Henüz Görüşme Yok'}
+                                                description={Object.values(filters).some(f => f !== 'Tümü') ? 'Filtrelere uygun görüşme bulunamadı.' : undefined}
+                                                action={!Object.values(filters).some(f => f !== 'Tümü') ? { label: 'Yeni Görüşme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                                            />
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
 
                     {/* Mobile Card View */}
                     <div className="md:hidden space-y-3">
-                        {filteredAndSortedMeetings.map(meeting => {
+                        {filteredAndSortedMeetings.length > 0 ? filteredAndSortedMeetings.map(meeting => {
                             const customer = customers.find(c => c.id === meeting.customerId);
 
                             return (
@@ -555,7 +567,16 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
                                     }
                                 />
                             );
-                        })}
+                        }) : (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                                <EmptyState
+                                    icon={Object.values(filters).some(f => f !== 'Tümü') ? 'search' : 'meetings'}
+                                    title={Object.values(filters).some(f => f !== 'Tümü') ? 'Görüşme Bulunamadı' : 'Henüz Görüşme Yok'}
+                                    description={Object.values(filters).some(f => f !== 'Tümü') ? 'Filtrelere uygun görüşme bulunamadı.' : undefined}
+                                    action={!Object.values(filters).some(f => f !== 'Tümü') ? { label: 'Yeni Görüşme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                                />
+                            </div>
+                        )}
                     </div>
                 </>
             )}

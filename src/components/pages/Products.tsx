@@ -7,6 +7,7 @@ import SearchBar from '../common/SearchBar';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
@@ -324,8 +325,19 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    {searchQuery ? 'Arama kriterine uygun ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
+                                <td colSpan={6} className="p-0">
+                                    <EmptyState
+                                        icon={searchQuery ? 'search' : 'products'}
+                                        title={searchQuery ? 'Ürün Bulunamadı' : 'Henüz Ürün Yok'}
+                                        description={searchQuery
+                                            ? 'Arama kriterinize uygun ürün bulunamadı. Lütfen farklı bir anahtar kelime deneyin.'
+                                            : 'Ürün ekleyerek başlayın. Ürünlerinizi buradan yönetebilir ve fiyatlandırabilirsiniz.'}
+                                        action={!searchQuery ? {
+                                            label: 'İlk Ürünü Ekle',
+                                            onClick: () => handleOpenModal(),
+                                            icon: <PlusIcon />
+                                        } : undefined}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -370,10 +382,19 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
                         }
                     />
                 )) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {searchQuery ? 'Arama kriterine uygun ürün bulunamadı.' : 'Henüz ürün eklenmemiş.'}
-                        </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <EmptyState
+                            icon={searchQuery ? 'search' : 'products'}
+                            title={searchQuery ? 'Ürün Bulunamadı' : 'Henüz Ürün Yok'}
+                            description={searchQuery
+                                ? 'Arama kriterinize uygun ürün bulunamadı. Lütfen farklı bir anahtar kelime deneyin.'
+                                : 'Ürün ekleyerek başlayın. Ürünlerinizi buradan yönetebilir ve fiyatlandırabilirsiniz.'}
+                            action={!searchQuery ? {
+                                label: 'İlk Ürünü Ekle',
+                                onClick: () => handleOpenModal(),
+                                icon: <PlusIcon />
+                            } : undefined}
+                        />
                     </div>
                 )}
             </div>

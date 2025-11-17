@@ -88,6 +88,13 @@ const FAB = ({ activePage, onAction, customers = [] }) => {
         setIsLongPress(false);
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleFABClick();
+        }
+    };
+
     const handleFABClick = () => {
         if (activePage === 'Anasayfa') {
             // On Dashboard, show action sheet with multiple options
@@ -147,13 +154,15 @@ const FAB = ({ activePage, onAction, customers = [] }) => {
                     }
                     setIsLongPress(false);
                 }}
-                className={`md:hidden fixed right-4 bottom-20 z-40 bg-blue-600 hover:bg-blue-700 text-white rounded-full min-w-[56px] min-h-[56px] w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 ${
+                onKeyDown={handleKeyDown}
+                className={`md:hidden fixed right-4 bottom-20 z-40 bg-blue-600 hover:bg-blue-700 text-white rounded-full min-w-[56px] min-h-[56px] w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-100 focus:ring-blue-500 ${
                     isLongPress ? 'scale-110' : 'active:scale-95'
                 }`}
                 aria-label={activePage === 'Anasayfa' ? 'Hızlı İşlemler' : currentAction?.label}
-                title={`Tıkla: ${activePage === 'Anasayfa' ? 'Hızlı işlemler' : currentAction?.label} | Basılı Tut: Hızlı menü`}
+                aria-expanded={showActionSheet}
+                title={`Tıkla: ${activePage === 'Anasayfa' ? 'Hızlı işlemler' : currentAction?.label} | Basılı Tut: Hızlı menü (Space/Enter tuşları ile de açabilirsiniz)`}
             >
-                <PlusIcon className="w-6 h-6" />
+                <PlusIcon className="w-6 h-6" aria-hidden="true" />
             </button>
 
             {/* Main Action Sheet */}

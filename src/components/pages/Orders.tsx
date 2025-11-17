@@ -10,6 +10,7 @@ import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
 import SkeletonTable from '../common/SkeletonTable';
+import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
@@ -523,8 +524,13 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                             </tr>
                         )}) : (
                             <tr>
-                                <td colSpan={6} className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                    {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : 'Henüz sipariş eklenmemiş.'}
+                                <td colSpan={6} className="p-0">
+                                    <EmptyState
+                                        icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'orders'}
+                                        title={searchQuery || statusFilter !== 'Tümü' ? 'Sipariş Bulunamadı' : 'Henüz Sipariş Yok'}
+                                        description={searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : undefined}
+                                        action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Sipariş Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                                    />
                                 </td>
                             </tr>
                         )}
@@ -582,10 +588,13 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                         />
                     );
                 }) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : 'Henüz sipariş eklenmemiş.'}
-                        </p>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <EmptyState
+                            icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'orders'}
+                            title={searchQuery || statusFilter !== 'Tümü' ? 'Sipariş Bulunamadı' : 'Henüz Sipariş Yok'}
+                            description={searchQuery || statusFilter !== 'Tümü' ? 'Arama kriterlerine uygun sipariş bulunamadı.' : undefined}
+                            action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Sipariş Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                        />
                     </div>
                 )}
             </div>
