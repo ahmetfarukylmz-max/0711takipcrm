@@ -11,7 +11,8 @@ import {
     TruckIcon,
     DownloadIcon,
     ChevronDownIcon,
-    BoxIcon
+    BoxIcon,
+    CurrencyDollarIcon
 } from '../icons';
 import { MetricCard, DetailAccordion } from './shared';
 
@@ -236,7 +237,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
 
                     <!-- Performans Metrikleri -->
                     <h3 style="color: #1e3a8a; font-size: 18px; margin: 0 0 16px 0; font-weight: bold;">📊 PERFORMANS METRİKLERİ</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px;">
                         <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
                             <div style="font-size: 14px; color: #1e40af; margin-bottom: 8px;">Müşteri Görüşmeleri</div>
                             <div style="font-size: 32px; font-weight: bold; color: #1e3a8a;">${todayData.stats.newMeetings}</div>
@@ -251,6 +252,11 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                             <div style="font-size: 14px; color: #16a34a; margin-bottom: 8px;">Onaylanan Siparişler</div>
                             <div style="font-size: 32px; font-weight: bold; color: #15803d;">${todayData.stats.convertedOrders}</div>
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.convertedOrdersValue)}</div>
+                        </div>
+                        <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
+                            <div style="font-size: 14px; color: #059669; margin-bottom: 8px;">Tahsil Edilen</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #047857;">${todayData.stats.collectedPayments}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.collectedPaymentsValue)}</div>
                         </div>
                         <div style="background: #fff7ed; padding: 20px; border-radius: 8px; border-left: 4px solid #f97316;">
                             <div style="font-size: 14px; color: #ea580c; margin-bottom: 8px;">Dönüşüm Oranı</div>
@@ -393,6 +399,38 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     </table>
                     ` : ''}
 
+                    ${todayData.payments && todayData.payments.length > 0 ? `
+                    <!-- Tahsil Edilen Ödemeler -->
+                    <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">💰 TAHSİL EDİLEN ÖDEMELER (${todayData.payments.length})</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #10b981; color: white;">
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #059669;">Müşteri Adı</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #059669;">Tutar</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #059669;">Ödeme Yöntemi</th>
+                                <th style="padding: 12px; text-align: left; font-size: 13px; border: 1px solid #059669;">Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todayData.payments.map((payment, idx) => {
+                                const amount = payment.amount || 0;
+                                const currency = payment.currency || 'TRY';
+                                const inTRY = currency === 'USD' ? amount * 35 :
+                                            currency === 'EUR' ? amount * 38 :
+                                            amount;
+                                return `
+                                    <tr style="background: ${idx % 2 === 0 ? '#ecfdf5' : 'white'};">
+                                        <td style="padding: 10px; border: 1px solid #d1fae5; font-size: 12px;">${getCustomerName(payment.customerId)}</td>
+                                        <td style="padding: 10px; border: 1px solid #d1fae5; font-size: 12px; font-weight: bold;">${formatCurrency(inTRY)}</td>
+                                        <td style="padding: 10px; border: 1px solid #d1fae5; font-size: 12px;">${payment.paymentMethod || 'Belirtilmemiş'}</td>
+                                        <td style="padding: 10px; border: 1px solid #d1fae5; font-size: 12px;">${formatDate(payment.paidDate)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    ` : ''}
+
                     <!-- Performans Özeti -->
                     <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 24px; border-radius: 12px; margin-top: 32px; color: white;">
                         <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: bold;">📈 GÜNLÜK PERFORMANS ÖZETİ</h3>
@@ -487,6 +525,8 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             ['Oluşturulan Teklifler', todayData.stats.newQuotes, yesterdayData.stats.newQuotes, ''],
             ['Teklif Tutarı', todayData.stats.newQuotesValue, yesterdayData.stats.newQuotesValue, ''],
             ['Siparişe Dönen Teklif', todayData.stats.convertedOrders, yesterdayData.stats.convertedOrders, ''],
+            ['Tahsil Edilen Ödeme', todayData.stats.collectedPayments, yesterdayData.stats.collectedPayments, ''],
+            ['Tahsil Edilen Tutar', todayData.stats.collectedPaymentsValue, yesterdayData.stats.collectedPaymentsValue, ''],
             ['Dönüşüm Oranı %', conversionRate, yesterdayConversionRate, ''],
         ];
 
@@ -576,7 +616,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
             </div>
 
             {/* Ana Metrik Kartları */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 <MetricCard
                     title="Müşteri Görüşmeleri"
                     value={todayData.stats.newMeetings}
@@ -608,6 +648,17 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     color="from-green-500 to-green-600"
                     details={formatCurrency(todayData.stats.convertedOrdersValue)}
                     onClick={() => toggleAccordion('orders')}
+                />
+
+                <MetricCard
+                    title="Tahsil Edilen"
+                    value={todayData.stats.collectedPayments}
+                    previousValue={yesterdayData.stats.collectedPayments}
+                    suffix=" adet"
+                    icon={CurrencyDollarIcon}
+                    color="from-emerald-500 to-emerald-600"
+                    details={formatCurrency(todayData.stats.collectedPaymentsValue)}
+                    onClick={() => toggleAccordion('payments')}
                 />
 
                 <MetricCard
@@ -738,6 +789,42 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     ) : (
                         <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                             Bugün sevkiyat kaydı bulunmuyor.
+                        </p>
+                    )}
+                </DetailAccordion>
+
+                {/* Tahsilat Detayı */}
+                <DetailAccordion
+                    title="Tahsil Edilen Ödemeler"
+                    icon={CurrencyDollarIcon}
+                    count={todayData.payments?.length || 0}
+                    isOpen={openAccordion === 'payments'}
+                    onToggle={() => toggleAccordion('payments')}
+                >
+                    {todayData.payments && todayData.payments.length > 0 ? (
+                        todayData.payments.map((payment) => {
+                            const customerName = getCustomerName(payment.customerId);
+                            const amount = payment.amount || 0;
+                            const currency = payment.currency || 'TRY';
+                            const inTRY = currency === 'USD' ? amount * 35 :
+                                        currency === 'EUR' ? amount * 38 :
+                                        amount;
+
+                            return (
+                                <DetailListItem
+                                    key={payment.id}
+                                    customer={customerName}
+                                    total={inTRY}
+                                    date={payment.paidDate}
+                                    notes={`Ödeme Yöntemi: ${payment.paymentMethod || 'Belirtilmemiş'} | ${currency !== 'TRY' ? `${formatCurrency(amount)} ${currency} ≈ ` : ''}${formatCurrency(inTRY)}`}
+                                    type="payment"
+                                    getProductName={getProductName}
+                                />
+                            );
+                        })
+                    ) : (
+                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                            Bugün tahsilat kaydı bulunmuyor.
                         </p>
                     )}
                 </DetailAccordion>
