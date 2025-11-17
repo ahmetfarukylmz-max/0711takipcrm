@@ -17,7 +17,7 @@ import { PlusIcon, WhatsAppIcon, EditIcon, TrashIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
-import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
+import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -41,8 +41,6 @@ interface CustomersProps {
     shipments?: Shipment[];
     /** List of products */
     products?: Product[];
-    /** List of payments */
-    payments?: Payment[];
     /** Callback when quote is saved */
     onQuoteSave?: (quote: Partial<Quote>) => void;
     /** Callback when order is saved */
@@ -69,7 +67,6 @@ const Customers = memo<CustomersProps>(({
     meetings = [],
     shipments = [],
     products = [],
-    payments = [],
     onQuoteSave,
     onOrderSave,
     onMeetingSave,
@@ -635,7 +632,6 @@ const Customers = memo<CustomersProps>(({
                         quotes={quotes}
                         meetings={meetings}
                         shipments={shipments}
-                        payments={payments}
                         onEdit={handleEditFromDetail}
                         onDelete={handleDeleteFromDetail}
                         onClose={() => setIsDetailModalOpen(false)}
@@ -673,7 +669,6 @@ const Customers = memo<CustomersProps>(({
                         onCancel={handleCloseOrderView}
                         customers={customers}
                         products={products}
-                        payments={payments}
                     />
                 )}
             </Modal>
