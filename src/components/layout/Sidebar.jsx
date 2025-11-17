@@ -13,6 +13,7 @@ import {
     CalendarIcon,
     TruckIcon,
     CreditCardIcon,
+    ScaleIcon,
     LogoutIcon,
     QuestionMarkCircleIcon,
     ShieldIcon
@@ -105,6 +106,9 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                     </NavLink>
                     <NavLink page="Ödemeler" Icon={CreditCardIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Ödemeler
+                    </NavLink>
+                    <NavLink page="Cari Hesaplar" Icon={ScaleIcon} activePage={activePage} onNavigate={handleNavClick}>
+                        Cari Hesaplar
                     </NavLink>
                     <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} onNavigate={handleNavClick}>
                         Raporlar

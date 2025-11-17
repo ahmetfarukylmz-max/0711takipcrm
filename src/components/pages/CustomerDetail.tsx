@@ -74,6 +74,8 @@ interface CustomerDetailProps {
     onCustomerSave?: (customer: Partial<Customer>) => Promise<string | void>;
     /** Handler for saving a product (for MeetingForm) */
     onProductSave?: (product: Partial<Product>) => Promise<string | void>;
+    /** Handler for navigating to another page */
+    onNavigate?: (page: string) => void;
     /** List of products for forms */
     products: Product[];
 }
@@ -101,6 +103,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     onMeetingSave,
     onCustomerSave,
     onProductSave,
+    onNavigate,
     products,
 }) => {
     const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -518,7 +521,19 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 </div>
 
                 {/* Bakiye Kartı */}
-                <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-2 ${balance.color} relative overflow-hidden`}>
+                <div
+                    className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-2 ${balance.color} relative overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-105`}
+                    onClick={() => onNavigate?.('Cari Hesaplar')}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onNavigate?.('Cari Hesaplar');
+                        }
+                    }}
+                    title="Tüm cari hesapları görmek için tıklayın"
+                >
                     <div className="absolute top-2 right-2 text-3xl opacity-20">{balance.icon}</div>
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-1">
