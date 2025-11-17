@@ -36,6 +36,7 @@ const Quotes = lazy(() => import('./components/pages/Quotes'));
 const Meetings = lazy(() => import('./components/pages/Meetings'));
 const Shipments = lazy(() => import('./components/pages/Shipments'));
 const Payments = lazy(() => import('./components/pages/Payments'));
+const Balances = lazy(() => import('./components/pages/Balances'));
 const Reports = lazy(() => import('./components/pages/Reports'));
 const Admin = lazy(() => import('./components/pages/Admin'));
 const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
@@ -674,11 +675,13 @@ const CrmApp = () => {
                         meetings={gorusmeler}
                         shipments={shipments}
                         products={products}
+                        payments={payments}
                         onQuoteSave={handleQuoteSave}
                         onOrderSave={handleOrderSave}
                         onMeetingSave={handleMeetingSave}
                         onProductSave={handleProductSave}
                         onShipmentUpdate={handleShipmentUpdate}
+                        setActivePage={setActivePage}
                         loading={dataLoading}
                     />
                 );
@@ -745,6 +748,19 @@ const CrmApp = () => {
                 return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
             case 'Ödemeler':
                 return <Payments payments={payments} customers={customers} orders={orders} onSave={handlePaymentSave} onDelete={handlePaymentDelete} loading={dataLoading} />;
+            case 'Cari Hesaplar':
+                return (
+                    <Balances
+                        customers={customers}
+                        orders={orders}
+                        payments={payments}
+                        onCustomerClick={(customer) => {
+                            // Navigate to customer detail
+                            setActivePage('Müşteriler');
+                            // The click will be handled by Customers page
+                        }}
+                    />
+                );
             case 'Raporlar':
                 return (
                     <Reports

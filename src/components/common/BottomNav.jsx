@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HomeIcon, UsersIcon, BoxIcon, ClipboardListIcon, MenuIcon, DocumentTextIcon, CalendarIcon, TruckIcon, ChartBarIcon, QuestionIcon } from '../icons';
+import { HomeIcon, UsersIcon, BoxIcon, ClipboardListIcon, MenuIcon, DocumentTextIcon, CalendarIcon, TruckIcon, CreditCardIcon, ScaleIcon, ChartBarIcon, QuestionIcon } from '../icons';
 import ActionSheet from './ActionSheet';
 import { useAuth } from '../../context/AuthContext';
 
@@ -31,6 +31,16 @@ const BottomNav = ({ activePage, setActivePage, onToggleGuide }) => {
             icon: <TruckIcon className="w-6 h-6" />
         },
         {
+            label: 'Ödemeler',
+            onPress: () => setActivePage('Ödemeler'),
+            icon: <CreditCardIcon className="w-6 h-6" />
+        },
+        {
+            label: 'Cari Hesaplar',
+            onPress: () => setActivePage('Cari Hesaplar'),
+            icon: <ScaleIcon className="w-6 h-6" />
+        },
+        {
             label: 'Raporlar',
             onPress: () => setActivePage('Raporlar'),
             icon: <ChartBarIcon className="w-6 h-6" />
@@ -44,7 +54,7 @@ const BottomNav = ({ activePage, setActivePage, onToggleGuide }) => {
         },
     ];
 
-    const morePages = ['Teklifler', 'Görüşmeler', 'Sevkiyat', 'Raporlar'];
+    const morePages = ['Teklifler', 'Görüşmeler', 'Sevkiyat', 'Ödemeler', 'Cari Hesaplar', 'Raporlar'];
     const isMoreActive = morePages.includes(activePage);
 
     return (

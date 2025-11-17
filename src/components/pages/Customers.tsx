@@ -53,6 +53,8 @@ interface CustomersProps {
     onProductSave?: (product: Partial<Product>) => Promise<string | void>;
     /** Callback when shipment is updated */
     onShipmentUpdate?: (shipment: Partial<Shipment>) => void;
+    /** Callback to set active page */
+    setActivePage?: (page: string) => void;
     /** Loading state */
     loading?: boolean;
 }
@@ -75,6 +77,7 @@ const Customers = memo<CustomersProps>(({
     onMeetingSave,
     onProductSave,
     onShipmentUpdate,
+    setActivePage,
     loading = false
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -651,6 +654,7 @@ const Customers = memo<CustomersProps>(({
                         onViewOrder={handleViewOrder}
                         onViewQuote={handleViewQuote}
                         onViewShipment={handleViewShipment}
+                        onNavigate={setActivePage}
                     />
                 )}
             </Modal>
