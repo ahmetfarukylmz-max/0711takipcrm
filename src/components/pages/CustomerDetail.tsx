@@ -5,7 +5,7 @@ import OrderForm from '../forms/OrderForm';
 import MeetingForm from '../forms/MeetingForm';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp, getStatusClass } from '../../utils/formatters';
-import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
+import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 
 interface ProductStats {
     id: string;
@@ -48,6 +48,8 @@ interface CustomerDetailProps {
     meetings?: Meeting[];
     /** List of all shipments */
     shipments?: Shipment[];
+    /** List of all payments */
+    payments?: Payment[];
     /** Handler for editing customer */
     onEdit: () => void;
     /** Handler for deleting customer */
@@ -86,6 +88,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     quotes = [],
     meetings = [],
     shipments = [],
+    payments = [],
     onEdit,
     onDelete,
     onCreateQuote,
@@ -160,6 +163,60 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             pendingQuotes
         };
     }, [customer.id, orders, quotes, meetings]);
+
+    // Calculate balance (simple: total payments - total orders)
+    const balance = useMemo(() => {
+        const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
+        const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi');
+
+        const totalOrders = customerOrders.reduce((sum, order) => {
+            const amount = order.total_amount || 0;
+            // Convert to TRY if needed
+            const inTRY = order.currency === 'USD' ? amount * 35 :
+                         order.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+
+        const totalPayments = customerPayments.reduce((sum, payment) => {
+            const amount = payment.amount || 0;
+            // Convert to TRY if needed
+            const inTRY = payment.currency === 'USD' ? amount * 35 :
+                         payment.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+
+        const balanceAmount = totalPayments - totalOrders;
+
+        // Determine status
+        let status = '';
+        let color = '';
+        let icon = '';
+
+        if (Math.abs(balanceAmount) < 100) {
+            status = 'Hesap Dengede';
+            color = 'border-gray-300 dark:border-gray-600';
+            icon = '⚖️';
+        } else if (balanceAmount > 0) {
+            status = 'Alacak Var';
+            color = 'border-green-300 dark:border-green-600';
+            icon = '💰';
+        } else {
+            status = 'Borç Var';
+            color = 'border-red-300 dark:border-red-600';
+            icon = '⚠️';
+        }
+
+        return {
+            totalOrders,
+            totalPayments,
+            balance: balanceAmount,
+            status,
+            color,
+            icon
+        };
+    }, [customer.id, orders, payments]);
 
     // Calculate top products for this customer
     const topProducts = useMemo<ProductStats[]>(() => {
@@ -435,7 +492,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             </Modal>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">Toplam Sipariş</div>
                     <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalOrders}</div>
@@ -458,6 +515,31 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                     <div className="text-sm text-orange-600 dark:text-orange-400 font-semibold mb-1">Toplam Görüşme</div>
                     <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.totalMeetings}</div>
                     <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Kayıt</div>
+                </div>
+
+                {/* Bakiye Kartı */}
+                <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-2 ${balance.color} relative overflow-hidden`}>
+                    <div className="absolute top-2 right-2 text-3xl opacity-20">{balance.icon}</div>
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Bakiye</div>
+                            <span className="text-xl">{balance.icon}</span>
+                        </div>
+                        <div className={`text-2xl font-bold ${
+                            balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
+                            balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
+                            'text-gray-600 dark:text-gray-400'
+                        }`}>
+                            {balance.balance >= 0 ? '+' : ''}{formatCurrency(balance.balance, 'TRY')}
+                        </div>
+                        <div className={`text-xs font-medium mt-1 ${
+                            balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
+                            balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
+                            'text-gray-600 dark:text-gray-400'
+                        }`}>
+                            {balance.status}
+                        </div>
+                    </div>
                 </div>
             </div>
 
