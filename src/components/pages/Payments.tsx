@@ -36,6 +36,9 @@ const Payments: React.FC<PaymentsProps> = ({
   // Filtreleme ve arama
   const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
+      // Exclude deleted payments
+      if (payment.isDeleted) return false;
+
       const matchesSearch =
         payment.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         payment.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,6 +58,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
     // Upcoming payments (due within 7 days)
     const upcomingPayments = payments.filter(p => {
+      if (p.isDeleted) return false;
       if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
       const dueDate = new Date(p.dueDate);
       return dueDate >= todayDate && dueDate <= sevenDaysLater;
@@ -62,6 +66,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
     // Overdue payments
     const overduePayments = payments.filter(p => {
+      if (p.isDeleted) return false;
       if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
       const dueDate = new Date(p.dueDate);
       return dueDate < todayDate;
@@ -72,6 +77,7 @@ const Payments: React.FC<PaymentsProps> = ({
     const thisMonthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
 
     const thisMonthPayments = payments.filter(p => {
+      if (p.isDeleted) return false;
       const dueDate = new Date(p.dueDate);
       return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
     });
