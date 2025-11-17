@@ -113,6 +113,8 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
+    const [isBalanceModalOpen, setIsBalanceModalOpen] = useState<boolean>(false);
+    const [balanceDetailTab, setBalanceDetailTab] = useState<'orders' | 'payments'>('orders');
 
     const handleOpenQuoteModal = useCallback(() => setIsQuoteModalOpen(true), []);
     const handleOpenOrderModal = useCallback(() => setIsOrderModalOpen(true), []);
@@ -539,6 +541,128 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 />
             </Modal>
 
+            {/* Balance Detail Modal */}
+            <Modal
+                show={isBalanceModalOpen}
+                onClose={() => setIsBalanceModalOpen(false)}
+                title={`Cari Hesap - ${customer.name}`}
+                maxWidth="max-w-5xl"
+            >
+                <div className="space-y-6">
+                    {/* Balance Summary */}
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-6 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="text-center">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Toplam Sipariş</div>
+                                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                                    {formatCurrency(balance.totalOrders, 'TRY')}
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Toplam Tahsilat</div>
+                                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                    {formatCurrency(balance.totalPayments, 'TRY')}
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Bakiye</div>
+                                <div className={`text-2xl font-bold mt-1 ${
+                                    balance.balance > 0 ? 'text-green-600 dark:text-green-400' :
+                                    balance.balance < 0 ? 'text-red-600 dark:text-red-400' :
+                                    'text-gray-600 dark:text-gray-400'
+                                }`}>
+                                    {formatCurrency(balance.balance, 'TRY')}
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{balance.status}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setBalanceDetailTab('orders')}
+                            className={`px-4 py-2 font-medium text-sm ${
+                                balanceDetailTab === 'orders'
+                                    ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                            }`}
+                        >
+                            Siparişler ({stats.totalOrders})
+                        </button>
+                        <button
+                            onClick={() => setBalanceDetailTab('payments')}
+                            className={`px-4 py-2 font-medium text-sm ${
+                                balanceDetailTab === 'payments'
+                                    ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                            }`}
+                        >
+                            Ödemeler ({stats.totalPayments})
+                        </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="max-h-96 overflow-y-auto">
+                        {balanceDetailTab === 'orders' ? (
+                            <div className="space-y-2">
+                                {orders.filter(o => o.customerId === customer.id && !o.isDeleted).length > 0 ? (
+                                    orders.filter(o => o.customerId === customer.id && !o.isDeleted).map(order => (
+                                        <div key={order.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                            <div>
+                                                <div className="font-medium text-gray-900 dark:text-gray-100">
+                                                    Sipariş #{order.orderNumber || order.id.slice(0, 8)}
+                                                </div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {formatDate(order.order_date)} • {order.status}
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-gray-900 dark:text-gray-100">
+                                                    {formatCurrency(order.total_amount)}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {order.currency || 'TRY'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">Sipariş bulunmuyor</p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {payments.filter(p => p.customerId === customer.id && !p.isDeleted).length > 0 ? (
+                                    payments.filter(p => p.customerId === customer.id && !p.isDeleted).map(payment => (
+                                        <div key={payment.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                            <div>
+                                                <div className="font-medium text-gray-900 dark:text-gray-100">
+                                                    {payment.paymentMethod || 'Ödeme'}
+                                                </div>
+                                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {formatDate(payment.paidDate || payment.dueDate)} • {payment.status}
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                    {formatCurrency(payment.amount)}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {payment.currency || 'TRY'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">Ödeme bulunmuyor</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Modal>
+
             {/* Statistics Cards - Compact Version */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -573,10 +697,10 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                     {/* Bakiye */}
                     <div
                         className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-2 -m-2 transition-colors"
-                        onClick={() => onNavigate?.('Cari Hesaplar')}
+                        onClick={() => setIsBalanceModalOpen(true)}
                         role="button"
                         tabIndex={0}
-                        title="Cari hesaplara git"
+                        title="Bakiye detaylarını göster"
                     >
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-center gap-1">
                             Bakiye {balance.icon}
