@@ -454,33 +454,6 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 />
             </Modal>
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">Toplam Sipariş</div>
-                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalOrders}</div>
-                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">{formatCurrency(stats.totalOrderAmount)}</div>
-                </div>
-
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <div className="text-sm text-purple-600 dark:text-purple-400 font-semibold mb-1">Toplam Teklif</div>
-                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{stats.totalQuotes}</div>
-                    <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">{formatCurrency(stats.totalQuoteAmount)}</div>
-                </div>
-
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-1">Tamamlanan</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.completedOrders}</div>
-                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">Sipariş</div>
-                </div>
-
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-                    <div className="text-sm text-orange-600 dark:text-orange-400 font-semibold mb-1">Toplam Görüşme</div>
-                    <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{stats.totalMeetings}</div>
-                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">Kayıt</div>
-                </div>
-            </div>
-
             {/* Tabs */}
             <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                 <nav className="-mb-px flex gap-4 md:gap-6 min-w-min">
