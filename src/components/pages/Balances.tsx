@@ -1,9 +1,9 @@
 import React, { useMemo, useState, memo } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
-import { formatCurrency, formatDate, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 import { exportToExcel } from '../../utils/excelExport';
-import { WhatsAppIcon, DownloadIcon, PrinterIcon } from '../icons';
+import { DownloadIcon, PrinterIcon } from '../icons';
 import type { Customer, Order, Payment } from '../../types';
 
 interface BalancesProps {
@@ -273,22 +273,6 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
   const handlePrint = () => {
     window.print();
     toast.success('Yazdırma penceresi açıldı');
-  };
-
-  const handleWhatsAppReminder = (customer: Customer, balance: number) => {
-    if (!customer.phone) {
-      toast.error('Müşterinin telefon numarası kayıtlı değil');
-      return;
-    }
-
-    const message = balance < 0
-      ? `Merhaba ${customer.name}, ${formatCurrency(Math.abs(balance), 'TRY')} tutarında borcunuz bulunmaktadır. Ödemenizi beklemekteyiz.`
-      : `Merhaba ${customer.name}, ${formatCurrency(balance, 'TRY')} tutarında alacağınız bulunmaktadır.`;
-
-    const phoneNumber = formatPhoneNumberForWhatsApp(customer.phone);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    toast.success('WhatsApp açılıyor...');
   };
 
   const clearFilters = () => {
@@ -643,23 +627,12 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
 
                     {/* Actions */}
                     <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-2">
-                        {cb.customer.phone && (
-                          <button
-                            onClick={() => handleWhatsAppReminder(cb.customer, cb.balance)}
-                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                            title="WhatsApp ile hatırlat"
-                          >
-                            <WhatsAppIcon className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleRowClick(cb)}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          Ekstre
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleRowClick(cb)}
+                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Ekstre
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -712,15 +685,6 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
 
               {/* Quick Actions */}
               <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-                {selectedCustomerBalance.customer.phone && (
-                  <button
-                    onClick={() => handleWhatsAppReminder(selectedCustomerBalance.customer, selectedCustomerBalance.balance)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <WhatsAppIcon className="w-4 h-4" />
-                    Hatırlat
-                  </button>
-                )}
                 <button
                   onClick={handleExportExtract}
                   className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
