@@ -610,6 +610,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                     onCancel={() => setIsModalOpen(false)}
                     customers={customers}
                     products={products}
+                    payments={payments}
                 />
             </Modal>
 

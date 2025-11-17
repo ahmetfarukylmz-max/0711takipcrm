@@ -5,7 +5,8 @@ import OrderForm from '../forms/OrderForm';
 import MeetingForm from '../forms/MeetingForm';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp, getStatusClass } from '../../utils/formatters';
-import type { Customer, Order, Quote, Meeting, Shipment, Product } from '../../types';
+import { calculateCariBalance, getPaymentHistory, getBalanceStatus } from '../../utils/cariHelpers';
+import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 
 interface ProductStats {
     id: string;
@@ -48,6 +49,8 @@ interface CustomerDetailProps {
     meetings?: Meeting[];
     /** List of all shipments */
     shipments?: Shipment[];
+    /** List of all payments */
+    payments?: Payment[];
     /** Handler for editing customer */
     onEdit: () => void;
     /** Handler for deleting customer */
@@ -86,6 +89,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     quotes = [],
     meetings = [],
     shipments = [],
+    payments = [],
     onEdit,
     onDelete,
     onCreateQuote,
@@ -160,6 +164,21 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             pendingQuotes
         };
     }, [customer.id, orders, quotes, meetings]);
+
+    // Calculate cari (current account) balance
+    const cariBalance = useMemo(() => {
+        return calculateCariBalance(customer.id, orders, payments);
+    }, [customer.id, orders, payments]);
+
+    // Get payment history
+    const paymentHistory = useMemo(() => {
+        return getPaymentHistory(customer.id, payments, orders);
+    }, [customer.id, payments, orders]);
+
+    // Get balance status
+    const balanceStatus = useMemo(() => {
+        return getBalanceStatus(cariBalance.balance);
+    }, [cariBalance.balance]);
 
     // Calculate top products for this customer
     const topProducts = useMemo<ProductStats[]>(() => {
@@ -419,6 +438,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                     onCancel={() => setIsOrderModalOpen(false)}
                     customers={[customer]}
                     products={products}
+                    payments={payments}
                 />
             </Modal>
 
@@ -490,6 +510,114 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             <div className="mt-4">
                 {activeTab === 'overview' && (
                     <div className="space-y-4">
+                        {/* Cari Hesap Özeti */}
+                        <div className={`p-6 rounded-lg border-2 ${balanceStatus.color}`}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <span className="text-2xl">{balanceStatus.icon}</span>
+                                    Cari Hesap Özeti
+                                </h3>
+                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${balanceStatus.color}`}>
+                                    {balanceStatus.text}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Toplam Sipariş</p>
+                                    <p className="text-lg font-bold">
+                                        {formatCurrency(cariBalance.totalOrders, cariBalance.currency)}
+                                    </p>
+                                </div>
+                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Toplam Ödeme</p>
+                                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                                        {formatCurrency(cariBalance.totalPayments, cariBalance.currency)}
+                                    </p>
+                                </div>
+                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Bakiye</p>
+                                    <p className={`text-lg font-bold ${cariBalance.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {formatCurrency(Math.abs(cariBalance.balance), cariBalance.currency)}
+                                        <span className="text-xs ml-1">
+                                            {cariBalance.balance >= 0 ? '(Alacak)' : '(Borç)'}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kullanılabilir Avans</p>
+                                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                        {formatCurrency(cariBalance.availableAdvance, cariBalance.currency)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {cariBalance.availableAdvance > 0 && (
+                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                                        💡 <strong>{formatCurrency(cariBalance.availableAdvance, 'TRY')}</strong> tutarında avans bakiyesi var.
+                                        Yeni sipariş oluştururken bu avansı kullanabilirsiniz.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Ödeme Geçmişi */}
+                        {paymentHistory.length > 0 && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                                    💳 Son Ödemeler ({paymentHistory.length})
+                                </h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50 dark:bg-gray-700 text-xs">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left">Tarih</th>
+                                                <th className="px-3 py-2 text-left">Tip</th>
+                                                <th className="px-3 py-2 text-left hidden md:table-cell">Sipariş</th>
+                                                <th className="px-3 py-2 text-right">Tutar</th>
+                                                <th className="px-3 py-2 text-center">Durum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {paymentHistory.slice(0, 5).map(payment => (
+                                                <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+                                                        {formatDate(payment.date)}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <span className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">
+                                                            {payment.paymentType || 'Cari'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                                                        {payment.orderNumber || '-'}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right font-semibold">
+                                                        {formatCurrency(payment.amount, payment.currency)}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-center">
+                                                        <span className={`text-xs px-2 py-1 rounded ${
+                                                            payment.status === 'Tahsil Edildi' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                            payment.status === 'İptal' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
+                                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                        }`}>
+                                                            {payment.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {paymentHistory.length > 5 && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                                        İlk 5 ödeme gösteriliyor. Toplam: {paymentHistory.length}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                             <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Son Aktiviteler</h3>
                             <div className="space-y-2">
