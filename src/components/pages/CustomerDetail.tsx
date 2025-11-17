@@ -510,57 +510,86 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             <div className="mt-4">
                 {activeTab === 'overview' && (
                     <div className="space-y-4">
-                        {/* Cari Hesap Özeti */}
-                        <div className={`p-6 rounded-lg border-2 ${balanceStatus.color}`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <span className="text-2xl">{balanceStatus.icon}</span>
-                                    Cari Hesap Özeti
-                                </h3>
-                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${balanceStatus.color}`}>
-                                    {balanceStatus.text}
-                                </span>
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {/* Toplam Sipariş Sayısı */}
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Toplam Sipariş</p>
+                                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stats.totalOrders}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {formatCurrency(stats.totalOrderAmount, 'TRY')}
+                                </p>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Toplam Sipariş</p>
-                                    <p className="text-lg font-bold">
-                                        {formatCurrency(cariBalance.totalOrders, cariBalance.currency)}
-                                    </p>
+                            {/* Toplam Teklif Sayısı */}
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Toplam Teklif</p>
+                                    <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
                                 </div>
-                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Toplam Ödeme</p>
-                                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                                        {formatCurrency(cariBalance.totalPayments, cariBalance.currency)}
-                                    </p>
-                                </div>
-                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Bakiye</p>
-                                    <p className={`text-lg font-bold ${cariBalance.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {formatCurrency(Math.abs(cariBalance.balance), cariBalance.currency)}
-                                        <span className="text-xs ml-1">
-                                            {cariBalance.balance >= 0 ? '(Alacak)' : '(Borç)'}
-                                        </span>
-                                    </p>
-                                </div>
-                                <div className="text-center p-3 bg-white/50 dark:bg-gray-900/30 rounded-lg">
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kullanılabilir Avans</p>
-                                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                        {formatCurrency(cariBalance.availableAdvance, cariBalance.currency)}
-                                    </p>
-                                </div>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stats.totalQuotes}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {formatCurrency(stats.totalQuoteAmount, 'TRY')}
+                                </p>
                             </div>
 
-                            {cariBalance.availableAdvance > 0 && (
-                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                                        💡 <strong>{formatCurrency(cariBalance.availableAdvance, 'TRY')}</strong> tutarında avans bakiyesi var.
-                                        Yeni sipariş oluştururken bu avansı kullanabilirsiniz.
-                                    </p>
+                            {/* Toplam Ödeme */}
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-200 dark:border-green-700 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Toplam Ödeme</p>
+                                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                 </div>
-                            )}
+                                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                    {formatCurrency(cariBalance.totalPayments, cariBalance.currency)}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tahsil Edildi</p>
+                            </div>
+
+                            {/* Bakiye */}
+                            <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-2 shadow-sm ${balanceStatus.color}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Bakiye</p>
+                                    <span className="text-xl">{balanceStatus.icon}</span>
+                                </div>
+                                <p className={`text-2xl font-bold ${cariBalance.balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {formatCurrency(Math.abs(cariBalance.balance), cariBalance.currency)}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {cariBalance.balance >= 0 ? 'Alacak Var' : 'Borç Var'}
+                                </p>
+                            </div>
+
+                            {/* Kullanılabilir Avans */}
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-blue-200 dark:border-blue-700 shadow-sm">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Avans</p>
+                                    <span className="text-xl">💵</span>
+                                </div>
+                                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                    {formatCurrency(cariBalance.availableAdvance, cariBalance.currency)}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Kullanılabilir</p>
+                            </div>
                         </div>
+
+                        {/* Avans Notification */}
+                        {cariBalance.availableAdvance > 0 && (
+                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
+                                    💡 <strong>{formatCurrency(cariBalance.availableAdvance, 'TRY')}</strong> tutarında avans bakiyesi var.
+                                    Yeni sipariş oluştururken bu avansı kullanabilirsiniz.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Ödeme Geçmişi */}
                         {paymentHistory.length > 0 && (
