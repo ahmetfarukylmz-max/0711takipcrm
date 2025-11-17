@@ -112,12 +112,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
         >
           <option value="Cari Hesap Ödemesi">💰 Cari Hesap Ödemesi</option>
           <option value="Sipariş Ödemesi">📦 Sipariş Ödemesi</option>
-          <option value="Avans/Önödeme">💵 Avans / Önödeme</option>
         </select>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {formData.paymentType === 'Cari Hesap Ödemesi' && '→ Sipariş ile ilişkilendirilmemiş genel ödeme'}
           {formData.paymentType === 'Sipariş Ödemesi' && '→ Belirli bir siparişe ait ödeme'}
-          {formData.paymentType === 'Avans/Önödeme' && '→ Gelecek siparişler için alınan önödeme'}
         </p>
       </div>
 
@@ -150,15 +148,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
               ⚠️ Bu müşteriye ait sipariş bulunamadı. Önce sipariş oluşturun veya "Cari Hesap Ödemesi" seçin.
             </p>
           )}
-        </div>
-      )}
-
-      {/* Avans Bilgilendirmesi */}
-      {formData.paymentType === 'Avans/Önödeme' && (
-        <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded">
-          <p className="text-sm text-green-800 dark:text-green-200">
-            💡 <strong>Avans/Önödeme:</strong> Bu ödeme müşterinin cari hesabına avans olarak kaydedilecek ve gelecekte siparişlerden düşülebilecektir.
-          </p>
         </div>
       )}
 
