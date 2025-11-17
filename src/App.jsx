@@ -713,6 +713,7 @@ const CrmApp = () => {
                         onShipment={handleShipmentSave}
                         customers={customers}
                         products={products}
+                        shipments={shipments}
                         payments={payments}
                         onMarkAsPaid={(paymentId) => {
                             const payment = payments.find(p => p.id === paymentId);

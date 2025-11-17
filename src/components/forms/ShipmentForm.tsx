@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
-import type { Order, Product } from '../../types';
+import type { Order, Product, Shipment } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
 
 interface ShipmentItem {
@@ -24,6 +24,8 @@ interface ShipmentFormProps {
     order: Order;
     /** List of products */
     products: Product[];
+    /** List of existing shipments (for calculating shipped quantities) */
+    shipments?: Shipment[];
     /** Callback when shipment is created */
     onSave: (shipmentData: any) => void;
     /** Callback when form is cancelled */
@@ -33,7 +35,7 @@ interface ShipmentFormProps {
 /**
  * ShipmentForm component - Form for creating shipments from orders
  */
-const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, onCancel }) => {
+const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, shipments = [], onSave, onCancel }) => {
     const [formData, setFormData] = useState<ShipmentFormData>({
         shipment_date: new Date().toISOString().split('T')[0],
         transporter: '',
@@ -43,18 +45,31 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, onSave, on
 
     useEffect(() => {
         if (order) {
+            // Calculate previously shipped quantities for this order
+            const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+
             // Initialize items with order items and their quantities
-            const items: ShipmentItem[] = order.items.map(item => ({
-                productId: item.productId,
-                productName: products.find(p => p.id === item.productId)?.name || 'Bilinmiyor',
-                orderedQty: item.quantity,
-                unit: item.unit || 'Adet',
-                shippedQty: 0,
-                toShipQty: item.quantity // Default to ship all
-            }));
+            const items: ShipmentItem[] = order.items.map(item => {
+                // Calculate total shipped quantity for this product
+                const totalShipped = orderShipments.reduce((sum, shipment) => {
+                    const shipmentItem = shipment.items?.find(si => si.productId === item.productId);
+                    return sum + (shipmentItem?.quantity || 0);
+                }, 0);
+
+                const remainingQty = item.quantity - totalShipped;
+
+                return {
+                    productId: item.productId,
+                    productName: products.find(p => p.id === item.productId)?.name || 'Bilinmiyor',
+                    orderedQty: item.quantity,
+                    unit: item.unit || 'Adet',
+                    shippedQty: totalShipped,
+                    toShipQty: Math.max(0, remainingQty) // Default to ship remaining quantity
+                };
+            });
             setFormData(prev => ({ ...prev, items }));
         }
-    }, [order, products]);
+    }, [order, products, shipments]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

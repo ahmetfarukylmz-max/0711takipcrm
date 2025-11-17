@@ -34,6 +34,8 @@ interface OrdersProps {
     customers: Customer[];
     /** List of products */
     products: Product[];
+    /** List of shipments */
+    shipments?: Shipment[];
     /** List of payments */
     payments?: Payment[];
     /** Callback when marking payment as paid */
@@ -49,7 +51,7 @@ interface OrdersProps {
 /**
  * Orders component - Order management page
  */
-const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, payments = [], onMarkAsPaid, onGoToPayment, onGeneratePdf, loading = false }) => {
+const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, shipments = [], payments = [], onMarkAsPaid, onGoToPayment, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -638,6 +640,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                     <ShipmentForm
                         order={orderToShip}
                         products={products}
+                        shipments={shipments}
                         onSave={handleShipmentSave}
                         onCancel={() => setIsShipmentModalOpen(false)}
                     />
