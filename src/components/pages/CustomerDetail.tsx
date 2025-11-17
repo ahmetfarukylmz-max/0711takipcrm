@@ -23,16 +23,19 @@ interface Stats {
     totalMeetings: number;
     completedOrders: number;
     pendingQuotes: number;
+    totalPayments: number;
+    totalPaymentAmount: number;
+    pendingPayments: number;
 }
 
 interface Activity {
-    type: 'order' | 'quote' | 'meeting' | 'shipment';
+    type: 'order' | 'quote' | 'meeting' | 'shipment' | 'payment';
     date: string;
     title: string;
     description: string;
     status: string;
     id: string;
-    data: Order | Quote | Meeting | Shipment;
+    data: Order | Quote | Meeting | Shipment | Payment;
 }
 
 type TabId = 'overview' | 'timeline' | 'orders' | 'quotes' | 'top-products';
@@ -150,11 +153,21 @@ const CustomerDetail = memo<CustomerDetailProps>(({
         const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
         const customerQuotes = quotes.filter(q => q.customerId === customer.id && !q.isDeleted);
         const customerMeetings = meetings.filter(m => m.customerId === customer.id && !m.isDeleted);
+        const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted);
 
         const totalOrderAmount = customerOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
         const totalQuoteAmount = customerQuotes.reduce((sum, quote) => sum + (quote.total_amount || 0), 0);
         const completedOrders = customerOrders.filter(o => o.status === 'Tamamlandı').length;
         const pendingQuotes = customerQuotes.filter(q => q.status === 'Bekliyor').length;
+
+        const totalPaymentAmount = customerPayments.reduce((sum, payment) => {
+            const amount = payment.amount || 0;
+            const inTRY = payment.currency === 'USD' ? amount * 35 :
+                         payment.currency === 'EUR' ? amount * 38 :
+                         amount;
+            return sum + inTRY;
+        }, 0);
+        const pendingPayments = customerPayments.filter(p => p.status === 'Bekliyor').length;
 
         return {
             totalOrders: customerOrders.length,
@@ -163,9 +176,12 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             totalQuoteAmount,
             totalMeetings: customerMeetings.length,
             completedOrders,
-            pendingQuotes
+            pendingQuotes,
+            totalPayments: customerPayments.length,
+            totalPaymentAmount,
+            pendingPayments
         };
-    }, [customer.id, orders, quotes, meetings]);
+    }, [customer.id, orders, quotes, meetings, payments]);
 
     // Calculate balance (simple: total payments - total orders)
     const balance = useMemo(() => {
@@ -325,9 +341,30 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 }
             });
 
+        // Add payments
+        payments
+            .filter(p => p.customerId === customer.id && !p.isDeleted)
+            .forEach(payment => {
+                const amount = payment.amount || 0;
+                const currency = payment.currency || 'TRY';
+                const inTRY = currency === 'USD' ? amount * 35 :
+                             currency === 'EUR' ? amount * 38 :
+                             amount;
+
+                activities.push({
+                    type: 'payment',
+                    date: payment.paidDate || payment.dueDate || '',
+                    title: payment.status === 'Tahsil Edildi' ? 'Ödeme Tahsil Edildi' : 'Ödeme Planlandı',
+                    description: `${formatCurrency(inTRY)} ${payment.paymentMethod ? `- ${payment.paymentMethod}` : ''}`,
+                    status: payment.status,
+                    id: payment.id,
+                    data: payment
+                });
+            });
+
         // Sort by date descending
         return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [customer.id, orders, quotes, meetings, shipments]);
+    }, [customer.id, orders, quotes, meetings, shipments, payments]);
 
     const getActivityIcon = (type: Activity['type']): JSX.Element | null => {
         switch (type) {
@@ -355,6 +392,12 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                     </svg>
                 );
+            case 'payment':
+                return (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                );
             default:
                 return null;
         }
@@ -370,6 +413,8 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                 return 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300';
             case 'shipment':
                 return 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300';
+            case 'payment':
+                return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-300';
             default:
                 return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
         }
@@ -495,7 +540,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             </Modal>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">Toplam Sipariş</div>
                     <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalOrders}</div>
@@ -555,6 +600,20 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                             {balance.status}
                         </div>
                     </div>
+                </div>
+
+                {/* Tahsilat Kartı */}
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    <div className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-1">Tahsil Edilen</div>
+                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{stats.totalPayments}</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{formatCurrency(stats.totalPaymentAmount)}</div>
+                </div>
+
+                {/* Bekleyen Ödemeler Kartı */}
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div className="text-sm text-amber-600 dark:text-amber-400 font-semibold mb-1">Bekleyen Ödeme</div>
+                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.pendingPayments}</div>
+                    <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">Tahsilat</div>
                 </div>
             </div>
 
