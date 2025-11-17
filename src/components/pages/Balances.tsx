@@ -1,5 +1,6 @@
 import React, { useMemo, useState, memo } from 'react';
 import toast from 'react-hot-toast';
+import Modal from '../common/Modal';
 import { formatCurrency, formatDate, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportToExcel } from '../../utils/excelExport';
 import { WhatsAppIcon, DownloadIcon, PrinterIcon } from '../icons';
@@ -15,6 +16,7 @@ interface BalancesProps {
 type BalanceStatus = 'all' | 'alacak' | 'borc' | 'dengede';
 type SortField = 'name' | 'balance' | 'orders' | 'payments';
 type SortDirection = 'asc' | 'desc';
+type DetailTab = 'orders' | 'payments';
 
 interface CustomerBalance {
   customer: Customer;
@@ -25,8 +27,8 @@ interface CustomerBalance {
   statusText: string;
   icon: string;
   color: string;
-  orderDetails: Array<{ id: string; date: string; amount: number; currency: string }>;
-  paymentDetails: Array<{ id: string; date: string; amount: number; currency: string; method: string }>;
+  orderDetails: Array<{ id: string; date: string; amount: number; currency: string; orderNumber?: string; status?: string }>;
+  paymentDetails: Array<{ id: string; date: string; amount: number; currency: string; method: string; status: string }>;
 }
 
 const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerClick }) => {
@@ -37,7 +39,8 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
   const [maxBalance, setMaxBalance] = useState('');
   const [sortField, setSortField] = useState<SortField>('balance');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<CustomerBalance | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>('orders');
 
   // Calculate balances for all customers
   const customerBalances = useMemo(() => {
@@ -51,7 +54,9 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         id: o.id,
         date: o.order_date,
         amount: o.total_amount || 0,
-        currency: o.currency || 'TRY'
+        currency: o.currency || 'TRY',
+        orderNumber: o.orderNumber,
+        status: o.status
       }));
 
       const paymentDetails = customerPayments.map(p => ({
@@ -59,7 +64,8 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         date: p.paidDate || p.dueDate,
         amount: p.amount || 0,
         currency: p.currency || 'TRY',
-        method: p.paymentMethod || 'Belirtilmemiş'
+        method: p.paymentMethod || 'Belirtilmemiş',
+        status: p.status
       }));
 
       const totalOrders = customerOrders.reduce((sum, order) => {
@@ -237,14 +243,9 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
-  const toggleRowExpansion = (customerId: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(customerId)) {
-      newExpanded.delete(customerId);
-    } else {
-      newExpanded.add(customerId);
-    }
-    setExpandedRows(newExpanded);
+  const handleRowClick = (customerBalance: CustomerBalance) => {
+    setSelectedCustomerBalance(customerBalance);
+    setDetailTab('orders');
   };
 
   const handleExportExcel = () => {
@@ -297,6 +298,55 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     setMinBalance('');
     setMaxBalance('');
     toast.success('Filtreler temizlendi');
+  };
+
+  const handlePrintExtract = () => {
+    if (!selectedCustomerBalance) return;
+    // In a real app, you'd generate a proper extract PDF
+    window.print();
+    toast.success('Ekstre yazdırılıyor...');
+  };
+
+  const handleExportExtract = () => {
+    if (!selectedCustomerBalance) return;
+
+    const cb = selectedCustomerBalance;
+    const exportData = [
+      {
+        'Müşteri': cb.customer.name,
+        'Şirket': cb.customer.company || '',
+        'Telefon': cb.customer.phone || '',
+        'Şehir': cb.customer.city || '',
+        '': '',
+        'Toplam Sipariş': cb.totalOrders,
+        'Toplam Ödeme': cb.totalPayments,
+        'Bakiye': cb.balance,
+        'Durum': cb.statusText
+      },
+      {},
+      { 'Sipariş Detayları': '' },
+      ...cb.orderDetails.map(o => ({
+        'Tarih': formatDate(o.date),
+        'Sipariş No': o.orderNumber || '-',
+        'Tutar': formatCurrency(o.amount, o.currency),
+        'Durum': o.status || '-'
+      })),
+      {},
+      { 'Ödeme Detayları': '' },
+      ...cb.paymentDetails.map(p => ({
+        'Tarih': formatDate(p.date),
+        'Tutar': formatCurrency(p.amount, p.currency),
+        'Yöntem': p.method,
+        'Durum': p.status
+      }))
+    ];
+
+    exportToExcel(
+      exportData,
+      `cari-ekstre-${cb.customer.name}-${new Date().toISOString().split('T')[0]}.xlsx`,
+      'Cari Ekstre'
+    );
+    toast.success('Ekstre Excel dosyası indirildi!');
   };
 
   return (
@@ -486,9 +536,6 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Detay
-                </th>
                 <th
                   onClick={() => handleSort('name')}
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -524,7 +571,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredAndSortedBalances.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="text-gray-400 dark:text-gray-500">
                       <div className="text-4xl mb-2">📭</div>
                       <p className="text-lg">Müşteri bulunamadı</p>
@@ -534,164 +581,299 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                 </tr>
               ) : (
                 filteredAndSortedBalances.map((cb) => (
-                  <React.Fragment key={cb.customer.id}>
-                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      {/* Expand Button */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => toggleRowExpansion(cb.customer.id)}
-                          className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                        >
-                          {expandedRows.has(cb.customer.id) ? '▼' : '▶'}
-                        </button>
-                      </td>
-
-                      {/* Customer Name */}
-                      <td
-                        className="px-6 py-4 whitespace-nowrap cursor-pointer"
-                        onClick={() => onCustomerClick?.(cb.customer)}
-                      >
-                        <div className="flex flex-col">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {cb.customer.name}
+                  <tr
+                    key={cb.customer.id}
+                    onClick={() => handleRowClick(cb)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                  >
+                    {/* Customer Name */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {cb.customer.name}
+                        </div>
+                        {cb.customer.company && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {cb.customer.company}
                           </div>
-                          {cb.customer.company && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {cb.customer.company}
-                            </div>
-                          )}
-                          {cb.customer.city && (
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              📍 {cb.customer.city}
-                            </div>
-                          )}
-                        </div>
-                      </td>
+                        )}
+                        {cb.customer.city && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
+                            📍 {cb.customer.city}
+                          </div>
+                        )}
+                      </div>
+                    </td>
 
-                      {/* Total Orders */}
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCurrency(cb.totalOrders, 'TRY')}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {cb.orderDetails.length} sipariş
-                        </div>
-                      </td>
+                    {/* Total Orders */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {formatCurrency(cb.totalOrders, 'TRY')}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {cb.orderDetails.length} sipariş
+                      </div>
+                    </td>
 
-                      {/* Total Payments */}
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatCurrency(cb.totalPayments, 'TRY')}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {cb.paymentDetails.length} ödeme
-                        </div>
-                      </td>
+                    {/* Total Payments */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {formatCurrency(cb.totalPayments, 'TRY')}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {cb.paymentDetails.length} ödeme
+                      </div>
+                    </td>
 
-                      {/* Balance */}
-                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-semibold ${cb.color}`}>
-                        {cb.balance >= 0 ? '+' : ''}{formatCurrency(cb.balance, 'TRY')}
-                      </td>
+                    {/* Balance */}
+                    <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-semibold ${cb.color}`}>
+                      {cb.balance >= 0 ? '+' : ''}{formatCurrency(cb.balance, 'TRY')}
+                    </td>
 
-                      {/* Status */}
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          cb.status === 'alacak' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                          cb.status === 'borc' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                        }`}>
-                          {cb.icon} {cb.statusText}
-                        </span>
-                      </td>
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        cb.status === 'alacak' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        cb.status === 'borc' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                      }`}>
+                        {cb.icon} {cb.statusText}
+                      </span>
+                    </td>
 
-                      {/* Actions */}
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {cb.customer.phone && (
-                            <button
-                              onClick={() => handleWhatsAppReminder(cb.customer, cb.balance)}
-                              className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                              title="WhatsApp ile hatırlat"
-                            >
-                              <WhatsAppIcon className="w-4 h-4" />
-                            </button>
-                          )}
+                    {/* Actions */}
+                    <td className="px-6 py-4 whitespace-nowrap text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        {cb.customer.phone && (
                           <button
-                            onClick={() => onCustomerClick?.(cb.customer)}
-                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            onClick={() => handleWhatsAppReminder(cb.customer, cb.balance)}
+                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            title="WhatsApp ile hatırlat"
                           >
-                            Detay
+                            <WhatsAppIcon className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Expanded Details */}
-                    {expandedRows.has(cb.customer.id) && (
-                      <tr className="bg-gray-50 dark:bg-gray-900/50">
-                        <td colSpan={7} className="px-6 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Orders Detail */}
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                                📦 Siparişler ({cb.orderDetails.length})
-                              </h4>
-                              <div className="space-y-1 max-h-48 overflow-y-auto">
-                                {cb.orderDetails.length === 0 ? (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">Henüz sipariş yok</p>
-                                ) : (
-                                  cb.orderDetails.map((order) => (
-                                    <div key={order.id} className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 p-2 rounded">
-                                      <span className="text-gray-600 dark:text-gray-400">
-                                        {formatDate(order.date)}
-                                      </span>
-                                      <span className="font-medium text-gray-900 dark:text-white">
-                                        {formatCurrency(order.amount, order.currency)}
-                                      </span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Payments Detail */}
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                                💰 Ödemeler ({cb.paymentDetails.length})
-                              </h4>
-                              <div className="space-y-1 max-h-48 overflow-y-auto">
-                                {cb.paymentDetails.length === 0 ? (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">Henüz ödeme yok</p>
-                                ) : (
-                                  cb.paymentDetails.map((payment) => (
-                                    <div key={payment.id} className="flex items-center justify-between text-xs bg-white dark:bg-gray-800 p-2 rounded">
-                                      <div className="flex flex-col">
-                                        <span className="text-gray-600 dark:text-gray-400">
-                                          {formatDate(payment.date)}
-                                        </span>
-                                        <span className="text-xs text-gray-500 dark:text-gray-500">
-                                          {payment.method}
-                                        </span>
-                                      </div>
-                                      <span className="font-medium text-green-600 dark:text-green-400">
-                                        {formatCurrency(payment.amount, payment.currency)}
-                                      </span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
+                        )}
+                        <button
+                          onClick={() => handleRowClick(cb)}
+                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Ekstre
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <Modal
+        show={selectedCustomerBalance !== null}
+        onClose={() => setSelectedCustomerBalance(null)}
+        title="Cari Hesap Ekstresi"
+        maxWidth="max-w-4xl"
+      >
+        {selectedCustomerBalance && (
+          <div className="space-y-4">
+            {/* Customer Header */}
+            <div className={`p-4 rounded-lg border-2 ${selectedCustomerBalance.status === 'alacak' ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' : selectedCustomerBalance.status === 'borc' ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600' : 'bg-gray-50 dark:bg-gray-900/20 border-gray-300 dark:border-gray-600'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {selectedCustomerBalance.customer.name}
+                  </h3>
+                  {selectedCustomerBalance.customer.company && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedCustomerBalance.customer.company}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    {selectedCustomerBalance.customer.city && `📍 ${selectedCustomerBalance.customer.city} • `}
+                    {selectedCustomerBalance.customer.phone && `📞 ${selectedCustomerBalance.customer.phone}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Bakiye</div>
+                  <div className={`text-3xl font-bold ${selectedCustomerBalance.color}`}>
+                    {selectedCustomerBalance.balance >= 0 ? '+' : ''}{formatCurrency(selectedCustomerBalance.balance, 'TRY')}
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
+                    selectedCustomerBalance.status === 'alacak' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                    selectedCustomerBalance.status === 'borc' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                  }`}>
+                    {selectedCustomerBalance.icon} {selectedCustomerBalance.statusText}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                {selectedCustomerBalance.customer.phone && (
+                  <button
+                    onClick={() => handleWhatsAppReminder(selectedCustomerBalance.customer, selectedCustomerBalance.balance)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <WhatsAppIcon className="w-4 h-4" />
+                    Hatırlat
+                  </button>
+                )}
+                <button
+                  onClick={handleExportExtract}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                  Excel İndir
+                </button>
+                <button
+                  onClick={handlePrintExtract}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <PrinterIcon className="w-4 h-4" />
+                  Yazdır
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-1">Toplam Sipariş</div>
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  {formatCurrency(selectedCustomerBalance.totalOrders, 'TRY')}
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {selectedCustomerBalance.orderDetails.length} adet
+                </div>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-1">Toplam Ödeme</div>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {formatCurrency(selectedCustomerBalance.totalPayments, 'TRY')}
+                </div>
+                <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  {selectedCustomerBalance.paymentDetails.length} adet
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setDetailTab('orders')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'orders'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  📦 Siparişler ({selectedCustomerBalance.orderDetails.length})
+                </button>
+                <button
+                  onClick={() => setDetailTab('payments')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'payments'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  💰 Ödemeler ({selectedCustomerBalance.paymentDetails.length})
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="max-h-96 overflow-y-auto">
+              {detailTab === 'orders' ? (
+                <div className="space-y-2">
+                  {selectedCustomerBalance.orderDetails.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <p className="text-4xl mb-2">📦</p>
+                      <p>Henüz sipariş yok</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Tarih</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Sipariş No</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">Tutar</th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Durum</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {selectedCustomerBalance.orderDetails.map((order) => (
+                          <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {formatDate(order.date)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                              {order.orderNumber || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
+                              {formatCurrency(order.amount, order.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                {order.status || 'Bekliyor'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedCustomerBalance.paymentDetails.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <p className="text-4xl mb-2">💰</p>
+                      <p>Henüz ödeme yok</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Tarih</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">Tutar</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Yöntem</th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Durum</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {selectedCustomerBalance.paymentDetails.map((payment) => (
+                          <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {formatDate(payment.date)}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-green-600 dark:text-green-400 text-right">
+                              {formatCurrency(payment.amount, payment.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                              {payment.method}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                {payment.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 });
