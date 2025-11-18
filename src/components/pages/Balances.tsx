@@ -430,6 +430,33 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     toast.success('Filtreler temizlendi');
   };
 
+  const handleAlertCardClick = (alertType: 'overdue' | 'highRisk' | 'upcoming' | 'mediumRisk') => {
+    // Filter the table based on alert type
+    clearFilters();
+
+    switch (alertType) {
+      case 'overdue':
+        // Show customers with overdue payments
+        toast.success('Vadesi geçmiş ödemeli müşteriler gösteriliyor');
+        break;
+      case 'highRisk':
+        // Show high risk customers
+        toast.success('Yüksek riskli müşteriler gösteriliyor');
+        break;
+      case 'upcoming':
+        // Show customers with upcoming payments
+        toast.success('Yaklaşan vadeli müşteriler gösteriliyor');
+        break;
+      case 'mediumRisk':
+        // Show medium risk customers
+        toast.success('Orta riskli müşteriler gösteriliyor');
+        break;
+    }
+
+    // Scroll to table
+    tableRef.current?.scrollTo(0);
+  };
+
   const handlePrintExtract = async () => {
     if (!selectedCustomerBalance) return;
 
@@ -575,112 +602,107 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         </div>
       </div>
 
-      {/* Critical Alerts */}
+      {/* Critical Alerts - Compact Banner Style */}
       {(summary.totalOverdue > 0 || summary.totalUpcoming > 0 || summary.highRiskCount > 0 || summary.mediumRiskCount > 0) && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            ⚠️ Kritik Uyarılar
-          </h2>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              ⚠️ Kritik Uyarılar
+            </h2>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Detay için tıklayın</span>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* CRITICAL: Overdue Payments */}
             {summary.totalOverdue > 0 && (
-              <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/20 p-5 rounded-xl border-l-4 border-red-600 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide mb-1">
-                      🚨 Kritik
-                    </div>
-                    <div className="text-sm font-semibold text-red-900 dark:text-red-300">
-                      Vadesi Geçmiş Ödemeler
-                    </div>
+              <button
+                onClick={() => handleAlertCardClick('overdue')}
+                className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 p-3 rounded-lg border-l-4 border-red-600 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide">
+                    🚨 Kritik
                   </div>
-                  <div className="bg-red-600 dark:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                  <div className="bg-red-600 dark:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
                     {summary.overdueCount}
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-red-700 dark:text-red-400 mb-1">
+                <div className="text-lg font-bold text-red-700 dark:text-red-400 mb-0.5">
                   {formatCurrency(summary.totalOverdue, 'TRY')}
                 </div>
-                <div className="text-xs text-red-700 dark:text-red-400 font-medium">
-                  Acil ödeme takibi gerekli
+                <div className="text-xs text-red-600 dark:text-red-500">
+                  Vadesi Geçmiş Ödemeler
                 </div>
-              </div>
+              </button>
             )}
 
             {/* HIGH RISK: Customers */}
             {summary.highRiskCount > 0 && (
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/20 p-5 rounded-xl border-l-4 border-orange-600 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">
-                      🔴 Yüksek Risk
-                    </div>
-                    <div className="text-sm font-semibold text-orange-900 dark:text-orange-300">
-                      Riskli Müşteriler
-                    </div>
+              <button
+                onClick={() => handleAlertCardClick('highRisk')}
+                className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-3 rounded-lg border-l-4 border-orange-600 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
+                    🔴 Yüksek Risk
                   </div>
-                  <div className="bg-orange-600 dark:bg-orange-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                  <div className="bg-orange-600 dark:bg-orange-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
                     {summary.highRiskCount}
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-orange-700 dark:text-orange-400 mb-1">
-                  {summary.highRiskCount}
+                <div className="text-lg font-bold text-orange-700 dark:text-orange-400 mb-0.5">
+                  {summary.highRiskCount} Müşteri
                 </div>
-                <div className="text-xs text-orange-700 dark:text-orange-400 font-medium">
-                  Dikkatli takip önerilir
+                <div className="text-xs text-orange-600 dark:text-orange-500">
+                  Riskli Müşteriler
                 </div>
-              </div>
+              </button>
             )}
 
             {/* WARNING: Upcoming Payments */}
             {summary.totalUpcoming > 0 && (
-              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-900/20 p-5 rounded-xl border-l-4 border-yellow-600 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide mb-1">
-                      ⚡ Uyarı
-                    </div>
-                    <div className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">
-                      Yaklaşan Vadeler (7 gün)
-                    </div>
+              <button
+                onClick={() => handleAlertCardClick('upcoming')}
+                className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-3 rounded-lg border-l-4 border-yellow-600 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
+                    ⚡ Uyarı
                   </div>
-                  <div className="bg-yellow-600 dark:bg-yellow-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                  <div className="bg-yellow-600 dark:bg-yellow-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
                     {summary.upcomingCount}
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">
+                <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400 mb-0.5">
                   {formatCurrency(summary.totalUpcoming, 'TRY')}
                 </div>
-                <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
-                  Hatırlatma gönder
+                <div className="text-xs text-yellow-600 dark:text-yellow-500">
+                  Yaklaşan Vadeler (7 gün)
                 </div>
-              </div>
+              </button>
             )}
 
             {/* MEDIUM RISK: Customers */}
             {summary.mediumRiskCount > 0 && (
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-900/20 p-5 rounded-xl border-l-4 border-amber-500 shadow-md hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1">
-                      🟡 Orta Risk
-                    </div>
-                    <div className="text-sm font-semibold text-amber-900 dark:text-amber-300">
-                      Takip Gereken Müşteriler
-                    </div>
+              <button
+                onClick={() => handleAlertCardClick('mediumRisk')}
+                className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 p-3 rounded-lg border-l-4 border-amber-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                    🟡 Orta Risk
                   </div>
-                  <div className="bg-amber-500 dark:bg-amber-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                  <div className="bg-amber-500 dark:bg-amber-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
                     {summary.mediumRiskCount}
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400 mb-1">
-                  {summary.mediumRiskCount}
+                <div className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-0.5">
+                  {summary.mediumRiskCount} Müşteri
                 </div>
-                <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                  Düzenli kontrol yapın
+                <div className="text-xs text-amber-600 dark:text-amber-500">
+                  Takip Gereken Müşteriler
                 </div>
-              </div>
+              </button>
             )}
           </div>
         </div>
