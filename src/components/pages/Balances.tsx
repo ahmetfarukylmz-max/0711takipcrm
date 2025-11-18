@@ -1,9 +1,12 @@
-import React, { useMemo, useState, memo } from 'react';
+import React, { useMemo, useState, memo, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { FixedSizeList } from 'react-window';
 import Modal from '../common/Modal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { exportToExcel } from '../../utils/excelExport';
+import { generatePDFExtract } from '../../utils/pdfExtract';
 import { DownloadIcon, PrinterIcon } from '../icons';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { Customer, Order, Payment } from '../../types';
 
 interface BalancesProps {
@@ -16,7 +19,7 @@ interface BalancesProps {
 type BalanceStatus = 'all' | 'alacak' | 'borc' | 'dengede';
 type SortField = 'name' | 'balance' | 'orders' | 'payments';
 type SortDirection = 'asc' | 'desc';
-type DetailTab = 'orders' | 'payments';
+type DetailTab = 'orders' | 'payments' | 'duedates';
 
 interface CustomerBalance {
   customer: Customer;
@@ -29,10 +32,29 @@ interface CustomerBalance {
   color: string;
   orderDetails: Array<{ id: string; date: string; amount: number; currency: string; orderNumber?: string; status?: string }>;
   paymentDetails: Array<{ id: string; date: string; amount: number; currency: string; method: string; status: string }>;
+  dueDateInfo: {
+    overduePayments: Payment[];
+    upcomingPayments: Payment[];
+    totalOverdueAmount: number;
+    totalUpcomingAmount: number;
+  };
+  riskAnalysis: {
+    riskScore: number; // 0-100
+    riskLevel: 'low' | 'medium' | 'high';
+    riskLabel: string;
+    riskColor: string;
+    factors: {
+      overdueCount: number;
+      averageDelayDays: number;
+      overdueRatio: number; // % of total debt
+      balanceRatio: number; // debt / total orders
+    };
+  };
 }
 
 const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [statusFilter, setStatusFilter] = useState<BalanceStatus>('all');
   const [cityFilter, setCityFilter] = useState('Tümü');
   const [minBalance, setMinBalance] = useState('');
@@ -41,14 +63,20 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<CustomerBalance | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('orders');
+  const tableRef = useRef<FixedSizeList>(null);
 
   // Calculate balances for all customers
   const customerBalances = useMemo(() => {
     const activeCustomers = customers.filter(c => !c.isDeleted);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+    const sevenDaysLater = new Date(today);
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
 
     return activeCustomers.map(customer => {
       const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
       const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi');
+      const customerPendingPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status !== 'Tahsil Edildi' && p.status !== 'İptal');
 
       const orderDetails = customerOrders.map(o => ({
         id: o.id,
@@ -67,6 +95,37 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         method: p.paymentMethod || 'Belirtilmemiş',
         status: p.status
       }));
+
+      // Calculate due date info
+      const overduePayments = customerPendingPayments.filter(p => {
+        if (!p.dueDate) return false;
+        const dueDate = new Date(p.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < today;
+      });
+
+      const upcomingPayments = customerPendingPayments.filter(p => {
+        if (!p.dueDate) return false;
+        const dueDate = new Date(p.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate >= today && dueDate <= sevenDaysLater;
+      });
+
+      const totalOverdueAmount = overduePayments.reduce((sum, p) => {
+        const amount = p.amount || 0;
+        const inTRY = p.currency === 'USD' ? amount * 35 :
+                     p.currency === 'EUR' ? amount * 38 :
+                     amount;
+        return sum + inTRY;
+      }, 0);
+
+      const totalUpcomingAmount = upcomingPayments.reduce((sum, p) => {
+        const amount = p.amount || 0;
+        const inTRY = p.currency === 'USD' ? amount * 35 :
+                     p.currency === 'EUR' ? amount * 38 :
+                     amount;
+        return sum + inTRY;
+      }, 0);
 
       const totalOrders = customerOrders.reduce((sum, order) => {
         const amount = order.total_amount || 0;
@@ -108,6 +167,57 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         icon = '⚠️';
       }
 
+      // Calculate risk analysis
+      const overdueCount = overduePayments.length;
+      const averageDelayDays = overdueCount > 0
+        ? overduePayments.reduce((sum, p) => {
+            const dueDate = new Date(p.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+            const delayDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+            return sum + delayDays;
+          }, 0) / overdueCount
+        : 0;
+
+      const overdueRatio = totalOrders > 0 ? (totalOverdueAmount / totalOrders) * 100 : 0;
+      const balanceRatio = totalOrders > 0 ? (Math.abs(balanceAmount) / totalOrders) * 100 : 0;
+
+      // Calculate risk score (0-100)
+      let riskScore = 0;
+
+      // Factor 1: Overdue count (max 30 points)
+      riskScore += Math.min(overdueCount * 10, 30);
+
+      // Factor 2: Average delay days (max 30 points)
+      riskScore += Math.min(averageDelayDays * 2, 30);
+
+      // Factor 3: Overdue ratio (max 25 points)
+      riskScore += Math.min(overdueRatio * 0.25, 25);
+
+      // Factor 4: Balance ratio - only if in debt (max 15 points)
+      if (balanceAmount < 0) {
+        riskScore += Math.min(balanceRatio * 0.15, 15);
+      }
+
+      riskScore = Math.min(Math.round(riskScore), 100);
+
+      let riskLevel: 'low' | 'medium' | 'high';
+      let riskLabel: string;
+      let riskColor: string;
+
+      if (riskScore <= 30) {
+        riskLevel = 'low';
+        riskLabel = 'Düşük Risk';
+        riskColor = 'text-green-600 dark:text-green-400';
+      } else if (riskScore <= 60) {
+        riskLevel = 'medium';
+        riskLabel = 'Orta Risk';
+        riskColor = 'text-yellow-600 dark:text-yellow-400';
+      } else {
+        riskLevel = 'high';
+        riskLabel = 'Yüksek Risk';
+        riskColor = 'text-red-600 dark:text-red-400';
+      }
+
       return {
         customer,
         totalOrders,
@@ -118,7 +228,25 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         icon,
         color,
         orderDetails,
-        paymentDetails
+        paymentDetails,
+        dueDateInfo: {
+          overduePayments,
+          upcomingPayments,
+          totalOverdueAmount,
+          totalUpcomingAmount
+        },
+        riskAnalysis: {
+          riskScore,
+          riskLevel,
+          riskLabel,
+          riskColor,
+          factors: {
+            overdueCount,
+            averageDelayDays: Math.round(averageDelayDays * 10) / 10, // 1 decimal
+            overdueRatio: Math.round(overdueRatio * 10) / 10,
+            balanceRatio: Math.round(balanceRatio * 10) / 10
+          }
+        }
       };
     });
   }, [customers, orders, payments]);
@@ -137,11 +265,29 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
 
     const dengedeCount = customerBalances.filter(cb => cb.status === 'dengede').length;
 
+    // Calculate total overdue and upcoming
+    const totalOverdue = customerBalances.reduce((sum, cb) => sum + cb.dueDateInfo.totalOverdueAmount, 0);
+    const totalUpcoming = customerBalances.reduce((sum, cb) => sum + cb.dueDateInfo.totalUpcomingAmount, 0);
+    const overdueCount = customerBalances.filter(cb => cb.dueDateInfo.overduePayments.length > 0).length;
+    const upcomingCount = customerBalances.filter(cb => cb.dueDateInfo.upcomingPayments.length > 0).length;
+
+    // Calculate risk statistics
+    const highRiskCount = customerBalances.filter(cb => cb.riskAnalysis.riskLevel === 'high').length;
+    const mediumRiskCount = customerBalances.filter(cb => cb.riskAnalysis.riskLevel === 'medium').length;
+    const lowRiskCount = customerBalances.filter(cb => cb.riskAnalysis.riskLevel === 'low').length;
+
     return {
       totalAlacak,
       totalBorc,
       netBalance,
-      dengedeCount
+      dengedeCount,
+      totalOverdue,
+      totalUpcoming,
+      overdueCount,
+      upcomingCount,
+      highRiskCount,
+      mediumRiskCount,
+      lowRiskCount
     };
   }, [customerBalances]);
 
@@ -151,13 +297,13 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     return ['Tümü', ...Array.from(uniqueCities).sort()];
   }, [customers]);
 
-  // Filter and sort
+  // Filter and sort (using debounced search for performance)
   const filteredAndSortedBalances = useMemo(() => {
     let filtered = customerBalances;
 
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Apply search filter (debounced)
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(cb =>
         cb.customer.name.toLowerCase().includes(term) ||
         cb.customer.company?.toLowerCase().includes(term)
@@ -227,7 +373,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     });
 
     return filtered;
-  }, [customerBalances, searchTerm, statusFilter, cityFilter, minBalance, maxBalance, sortField, sortDirection]);
+  }, [customerBalances, debouncedSearchTerm, statusFilter, cityFilter, minBalance, maxBalance, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -284,11 +430,19 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     toast.success('Filtreler temizlendi');
   };
 
-  const handlePrintExtract = () => {
+  const handlePrintExtract = async () => {
     if (!selectedCustomerBalance) return;
-    // In a real app, you'd generate a proper extract PDF
-    window.print();
-    toast.success('Ekstre yazdırılıyor...');
+
+    try {
+      toast.loading('PDF oluşturuluyor...', { id: 'pdf-generate' });
+
+      const filename = await generatePDFExtract(selectedCustomerBalance);
+
+      toast.success(`PDF indirildi: ${filename}`, { id: 'pdf-generate' });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('PDF oluşturulurken hata oluştu', { id: 'pdf-generate' });
+    }
   };
 
   const handleExportExtract = () => {
@@ -420,6 +574,96 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
           </div>
         </div>
       </div>
+
+      {/* Due Date Alert Cards */}
+      {(summary.totalOverdue > 0 || summary.totalUpcoming > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Overdue Payments */}
+          {summary.totalOverdue > 0 && (
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-2 border-red-400 dark:border-red-600">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-red-700 dark:text-red-400">🚨 Vadesi Geçmiş Ödemeler</div>
+                <span className="text-xl">⏰</span>
+              </div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+                {formatCurrency(summary.totalOverdue, 'TRY')}
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                {summary.overdueCount} müşteri • Ödeme bekliyor
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Payments */}
+          {summary.totalUpcoming > 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-2 border-yellow-400 dark:border-yellow-600">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">⚡ 7 Gün İçinde Vadesi Dolacak</div>
+                <span className="text-xl">📅</span>
+              </div>
+              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                {formatCurrency(summary.totalUpcoming, 'TRY')}
+              </div>
+              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                {summary.upcomingCount} müşteri • Yaklaşan vadeler
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Risk Analysis Cards */}
+      {(summary.highRiskCount > 0 || summary.mediumRiskCount > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* High Risk */}
+          {summary.highRiskCount > 0 && (
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-2 border-red-400 dark:border-red-600">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-red-700 dark:text-red-400">🔴 Yüksek Risk</div>
+                <span className="text-xl">⚠️</span>
+              </div>
+              <div className="text-3xl font-bold text-red-700 dark:text-red-400">
+                {summary.highRiskCount}
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                Müşteri • Dikkat gerekli
+              </div>
+            </div>
+          )}
+
+          {/* Medium Risk */}
+          {summary.mediumRiskCount > 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-2 border-yellow-400 dark:border-yellow-600">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">🟡 Orta Risk</div>
+                <span className="text-xl">⚡</span>
+              </div>
+              <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">
+                {summary.mediumRiskCount}
+              </div>
+              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                Müşteri • Takip gerekli
+              </div>
+            </div>
+          )}
+
+          {/* Low Risk - Optional */}
+          {summary.lowRiskCount > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border-2 border-green-400 dark:border-green-600">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-green-700 dark:text-green-400">🟢 Düşük Risk</div>
+                <span className="text-xl">✅</span>
+              </div>
+              <div className="text-3xl font-bold text-green-700 dark:text-green-400">
+                {summary.lowRiskCount}
+              </div>
+              <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Müşteri • Güvenli
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Advanced Filters */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -573,8 +817,32 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                     {/* Customer Name */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {cb.customer.name}
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {cb.customer.name}
+                          </div>
+                          {/* Risk Indicator */}
+                          {cb.riskAnalysis.riskLevel === 'high' && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-semibold" title={`Yüksek Risk (${cb.riskAnalysis.riskScore}/100)`}>
+                              🔴
+                            </span>
+                          )}
+                          {cb.riskAnalysis.riskLevel === 'medium' && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold" title={`Orta Risk (${cb.riskAnalysis.riskScore}/100)`}>
+                              🟡
+                            </span>
+                          )}
+                          {/* Due Date Indicators */}
+                          {cb.dueDateInfo.overduePayments.length > 0 && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-semibold" title="Vadesi geçmiş ödeme var">
+                              🚨
+                            </span>
+                          )}
+                          {cb.dueDateInfo.upcomingPayments.length > 0 && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold" title="7 gün içinde vade var">
+                              ⚡
+                            </span>
+                          )}
                         </div>
                         {cb.customer.company && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -681,21 +949,73 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
               {/* Quick Actions */}
               <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <button
+                  onClick={handlePrintExtract}
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                  PDF İndir
+                </button>
+                <button
                   onClick={handleExportExtract}
-                  className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <DownloadIcon className="w-4 h-4" />
                   Excel İndir
                 </button>
-                <button
-                  onClick={handlePrintExtract}
-                  className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <PrinterIcon className="w-4 h-4" />
-                  Yazdır
-                </button>
               </div>
             </div>
+
+            {/* Risk Analysis Section */}
+            {selectedCustomerBalance.riskAnalysis.riskLevel !== 'low' && (
+              <div className={`p-4 rounded-lg border-2 ${
+                selectedCustomerBalance.riskAnalysis.riskLevel === 'high'
+                  ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600'
+                  : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    📊 Risk Analizi
+                    <span className={`text-sm px-2 py-1 rounded ${selectedCustomerBalance.riskAnalysis.riskColor}`}>
+                      {selectedCustomerBalance.riskAnalysis.riskLabel}
+                    </span>
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Risk Skoru</div>
+                    <div className={`text-3xl font-bold ${selectedCustomerBalance.riskAnalysis.riskColor}`}>
+                      {selectedCustomerBalance.riskAnalysis.riskScore}/100
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk Factors */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Gecikmiş Ödeme</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      {selectedCustomerBalance.riskAnalysis.factors.overdueCount}
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Ort. Gecikme</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      {selectedCustomerBalance.riskAnalysis.factors.averageDelayDays} gün
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Gecikme Oranı</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      %{selectedCustomerBalance.riskAnalysis.factors.overdueRatio}
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-white dark:bg-gray-800 rounded">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Bakiye Oranı</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      %{selectedCustomerBalance.riskAnalysis.factors.balanceRatio}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-4">
@@ -743,6 +1063,16 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                 >
                   💰 Ödemeler ({selectedCustomerBalance.paymentDetails.length})
                 </button>
+                <button
+                  onClick={() => setDetailTab('duedates')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'duedates'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  ⏰ Vadeler ({selectedCustomerBalance.dueDateInfo.overduePayments.length + selectedCustomerBalance.dueDateInfo.upcomingPayments.length})
+                </button>
               </nav>
             </div>
 
@@ -788,7 +1118,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                     </table>
                   )}
                 </div>
-              ) : (
+              ) : detailTab === 'payments' ? (
                 <div className="space-y-2">
                   {selectedCustomerBalance.paymentDetails.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -826,6 +1156,131 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                         ))}
                       </tbody>
                     </table>
+                  )}
+                </div>
+              ) : (
+                /* Due Dates Tab */
+                <div className="space-y-4">
+                  {selectedCustomerBalance.dueDateInfo.overduePayments.length === 0 && selectedCustomerBalance.dueDateInfo.upcomingPayments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <p className="text-4xl mb-2">⏰</p>
+                      <p>Vadeli ödeme bulunamadı</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Overdue Payments Section */}
+                      {selectedCustomerBalance.dueDateInfo.overduePayments.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-red-600 dark:text-red-400 font-semibold">🚨 Vadesi Geçmiş Ödemeler</span>
+                            <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                              {selectedCustomerBalance.dueDateInfo.overduePayments.length} adet
+                            </span>
+                          </div>
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-red-50 dark:bg-red-900/20">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-red-700 dark:text-red-400">Vade Tarihi</th>
+                                <th className="px-4 py-2 text-right text-xs font-medium text-red-700 dark:text-red-400">Tutar</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-red-700 dark:text-red-400">Ödeme Yöntemi</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium text-red-700 dark:text-red-400">Durum</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                              {selectedCustomerBalance.dueDateInfo.overduePayments.map((payment) => {
+                                const dueDate = new Date(payment.dueDate);
+                                const today = new Date();
+                                const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                                return (
+                                  <tr key={payment.id} className="hover:bg-red-50 dark:hover:bg-red-900/10">
+                                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                                      {formatDate(payment.dueDate)}
+                                      <div className="text-xs text-red-600 dark:text-red-400">
+                                        {daysOverdue} gün gecikti
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 text-right">
+                                      {formatCurrency(payment.amount, payment.currency || 'TRY')}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                      {payment.paymentMethod}
+                                      {payment.checkNumber && (
+                                        <div className="text-xs text-gray-500">
+                                          No: {payment.checkNumber}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                        {payment.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* Upcoming Payments Section */}
+                      {selectedCustomerBalance.dueDateInfo.upcomingPayments.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-yellow-600 dark:text-yellow-400 font-semibold">⚡ 7 Gün İçinde Vadesi Dolacak</span>
+                            <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                              {selectedCustomerBalance.dueDateInfo.upcomingPayments.length} adet
+                            </span>
+                          </div>
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-yellow-50 dark:bg-yellow-900/20">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-yellow-700 dark:text-yellow-400">Vade Tarihi</th>
+                                <th className="px-4 py-2 text-right text-xs font-medium text-yellow-700 dark:text-yellow-400">Tutar</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-yellow-700 dark:text-yellow-400">Ödeme Yöntemi</th>
+                                <th className="px-4 py-2 text-center text-xs font-medium text-yellow-700 dark:text-yellow-400">Durum</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                              {selectedCustomerBalance.dueDateInfo.upcomingPayments.map((payment) => {
+                                const dueDate = new Date(payment.dueDate);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                                return (
+                                  <tr key={payment.id} className="hover:bg-yellow-50 dark:hover:bg-yellow-900/10">
+                                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                                      {formatDate(payment.dueDate)}
+                                      <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                                        {daysUntilDue === 0 ? 'Bugün' : `${daysUntilDue} gün sonra`}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-yellow-600 dark:text-yellow-400 text-right">
+                                      {formatCurrency(payment.amount, payment.currency || 'TRY')}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                      {payment.paymentMethod}
+                                      {payment.checkNumber && (
+                                        <div className="text-xs text-gray-500">
+                                          No: {payment.checkNumber}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                        {payment.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
