@@ -799,7 +799,7 @@ const CrmApp = () => {
                     onClose={() => {}}
                 />
             </div>
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0 pb-20 md:pb-4">
+            <main className="flex-1 h-full p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0 pb-20 md:pb-4">
                 <PullToRefresh onRefresh={handleRefresh}>
                     <Suspense fallback={
                         <div className="flex items-center justify-center h-full">
