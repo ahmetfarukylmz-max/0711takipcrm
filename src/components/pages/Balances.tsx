@@ -476,14 +476,6 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         toast.success('Orta riskli müşteriler gösteriliyor');
         break;
     }
-
-    // Scroll to table
-    setTimeout(() => {
-      const tableElement = document.querySelector('.min-w-full');
-      if (tableElement) {
-        tableElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
   };
 
   const handlePrintExtract = async () => {
