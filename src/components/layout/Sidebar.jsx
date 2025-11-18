@@ -35,17 +35,17 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
             onClick={() => onNavigate(page)}
             aria-label={children}
             aria-current={isActive ? 'page' : undefined}
-            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
+            className={`group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
                 isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
+                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
             }`}
             title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
         >
-            <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-            <span className="flex-1 text-left">{children}</span>
+            <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} aria-hidden="true" />
+            <span className="flex-1 text-left font-medium">{children}</span>
             {badge > 0 && (
-                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold bg-red-500 text-white rounded-full">
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
                     {badge > 99 ? '99+' : badge}
                 </span>
             )}
@@ -101,26 +101,59 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
 
     return (
         <aside className={`
-            w-64 bg-gray-800 dark:bg-gray-900 text-white flex flex-col p-4
+            w-64 bg-gradient-to-b from-gray-800 via-gray-800 to-gray-900 text-white flex flex-col
             fixed md:relative h-full z-50
             transform transition-transform duration-300 ease-in-out
             ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            shadow-2xl
         `} role="navigation" aria-label="Ana menü">
             <div className="flex flex-col flex-grow">
-                <div className="mb-10 border-b border-gray-700 pb-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-semibold text-white">Takip CRM</h1>
-                    {/* Mobilde kapat butonu */}
-                    <button
-                        onClick={onClose}
-                        className="md:hidden text-gray-300 hover:text-white"
-                        aria-label="Menüyü Kapat"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                {/* Modern Header with Gradient */}
+                <div className="relative mb-6 px-4 pt-4 pb-6">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-b-3xl" />
+                    <div className="relative flex justify-between items-start">
+                        <div className="flex-1">
+                            {/* Logo Icon */}
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-blue-500/50">
+                                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                                Takip CRM
+                            </h1>
+                            <p className="text-xs text-gray-400 mt-1">Müşteri İlişkileri Yönetimi</p>
+                        </div>
+                        {/* Mobilde kapat butonu */}
+                        <button
+                            onClick={onClose}
+                            className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
+                            aria-label="Menüyü Kapat"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* User Profile Section */}
+                    {user && (
+                        <div className="mt-4 p-3 bg-gray-700/30 backdrop-blur-sm rounded-xl border border-gray-600/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white truncate">
+                                        {user.displayName || user.email?.split('@')[0]}
+                                    </p>
+                                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <nav className="flex flex-col gap-2" role="navigation" aria-label="Sayfalar">
+                <nav className="flex flex-col gap-2 px-3 overflow-y-auto flex-1" role="navigation" aria-label="Sayfalar">
                     {navigationItems.map(({ page, label, Icon, badge }) => (
                         <NavLink
                             key={page}
@@ -133,28 +166,39 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                             {label}
                         </NavLink>
                     ))}
+
+                    {/* Divider */}
+                    <div className="my-2 border-t border-gray-700/50" />
+
+                    {/* Guide Button */}
                     <button
                         onClick={onToggleGuide}
                         aria-label="Kullanıcı rehberi"
-                        className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset min-h-[44px]"
+                        className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 min-h-[44px]"
                         title="Rehberi aç"
                     >
-                        <QuestionMarkCircleIcon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                        <span className="flex-1 text-left">Rehber</span>
+                        <QuestionMarkCircleIcon className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                        <span className="flex-1 text-left font-medium">Rehber</span>
                     </button>
                 </nav>
             </div>
-            <div className="flex-shrink-0">
+            {/* Footer Section */}
+            <div className="flex-shrink-0 px-3 pb-4 space-y-3">
+                {/* Connection Status */}
+                <div className="px-2">
+                    <ConnectionStatusIndicator status={connectionStatus} />
+                </div>
+
+                {/* Logout Button */}
                 <button
                     onClick={handleLogout}
                     aria-label="Çıkış yap"
-                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset min-h-[44px]"
+                    className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-gray-800 min-h-[44px] border border-gray-700 hover:border-red-500"
                     title="Uygulamadan çıkış yap"
                 >
-                    <LogoutIcon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                    <span className="flex-1 text-left">Çıkış Yap</span>
+                    <LogoutIcon className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                    <span className="flex-1 text-left font-medium">Çıkış Yap</span>
                 </button>
-                <ConnectionStatusIndicator status={connectionStatus} />
             </div>
         </aside>
     );
