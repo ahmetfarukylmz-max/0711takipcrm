@@ -63,6 +63,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<CustomerBalance | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('orders');
+  const [alertFilter, setAlertFilter] = useState<'all' | 'overdue' | 'highRisk' | 'upcoming' | 'mediumRisk'>('all');
   const tableRef = useRef<FixedSizeList>(null);
 
   // Calculate balances for all customers
@@ -301,6 +302,24 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
   const filteredAndSortedBalances = useMemo(() => {
     let filtered = customerBalances;
 
+    // Apply alert filter (highest priority)
+    if (alertFilter !== 'all') {
+      switch (alertFilter) {
+        case 'overdue':
+          filtered = filtered.filter(cb => cb.dueDateInfo.overduePayments.length > 0);
+          break;
+        case 'highRisk':
+          filtered = filtered.filter(cb => cb.riskAnalysis.riskLevel === 'high');
+          break;
+        case 'upcoming':
+          filtered = filtered.filter(cb => cb.dueDateInfo.upcomingPayments.length > 0);
+          break;
+        case 'mediumRisk':
+          filtered = filtered.filter(cb => cb.riskAnalysis.riskLevel === 'medium');
+          break;
+      }
+    }
+
     // Apply search filter (debounced)
     if (debouncedSearchTerm) {
       const term = debouncedSearchTerm.toLowerCase();
@@ -373,7 +392,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     });
 
     return filtered;
-  }, [customerBalances, debouncedSearchTerm, statusFilter, cityFilter, minBalance, maxBalance, sortField, sortDirection]);
+  }, [customerBalances, debouncedSearchTerm, statusFilter, cityFilter, minBalance, maxBalance, sortField, sortDirection, alertFilter]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -427,34 +446,44 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
     setCityFilter('Tümü');
     setMinBalance('');
     setMaxBalance('');
+    setAlertFilter('all');
     toast.success('Filtreler temizlendi');
   };
 
   const handleAlertCardClick = (alertType: 'overdue' | 'highRisk' | 'upcoming' | 'mediumRisk') => {
-    // Filter the table based on alert type
-    clearFilters();
+    // Clear other filters first
+    setSearchTerm('');
+    setStatusFilter('all');
+    setCityFilter('Tümü');
+    setMinBalance('');
+    setMaxBalance('');
 
+    // Set the alert filter
+    setAlertFilter(alertType);
+
+    // Show toast notification
     switch (alertType) {
       case 'overdue':
-        // Show customers with overdue payments
         toast.success('Vadesi geçmiş ödemeli müşteriler gösteriliyor');
         break;
       case 'highRisk':
-        // Show high risk customers
         toast.success('Yüksek riskli müşteriler gösteriliyor');
         break;
       case 'upcoming':
-        // Show customers with upcoming payments
         toast.success('Yaklaşan vadeli müşteriler gösteriliyor');
         break;
       case 'mediumRisk':
-        // Show medium risk customers
         toast.success('Orta riskli müşteriler gösteriliyor');
         break;
     }
 
     // Scroll to table
-    tableRef.current?.scrollTo(0);
+    setTimeout(() => {
+      const tableElement = document.querySelector('.min-w-full');
+      if (tableElement) {
+        tableElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const handlePrintExtract = async () => {
@@ -774,6 +803,14 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <strong>{filteredAndSortedBalances.length}</strong> müşteri gösteriliyor
+            {alertFilter !== 'all' && (
+              <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold">
+                {alertFilter === 'overdue' ? '🚨 Vadesi Geçmiş' :
+                 alertFilter === 'highRisk' ? '🔴 Yüksek Risk' :
+                 alertFilter === 'upcoming' ? '⚡ Yaklaşan Vadeler' :
+                 '🟡 Orta Risk'} Filtresi Aktif
+              </span>
+            )}
           </div>
           <button
             onClick={clearFilters}
