@@ -1,3 +1,4 @@
+import React, { useMemo, useCallback, memo } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -25,41 +26,78 @@ const ChartBarIcon = (props) => (
     </svg>
 );
 
-const NavLink = ({ page, children, Icon, activePage, onNavigate }) => (
-    <button
-        onClick={() => onNavigate(page)}
-        aria-label={children}
-        aria-current={activePage === page ? 'page' : undefined}
-        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
-            activePage === page
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-        }`}
-        title={`${children}${activePage === page ? ' (Şu anda aktif)' : ''}`}
-    >
-        <Icon className="w-5 h-5" aria-hidden="true" />
-        <span>{children}</span>
-    </button>
-);
+// Memoized NavLink component for better performance
+const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
+    const isActive = activePage === page;
+
+    return (
+        <button
+            onClick={() => onNavigate(page)}
+            aria-label={children}
+            aria-current={isActive ? 'page' : undefined}
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset ${
+                isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            }`}
+            title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
+        >
+            <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+            <span className="flex-1 text-left">{children}</span>
+            {badge > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold bg-red-500 text-white rounded-full">
+                    {badge > 99 ? '99+' : badge}
+                </span>
+            )}
+        </button>
+    );
+});
+
+NavLink.displayName = 'NavLink';
 
 const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, overdueItems, isOpen, onClose }) => {
     const { user, isAdmin } = useAuth();
 
-    const handleLogout = async () => {
+    // Memoized logout handler
+    const handleLogout = useCallback(async () => {
         // Log logout activity before signing out
         if (user) {
             await logUserActivity(user.uid, user.email, 'logout');
         }
         await signOut(auth);
-    };
+    }, [user]);
 
-    const handleNavClick = (page) => {
+    // Memoized navigation handler
+    const handleNavClick = useCallback((page) => {
         setActivePage(page);
         // Mobilde menüyü kapat
         if (onClose && window.innerWidth < 768) {
             onClose();
         }
-    };
+    }, [setActivePage, onClose]);
+
+    // Navigation items configuration with badges
+    const navigationItems = useMemo(() => {
+        const items = [
+            { page: 'Anasayfa', label: 'Anasayfa', Icon: HomeIcon, badge: 0 },
+            { page: 'Müşteriler', label: 'Müşteriler', Icon: UsersIcon, badge: 0 },
+            { page: 'Ürünler', label: 'Ürünler', Icon: BoxIcon, badge: 0 },
+            { page: 'Teklifler', label: 'Teklifler', Icon: DocumentTextIcon, badge: 0 },
+            { page: 'Siparişler', label: 'Siparişler', Icon: ClipboardListIcon, badge: 0 },
+            { page: 'Görüşmeler', label: 'Görüşmeler', Icon: CalendarIcon, badge: 0 },
+            { page: 'Sevkiyat', label: 'Sevkiyat', Icon: TruckIcon, badge: 0 },
+            { page: 'Ödemeler', label: 'Ödemeler', Icon: CreditCardIcon, badge: overdueItems?.payments || 0 },
+            { page: 'Cari Hesaplar', label: 'Cari Hesaplar', Icon: ScaleIcon, badge: 0 },
+            { page: 'Raporlar', label: 'Raporlar', Icon: ChartBarIcon, badge: 0 },
+        ];
+
+        // Add admin panel if user is admin
+        if (isAdmin()) {
+            items.push({ page: 'Admin', label: 'Admin Paneli', Icon: ShieldIcon, badge: 0 });
+        }
+
+        return items;
+    }, [isAdmin, overdueItems]);
 
     return (
         <aside className={`
@@ -82,50 +120,27 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                         </svg>
                     </button>
                 </div>
-                <nav className="flex flex-col gap-3" role="navigation" aria-label="Sayfalar">
-                    <NavLink page="Anasayfa" Icon={HomeIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Anasayfa
-                    </NavLink>
-                    <NavLink page="Müşteriler" Icon={UsersIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Müşteriler
-                    </NavLink>
-                    <NavLink page="Ürünler" Icon={BoxIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Ürünler
-                    </NavLink>
-                    <NavLink page="Teklifler" Icon={DocumentTextIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Teklifler
-                    </NavLink>
-                    <NavLink page="Siparişler" Icon={ClipboardListIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Siparişler
-                    </NavLink>
-                    <NavLink page="Görüşmeler" Icon={CalendarIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Görüşmeler
-                    </NavLink>
-                    <NavLink page="Sevkiyat" Icon={TruckIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Sevkiyat
-                    </NavLink>
-                    <NavLink page="Ödemeler" Icon={CreditCardIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Ödemeler
-                    </NavLink>
-                    <NavLink page="Cari Hesaplar" Icon={ScaleIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Cari Hesaplar
-                    </NavLink>
-                    <NavLink page="Raporlar" Icon={ChartBarIcon} activePage={activePage} onNavigate={handleNavClick}>
-                        Raporlar
-                    </NavLink>
-                    {isAdmin() && (
-                        <NavLink page="Admin" Icon={ShieldIcon} activePage={activePage} onNavigate={handleNavClick}>
-                            Admin Paneli
+                <nav className="flex flex-col gap-2" role="navigation" aria-label="Sayfalar">
+                    {navigationItems.map(({ page, label, Icon, badge }) => (
+                        <NavLink
+                            key={page}
+                            page={page}
+                            Icon={Icon}
+                            activePage={activePage}
+                            onNavigate={handleNavClick}
+                            badge={badge}
+                        >
+                            {label}
                         </NavLink>
-                    )}
+                    ))}
                     <button
                         onClick={onToggleGuide}
                         aria-label="Kullanıcı rehberi"
-                        className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                        className="w-full flex items-center gap-3 px-4 py-2 mt-2 rounded-md transition-colors text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset min-h-[44px]"
                         title="Rehberi aç"
                     >
-                        <QuestionMarkCircleIcon className="w-5 h-5" aria-hidden="true" />
-                        <span>Rehber</span>
+                        <QuestionMarkCircleIcon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                        <span className="flex-1 text-left">Rehber</span>
                     </button>
                 </nav>
             </div>
@@ -133,11 +148,11 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                 <button
                     onClick={handleLogout}
                     aria-label="Çıkış yap"
-                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset"
+                    className="w-full flex items-center gap-3 px-4 py-2 mb-2 rounded-md transition-colors text-gray-300 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset min-h-[44px]"
                     title="Uygulamadan çıkış yap"
                 >
-                    <LogoutIcon className="w-5 h-5" aria-hidden="true" />
-                    <span>Çıkış Yap</span>
+                    <LogoutIcon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                    <span className="flex-1 text-left">Çıkış Yap</span>
                 </button>
                 <ConnectionStatusIndicator status={connectionStatus} />
             </div>
@@ -145,4 +160,5 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
     );
 };
 
-export default Sidebar;
+// Memoize Sidebar to prevent unnecessary re-renders
+export default memo(Sidebar);
