@@ -575,93 +575,114 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         </div>
       </div>
 
-      {/* Due Date Alert Cards */}
-      {(summary.totalOverdue > 0 || summary.totalUpcoming > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Overdue Payments */}
-          {summary.totalOverdue > 0 && (
-            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-2 border-red-400 dark:border-red-600">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-red-700 dark:text-red-400">🚨 Vadesi Geçmiş Ödemeler</div>
-                <span className="text-xl">⏰</span>
-              </div>
-              <div className="text-2xl font-bold text-red-700 dark:text-red-400">
-                {formatCurrency(summary.totalOverdue, 'TRY')}
-              </div>
-              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                {summary.overdueCount} müşteri • Ödeme bekliyor
-              </div>
-            </div>
-          )}
+      {/* Critical Alerts */}
+      {(summary.totalOverdue > 0 || summary.totalUpcoming > 0 || summary.highRiskCount > 0 || summary.mediumRiskCount > 0) && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            ⚠️ Kritik Uyarılar
+          </h2>
 
-          {/* Upcoming Payments */}
-          {summary.totalUpcoming > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-2 border-yellow-400 dark:border-yellow-600">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">⚡ 7 Gün İçinde Vadesi Dolacak</div>
-                <span className="text-xl">📅</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* CRITICAL: Overdue Payments */}
+            {summary.totalOverdue > 0 && (
+              <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/20 p-5 rounded-xl border-l-4 border-red-600 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide mb-1">
+                      🚨 Kritik
+                    </div>
+                    <div className="text-sm font-semibold text-red-900 dark:text-red-300">
+                      Vadesi Geçmiş Ödemeler
+                    </div>
+                  </div>
+                  <div className="bg-red-600 dark:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    {summary.overdueCount}
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-red-700 dark:text-red-400 mb-1">
+                  {formatCurrency(summary.totalOverdue, 'TRY')}
+                </div>
+                <div className="text-xs text-red-700 dark:text-red-400 font-medium">
+                  Acil ödeme takibi gerekli
+                </div>
               </div>
-              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                {formatCurrency(summary.totalUpcoming, 'TRY')}
-              </div>
-              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                {summary.upcomingCount} müşteri • Yaklaşan vadeler
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {/* Risk Analysis Cards */}
-      {(summary.highRiskCount > 0 || summary.mediumRiskCount > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* High Risk */}
-          {summary.highRiskCount > 0 && (
-            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-2 border-red-400 dark:border-red-600">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-red-700 dark:text-red-400">🔴 Yüksek Risk</div>
-                <span className="text-xl">⚠️</span>
+            {/* HIGH RISK: Customers */}
+            {summary.highRiskCount > 0 && (
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/20 p-5 rounded-xl border-l-4 border-orange-600 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">
+                      🔴 Yüksek Risk
+                    </div>
+                    <div className="text-sm font-semibold text-orange-900 dark:text-orange-300">
+                      Riskli Müşteriler
+                    </div>
+                  </div>
+                  <div className="bg-orange-600 dark:bg-orange-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    {summary.highRiskCount}
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-orange-700 dark:text-orange-400 mb-1">
+                  {summary.highRiskCount}
+                </div>
+                <div className="text-xs text-orange-700 dark:text-orange-400 font-medium">
+                  Dikkatli takip önerilir
+                </div>
               </div>
-              <div className="text-3xl font-bold text-red-700 dark:text-red-400">
-                {summary.highRiskCount}
-              </div>
-              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                Müşteri • Dikkat gerekli
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Medium Risk */}
-          {summary.mediumRiskCount > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border-2 border-yellow-400 dark:border-yellow-600">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">🟡 Orta Risk</div>
-                <span className="text-xl">⚡</span>
+            {/* WARNING: Upcoming Payments */}
+            {summary.totalUpcoming > 0 && (
+              <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-900/20 p-5 rounded-xl border-l-4 border-yellow-600 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="text-xs font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide mb-1">
+                      ⚡ Uyarı
+                    </div>
+                    <div className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">
+                      Yaklaşan Vadeler (7 gün)
+                    </div>
+                  </div>
+                  <div className="bg-yellow-600 dark:bg-yellow-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    {summary.upcomingCount}
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">
+                  {formatCurrency(summary.totalUpcoming, 'TRY')}
+                </div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
+                  Hatırlatma gönder
+                </div>
               </div>
-              <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">
-                {summary.mediumRiskCount}
-              </div>
-              <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                Müşteri • Takip gerekli
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Low Risk - Optional */}
-          {summary.lowRiskCount > 0 && (
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border-2 border-green-400 dark:border-green-600">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold text-green-700 dark:text-green-400">🟢 Düşük Risk</div>
-                <span className="text-xl">✅</span>
+            {/* MEDIUM RISK: Customers */}
+            {summary.mediumRiskCount > 0 && (
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-900/20 p-5 rounded-xl border-l-4 border-amber-500 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1">
+                      🟡 Orta Risk
+                    </div>
+                    <div className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                      Takip Gereken Müşteriler
+                    </div>
+                  </div>
+                  <div className="bg-amber-500 dark:bg-amber-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                    {summary.mediumRiskCount}
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400 mb-1">
+                  {summary.mediumRiskCount}
+                </div>
+                <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                  Düzenli kontrol yapın
+                </div>
               </div>
-              <div className="text-3xl font-bold text-green-700 dark:text-green-400">
-                {summary.lowRiskCount}
-              </div>
-              <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                Müşteri • Güvenli
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
