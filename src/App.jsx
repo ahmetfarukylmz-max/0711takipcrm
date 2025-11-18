@@ -182,14 +182,15 @@ const CrmApp = () => {
     }, [collections, connectionStatus, dataLoading, setCollections, setConnectionStatus, setDataLoading]);
 
     // Get collections from store (now other components can access directly from store)
-    const customers = useStore((state) => state.collections.customers);
-    const products = useStore((state) => state.collections.products);
-    const orders = useStore((state) => state.collections.orders);
-    const shipments = useStore((state) => state.collections.shipments);
-    const teklifler = useStore((state) => state.collections.teklifler);
-    const gorusmeler = useStore((state) => state.collections.gorusmeler);
-    const customTasks = useStore((state) => state.collections.customTasks);
-    const payments = useStore((state) => state.collections.payments);
+    // Using fallback empty arrays to prevent undefined errors
+    const customers = useStore((state) => state.collections.customers) || [];
+    const products = useStore((state) => state.collections.products) || [];
+    const orders = useStore((state) => state.collections.orders) || [];
+    const shipments = useStore((state) => state.collections.shipments) || [];
+    const teklifler = useStore((state) => state.collections.teklifler) || [];
+    const gorusmeler = useStore((state) => state.collections.gorusmeler) || [];
+    const customTasks = useStore((state) => state.collections.customTasks) || [];
+    const payments = useStore((state) => state.collections.payments) || [];
 
     const logUserActivity = (action, details) => {
         logActivity(user.uid, action, details);
