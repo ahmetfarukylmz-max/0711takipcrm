@@ -1,6 +1,12 @@
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
+// Import store for optimistic updates (will be used by saveDocumentOptimistic)
+let storeInstance = null;
+export const setStoreInstance = (store) => {
+  storeInstance = store;
+};
+
 /**
  * Logs a user activity to the activity_log collection.
  * @param {string} userId - The ID of the user performing the action.
@@ -193,6 +199,164 @@ export const undoDelete = async (userId, collectionName, docId) => {
         return true;
     } catch (error) {
         console.error('Undo delete error:', error);
+        return false;
+    }
+};
+
+/**
+ * Save document with optimistic UI updates
+ * Updates UI immediately before Firestore confirmation for better UX
+ *
+ * @param {string} userId - User ID
+ * @param {string} collectionName - Collection name
+ * @param {Object} data - Data to save
+ * @param {Object} options - Optimistic update options
+ * @param {Function} options.onOptimisticUpdate - Callback when optimistic update is applied
+ * @param {Function} options.onSuccess - Callback when Firestore save succeeds
+ * @param {Function} options.onError - Callback when Firestore save fails
+ * @returns {Promise<string>} Document ID
+ *
+ * @example
+ * await saveDocumentOptimistic(userId, 'customers', data, {
+ *   onOptimisticUpdate: (tempDoc) => {
+ *     // Update UI immediately
+ *     addPendingItem('customers', tempDoc);
+ *   },
+ *   onSuccess: (realDoc) => {
+ *     // Replace temp with real
+ *     updatePendingItem('customers', tempDoc.id, realDoc);
+ *   },
+ *   onError: (tempId) => {
+ *     // Rollback
+ *     removePendingItem('customers', tempId);
+ *   }
+ * });
+ */
+export const saveDocumentOptimistic = async (userId, collectionName, data, options = {}) => {
+    if (!userId) return null;
+
+    const { onOptimisticUpdate, onSuccess, onError } = options;
+    const isUpdate = !!data.id;
+    const tempId = data.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // 1. Optimistic UI Update (immediate)
+    if (onOptimisticUpdate && storeInstance) {
+        const tempDoc = {
+            ...data,
+            id: tempId,
+            _pending: true,
+            _optimistic: true,
+        };
+
+        if (isUpdate) {
+            // For updates, use existing update function
+            storeInstance.getState().updateInCollection(collectionName, tempId, tempDoc);
+        } else {
+            // For creates, add to collection
+            storeInstance.getState().addPendingItem(collectionName, tempDoc);
+        }
+
+        onOptimisticUpdate(tempDoc);
+    }
+
+    // 2. Firestore Save (async)
+    try {
+        const realId = await saveDocument(userId, collectionName, data);
+
+        // 3. Success - update with real data
+        if (onSuccess && storeInstance) {
+            const realDoc = {
+                ...data,
+                id: realId,
+                _pending: false,
+                _optimistic: false,
+            };
+
+            if (!isUpdate && tempId !== realId) {
+                // New document: remove temp and let real-time listener handle the rest
+                storeInstance.getState().removePendingItem(collectionName, tempId);
+            } else {
+                // Update: mark as no longer pending
+                storeInstance.getState().updateInCollection(collectionName, realId, {
+                    _pending: false,
+                    _optimistic: false,
+                });
+            }
+
+            onSuccess(realDoc);
+        }
+
+        return realId;
+    } catch (error) {
+        console.error('Optimistic save failed:', error);
+
+        // 4. Error - rollback optimistic update
+        if (onError && storeInstance) {
+            if (isUpdate) {
+                // Revert update - real-time listener will restore original
+                storeInstance.getState().updateInCollection(collectionName, tempId, {
+                    _pending: false,
+                    _optimistic: false,
+                    _error: true,
+                });
+            } else {
+                // Remove temp item
+                storeInstance.getState().removePendingItem(collectionName, tempId);
+            }
+
+            onError(tempId, error);
+        }
+
+        throw error;
+    }
+};
+
+/**
+ * Delete document with optimistic UI updates
+ *
+ * @param {string} userId - User ID
+ * @param {string} collectionName - Collection name
+ * @param {string} docId - Document ID
+ * @param {Object} options - Optimistic update options
+ * @returns {Promise<boolean>} Success status
+ */
+export const deleteDocumentOptimistic = async (userId, collectionName, docId, options = {}) => {
+    const { onOptimisticUpdate, onSuccess, onError } = options;
+
+    // 1. Optimistic UI Update
+    if (onOptimisticUpdate && storeInstance) {
+        storeInstance.getState().updateInCollection(collectionName, docId, {
+            isDeleted: true,
+            _pending: true,
+        });
+        onOptimisticUpdate(docId);
+    }
+
+    // 2. Firestore Delete
+    try {
+        const success = await deleteDocument(userId, collectionName, docId);
+
+        if (success && onSuccess && storeInstance) {
+            storeInstance.getState().updateInCollection(collectionName, docId, {
+                _pending: false,
+            });
+            onSuccess(docId);
+        }
+
+        return success;
+    } catch (error) {
+        console.error('Optimistic delete failed:', error);
+
+        // 3. Rollback
+        if (onError && storeInstance) {
+            storeInstance.getState().updateInCollection(collectionName, docId, {
+                isDeleted: false,
+                _pending: false,
+                _error: true,
+            });
+            onError(docId, error);
+        }
+
         return false;
     }
 };

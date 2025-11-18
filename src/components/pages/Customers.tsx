@@ -1,5 +1,6 @@
 import React, { useState, useMemo, memo, useRef, ChangeEvent, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { FixedSizeList } from 'react-window';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import CustomerForm from '../forms/CustomerForm';
@@ -17,6 +18,7 @@ import { PlusIcon, WhatsAppIcon, EditIcon, TrashIcon } from '../icons';
 import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
 import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 
 interface DeleteConfirmState {
@@ -90,6 +92,7 @@ const Customers = memo<CustomersProps>(({
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [isShipmentViewModalOpen, setIsShipmentViewModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [statusFilter, setStatusFilter] = useState('Tümü');
     const [cityFilter, setCityFilter] = useState('Tümü');
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, customer: null });
@@ -97,6 +100,7 @@ const Customers = memo<CustomersProps>(({
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<FixedSizeList>(null);
 
     const handleOpenModal = useCallback((customer: Customer | null = null) => {
         setCurrentCustomer(customer);
@@ -300,15 +304,16 @@ const Customers = memo<CustomersProps>(({
     const cities = ['Tümü', ...new Set(customers.map(c => c.city).filter(Boolean))];
 
     // Filter customers based on search query, status, and exclude deleted ones
+    // Using debounced search query for better performance
     const filteredCustomers = useMemo(() => {
         const activeCustomers = customers.filter(c => !c.isDeleted);
 
         return activeCustomers
             .filter(customer => {
-                const query = searchQuery.toLowerCase();
+                const query = debouncedSearchQuery.toLowerCase();
                 const status = getCustomerStatus(customer.id);
 
-                const matchesSearch = !searchQuery.trim() ||
+                const matchesSearch = !debouncedSearchQuery.trim() ||
                     customer.name?.toLowerCase().includes(query) ||
                     customer.contact_person?.toLowerCase().includes(query) ||
                     customer.phone?.toLowerCase().includes(query) ||
@@ -323,7 +328,7 @@ const Customers = memo<CustomersProps>(({
                 // Turkish locale-aware alphabetical sorting by name
                 return a.name.localeCompare(b.name, 'tr-TR');
             });
-    }, [customers, searchQuery, statusFilter, cityFilter, orders, shipments]);
+    }, [customers, debouncedSearchQuery, statusFilter, cityFilter, orders, shipments]);
 
     // Show skeleton when loading
     if (loading) {
@@ -530,23 +535,33 @@ const Customers = memo<CustomersProps>(({
                 </table>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile Card View - With Virtual Scrolling for performance */}
+            <div className="md:hidden">
                 {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map(customer => {
-                        const status = getCustomerStatus(customer.id);
+                    <FixedSizeList
+                        ref={listRef}
+                        height={window.innerHeight - 300} // Adjust based on header height
+                        itemCount={filteredCustomers.length}
+                        itemSize={100} // Height of each card
+                        width="100%"
+                        className="space-y-3"
+                    >
+                        {({ index, style }) => {
+                            const customer = filteredCustomers[index];
+                            const status = getCustomerStatus(customer.id);
 
-                        return (
-                            <MobileListItem
-                                key={customer.id}
-                                title={customer.name}
-                                subtitle={customer.contact_person}
-                                onClick={() => handleOpenDetailModal(customer)}
-                                rightContent={
-                                    <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
-                                        {status}
-                                    </span>
-                                }
+                            return (
+                                <div style={{...style, paddingBottom: '12px'}}>
+                                    <MobileListItem
+                                        key={customer.id}
+                                        title={customer.name}
+                                        subtitle={customer.contact_person}
+                                        onClick={() => handleOpenDetailModal(customer)}
+                                        rightContent={
+                                            <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
+                                                {status}
+                                            </span>
+                                        }
                                 bottomContent={
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between text-sm">
@@ -575,25 +590,27 @@ const Customers = memo<CustomersProps>(({
                                         )}
                                     </div>
                                 }
-                                actions={
-                                    <MobileActions
-                                        actions={[
-                                            {
-                                                label: 'Düzenle',
-                                                onClick: (e) => { e?.stopPropagation(); handleOpenModal(customer); },
-                                                variant: 'secondary'
-                                            },
-                                            {
-                                                label: 'Sil',
-                                                onClick: (e) => { e?.stopPropagation(); handleDelete(customer); },
-                                                variant: 'danger'
-                                            }
-                                        ]}
+                                        actions={
+                                            <MobileActions
+                                                actions={[
+                                                    {
+                                                        label: 'Düzenle',
+                                                        onClick: (e) => { e?.stopPropagation(); handleOpenModal(customer); },
+                                                        variant: 'secondary'
+                                                    },
+                                                    {
+                                                        label: 'Sil',
+                                                        onClick: (e) => { e?.stopPropagation(); handleDelete(customer); },
+                                                        variant: 'danger'
+                                                    }
+                                                ]}
+                                            />
+                                        }
                                     />
-                                }
-                            />
-                        );
-                    })
+                                </div>
+                            );
+                        }}
+                    </FixedSizeList>
                 ) : (
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                         <EmptyState
