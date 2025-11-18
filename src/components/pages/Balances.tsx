@@ -602,109 +602,92 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
         </div>
       </div>
 
-      {/* Critical Alerts - Compact Banner Style */}
+      {/* Critical Alerts - Horizontal Banner Style */}
       {(summary.totalOverdue > 0 || summary.totalUpcoming > 0 || summary.highRiskCount > 0 || summary.mediumRiskCount > 0) && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              ⚠️ Kritik Uyarılar
-            </h2>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Detay için tıklayın</span>
-          </div>
+        <div className="space-y-3">
+          {/* Overdue Payments Alert */}
+          {summary.totalOverdue > 0 && (
+            <button
+              onClick={() => handleAlertCardClick('overdue')}
+              className="w-full flex items-center justify-between p-4 border-l-4 border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🚨</span>
+                <div className="text-left">
+                  <p className="font-bold text-sm">Vadesi Geçmiş Ödemeler</p>
+                  <p className="text-xs opacity-80">{summary.overdueCount} müşteri • {formatCurrency(summary.totalOverdue, 'TRY')}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 text-red-600 dark:text-red-400">
+                  Görüntüle
+                </span>
+              </div>
+            </button>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* CRITICAL: Overdue Payments */}
-            {summary.totalOverdue > 0 && (
-              <button
-                onClick={() => handleAlertCardClick('overdue')}
-                className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 p-3 rounded-lg border-l-4 border-red-600 hover:shadow-md transition-all text-left group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide">
-                    🚨 Kritik
-                  </div>
-                  <div className="bg-red-600 dark:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
-                    {summary.overdueCount}
-                  </div>
+          {/* High Risk Alert */}
+          {summary.highRiskCount > 0 && (
+            <button
+              onClick={() => handleAlertCardClick('highRisk')}
+              className="w-full flex items-center justify-between p-4 border-l-4 border-orange-600 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🔴</span>
+                <div className="text-left">
+                  <p className="font-bold text-sm">Yüksek Riskli Müşteriler</p>
+                  <p className="text-xs opacity-80">{summary.highRiskCount} müşteri • Dikkatli takip gerekli</p>
                 </div>
-                <div className="text-lg font-bold text-red-700 dark:text-red-400 mb-0.5">
-                  {formatCurrency(summary.totalOverdue, 'TRY')}
-                </div>
-                <div className="text-xs text-red-600 dark:text-red-500">
-                  Vadesi Geçmiş Ödemeler
-                </div>
-              </button>
-            )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400">
+                  İncele
+                </span>
+              </div>
+            </button>
+          )}
 
-            {/* HIGH RISK: Customers */}
-            {summary.highRiskCount > 0 && (
-              <button
-                onClick={() => handleAlertCardClick('highRisk')}
-                className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-3 rounded-lg border-l-4 border-orange-600 hover:shadow-md transition-all text-left group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
-                    🔴 Yüksek Risk
-                  </div>
-                  <div className="bg-orange-600 dark:bg-orange-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
-                    {summary.highRiskCount}
-                  </div>
+          {/* Upcoming Payments Alert */}
+          {summary.totalUpcoming > 0 && (
+            <button
+              onClick={() => handleAlertCardClick('upcoming')}
+              className="w-full flex items-center justify-between p-4 border-l-4 border-yellow-600 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚡</span>
+                <div className="text-left">
+                  <p className="font-bold text-sm">Yaklaşan Vadeler (7 gün)</p>
+                  <p className="text-xs opacity-80">{summary.upcomingCount} müşteri • {formatCurrency(summary.totalUpcoming, 'TRY')}</p>
                 </div>
-                <div className="text-lg font-bold text-orange-700 dark:text-orange-400 mb-0.5">
-                  {summary.highRiskCount} Müşteri
-                </div>
-                <div className="text-xs text-orange-600 dark:text-orange-500">
-                  Riskli Müşteriler
-                </div>
-              </button>
-            )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 text-yellow-600 dark:text-yellow-400">
+                  Hatırlat
+                </span>
+              </div>
+            </button>
+          )}
 
-            {/* WARNING: Upcoming Payments */}
-            {summary.totalUpcoming > 0 && (
-              <button
-                onClick={() => handleAlertCardClick('upcoming')}
-                className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-3 rounded-lg border-l-4 border-yellow-600 hover:shadow-md transition-all text-left group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
-                    ⚡ Uyarı
-                  </div>
-                  <div className="bg-yellow-600 dark:bg-yellow-700 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
-                    {summary.upcomingCount}
-                  </div>
+          {/* Medium Risk Alert */}
+          {summary.mediumRiskCount > 0 && (
+            <button
+              onClick={() => handleAlertCardClick('mediumRisk')}
+              className="w-full flex items-center justify-between p-4 border-l-4 border-amber-500 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🟡</span>
+                <div className="text-left">
+                  <p className="font-bold text-sm">Orta Riskli Müşteriler</p>
+                  <p className="text-xs opacity-80">{summary.mediumRiskCount} müşteri • Düzenli kontrol önerilir</p>
                 </div>
-                <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400 mb-0.5">
-                  {formatCurrency(summary.totalUpcoming, 'TRY')}
-                </div>
-                <div className="text-xs text-yellow-600 dark:text-yellow-500">
-                  Yaklaşan Vadeler (7 gün)
-                </div>
-              </button>
-            )}
-
-            {/* MEDIUM RISK: Customers */}
-            {summary.mediumRiskCount > 0 && (
-              <button
-                onClick={() => handleAlertCardClick('mediumRisk')}
-                className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 p-3 rounded-lg border-l-4 border-amber-500 hover:shadow-md transition-all text-left group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
-                    🟡 Orta Risk
-                  </div>
-                  <div className="bg-amber-500 dark:bg-amber-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs">
-                    {summary.mediumRiskCount}
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-0.5">
-                  {summary.mediumRiskCount} Müşteri
-                </div>
-                <div className="text-xs text-amber-600 dark:text-amber-500">
-                  Takip Gereken Müşteriler
-                </div>
-              </button>
-            )}
-          </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400">
+                  İncele
+                </span>
+              </div>
+            </button>
+          )}
         </div>
       )}
 
