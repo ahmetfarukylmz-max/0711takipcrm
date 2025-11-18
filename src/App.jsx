@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { useFirestoreCollections } from './hooks/useFirestore';
+import useStore from './store/useStore';
 import {
     saveDocument,
     saveOrder,
@@ -12,7 +13,8 @@ import {
     markShipmentDelivered,
     deleteDocument,
     undoDelete,
-    logActivity
+    logActivity,
+    setStoreInstance
 } from './services/firestoreService';
 import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils.jsx';
 
@@ -71,15 +73,32 @@ const LoadingScreen = () => (
 
 const CrmApp = () => {
     const { user, loading } = useAuth();
-    const [activePage, setActivePage] = useState('Anasayfa');
-    const [editingDocument, setEditingDocument] = useState(null);
-    const [showGuide, setShowGuide] = useState(false);
-    const [overdueItems, setOverdueItems] = useState([]);
+
+    // Zustand store - replacing local state
+    const activePage = useStore((state) => state.activePage);
+    const setActivePage = useStore((state) => state.setActivePage);
+    const editingDocument = useStore((state) => state.editingDocument);
+    const setEditingDocument = useStore((state) => state.setEditingDocument);
+    const showGuide = useStore((state) => state.showGuide);
+    const toggleGuide = useStore((state) => state.toggleGuide);
+    const overdueItems = useStore((state) => state.overdueItems);
+    const setOverdueItems = useStore((state) => state.setOverdueItems);
+    const prefilledQuote = useStore((state) => state.prefilledQuote);
+    const setPrefilledQuote = useStore((state) => state.setPrefilledQuote);
+    const clearPrefilledQuote = useStore((state) => state.clearPrefilledQuote);
+    const setCollections = useStore((state) => state.setCollections);
+    const setDataLoading = useStore((state) => state.setDataLoading);
+    const setConnectionStatus = useStore((state) => state.setConnectionStatus);
+
     const [refreshing, setRefreshing] = useState(false);
-    const [prefilledQuote, setPrefilledQuote] = useState(null);
+
+    // Initialize store instance for optimistic UI
+    useEffect(() => {
+        setStoreInstance(useStore);
+    }, []);
 
     const handleToggleGuide = () => {
-        setShowGuide(!showGuide);
+        toggleGuide();
     };
 
     // Handle pull to refresh
@@ -155,14 +174,22 @@ const CrmApp = () => {
         'payments'
     ]);
 
-    const customers = collections.customers || [];
-    const products = collections.products || [];
-    const orders = collections.orders || [];
-    const shipments = collections.shipments || [];
-    const teklifler = collections.teklifler || [];
-    const gorusmeler = collections.gorusmeler || [];
-    const customTasks = collections.customTasks || [];
-    const payments = collections.payments || [];
+    // Sync Firestore data to Zustand store
+    useEffect(() => {
+        setCollections(collections);
+        setConnectionStatus(connectionStatus);
+        setDataLoading(dataLoading);
+    }, [collections, connectionStatus, dataLoading, setCollections, setConnectionStatus, setDataLoading]);
+
+    // Get collections from store (now other components can access directly from store)
+    const customers = useStore((state) => state.collections.customers);
+    const products = useStore((state) => state.collections.products);
+    const orders = useStore((state) => state.collections.orders);
+    const shipments = useStore((state) => state.collections.shipments);
+    const teklifler = useStore((state) => state.collections.teklifler);
+    const gorusmeler = useStore((state) => state.collections.gorusmeler);
+    const customTasks = useStore((state) => state.collections.customTasks);
+    const payments = useStore((state) => state.collections.payments);
 
     const logUserActivity = (action, details) => {
         logActivity(user.uid, action, details);
@@ -646,7 +673,7 @@ const CrmApp = () => {
                         products={products}
                         onGeneratePdf={handleGeneratePdf}
                         prefilledQuote={prefilledQuote}
-                        onPrefilledQuoteConsumed={() => setPrefilledQuote(null)}
+                        onPrefilledQuoteConsumed={clearPrefilledQuote}
                         loading={dataLoading}
                     />
                 );
