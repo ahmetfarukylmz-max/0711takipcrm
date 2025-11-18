@@ -108,50 +108,29 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
             shadow-2xl
         `} role="navigation" aria-label="Ana menü">
             <div className="flex flex-col flex-grow">
-                {/* Modern Header with Gradient */}
-                <div className="relative mb-6 px-4 pt-4 pb-6">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-b-3xl" />
-                    <div className="relative flex justify-between items-start">
-                        <div className="flex-1">
-                            {/* Logo Icon */}
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-3 shadow-lg shadow-blue-500/50">
-                                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                                Takip CRM
-                            </h1>
-                            <p className="text-xs text-gray-400 mt-1">Müşteri İlişkileri Yönetimi</p>
-                        </div>
-                        {/* Mobilde kapat butonu */}
-                        <button
-                            onClick={onClose}
-                            className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
-                            aria-label="Menüyü Kapat"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                {/* Simple Header */}
+                <div className="mb-6 px-4 pt-6 pb-6 flex justify-between items-center border-b border-gray-700/50">
+                    <div className="flex items-center gap-3">
+                        {/* Logo Icon */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/50">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                        </button>
-                    </div>
-
-                    {/* User Profile Section */}
-                    {user && (
-                        <div className="mt-4 p-3 bg-gray-700/30 backdrop-blur-sm rounded-xl border border-gray-600/30">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-white truncate">
-                                        {user.displayName || user.email?.split('@')[0]}
-                                    </p>
-                                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                                </div>
-                            </div>
                         </div>
-                    )}
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                            Takip CRM
+                        </h1>
+                    </div>
+                    {/* Mobilde kapat butonu */}
+                    <button
+                        onClick={onClose}
+                        className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
+                        aria-label="Menüyü Kapat"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
                 <nav className="flex flex-col gap-2 px-3 overflow-y-auto flex-1" role="navigation" aria-label="Sayfalar">
                     {navigationItems.map(({ page, label, Icon, badge }) => (
