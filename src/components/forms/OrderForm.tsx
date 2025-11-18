@@ -10,6 +10,7 @@ import type { Order, Customer, Product, OrderItem, VATRate, Currency } from '../
 interface OrderFormData {
     customerId: string;
     items: OrderItem[];
+    order_date: string;
     delivery_date: string;
     vatRate: VATRate;
     paymentType: string;
@@ -41,6 +42,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
     const [formData, setFormData] = useState<OrderFormData>(order || {
         customerId: customers[0]?.id || '',
         items: [],
+        order_date: new Date().toISOString().slice(0, 10),
         delivery_date: '',
         vatRate: 20,
         paymentType: 'Peşin',
@@ -75,21 +77,30 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            <FormSelect
+                label="Müşteri"
+                name="customerId"
+                value={formData.customerId}
+                onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                required
+            >
+                <option value="">Müşteri Seçin</option>
+                {customers.map(c => (
+                    <option key={c.id} value={c.id}>
+                        {c.name}
+                    </option>
+                ))}
+            </FormSelect>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormSelect
-                    label="Müşteri"
-                    name="customerId"
-                    value={formData.customerId}
-                    onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                <FormInput
+                    label="Sipariş Tarihi"
+                    name="order_date"
+                    type="date"
+                    value={formData.order_date}
+                    onChange={e => setFormData({ ...formData, order_date: e.target.value })}
                     required
-                >
-                    <option value="">Müşteri Seçin</option>
-                    {customers.map(c => (
-                        <option key={c.id} value={c.id}>
-                            {c.name}
-                        </option>
-                    ))}
-                </FormSelect>
+                />
                 <FormInput
                     label="Teslim Tarihi"
                     name="delivery_date"
