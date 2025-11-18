@@ -212,9 +212,11 @@ const CrmApp = () => {
             })
         );
 
-        // Combine with other overdue items here in the future
-        setOverdueItems(overdueMeetings);
-    }, [gorusmeler, customers]);
+        // Use queueMicrotask to avoid React error #185 (updating state during render)
+        queueMicrotask(() => {
+            setOverdueItems(overdueMeetings);
+        });
+    }, [gorusmeler, customers, setOverdueItems]);
 
     // Handler functions
     const handleCustomerSave = async (data) => {
