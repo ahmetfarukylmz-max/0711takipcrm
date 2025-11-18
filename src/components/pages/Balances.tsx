@@ -581,11 +581,6 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
                             {cb.customer.company}
                           </div>
                         )}
-                        {cb.customer.city && (
-                          <div className="text-xs text-gray-400 dark:text-gray-500">
-                            📍 {cb.customer.city}
-                          </div>
-                        )}
                       </div>
                     </td>
 
