@@ -19,6 +19,7 @@ export type MeetingOutcome = 'İlgileniyor' | 'İlgilenmiyor' | 'Teklif Bekliyor
 export type ShipmentStatus = 'Hazırlanıyor' | 'Gönderildi' | 'Yolda' | 'Teslim Edildi';
 export type PaymentStatus = 'Bekliyor' | 'Tahsil Edildi' | 'Gecikti' | 'İptal';
 export type PaymentMethod = 'Nakit' | 'Havale/EFT' | 'Kredi Kartı' | 'Çek' | 'Senet' | 'Belirtilmemiş';
+export type CheckStatus = 'Portföyde' | 'Bankaya Verildi' | 'Tahsil Edildi' | 'Ciro Edildi' | 'Karşılıksız' | 'İade Edildi';
 
 // User Interface
 export interface User {
@@ -261,6 +262,61 @@ export interface CustomTask {
   updatedAt?: Timestamp;
 }
 
+// Check/Promissory Note Endorsement Interface
+export interface CheckEndorsement {
+  id: string;
+  date: string; // YYYY-MM-DD
+  endorsedTo: string; // Firma adı
+  endorsedBy: string; // Personel email
+  notes?: string;
+}
+
+// Check/Promissory Note Status History Interface
+export interface CheckStatusHistory {
+  date: string; // ISO timestamp
+  status: CheckStatus;
+  changedBy: string; // User email
+  notes?: string;
+}
+
+// Check Tracking Interface (for detailed check/promissory note tracking)
+export interface CheckTracking {
+  // Temel Bilgiler
+  checkNumber: string;
+  bank: string;
+  dueDate: string; // YYYY-MM-DD
+  amount: number;
+  currency: Currency;
+
+  // Durum
+  status: CheckStatus;
+
+  // Banka İşlemleri
+  bankSubmissionDate?: string; // Bankaya verilme tarihi
+  bankBranch?: string; // Şube adı
+  submittedBy?: string; // Bankaya teslim eden personel
+
+  // Tahsilat
+  collectionDate?: string; // Tahsil edilme tarihi
+
+  // Ciro Bilgileri
+  endorsements: CheckEndorsement[];
+
+  // Karşılıksız
+  bouncedDate?: string; // Karşılıksız dönüş tarihi
+  bouncedReason?: string; // Karşılıksız nedeni
+
+  // İade
+  returnedDate?: string; // İade tarihi
+  returnedReason?: string; // İade nedeni
+
+  // Durum Geçmişi
+  statusHistory: CheckStatusHistory[];
+
+  // Notlar
+  notes?: string;
+}
+
 // Payment Interface (for payment tracking)
 export interface Payment {
   id: string;
@@ -290,6 +346,9 @@ export interface Payment {
   // Notlar
   notes?: string;
 
+  // Çek Takip (Opsiyonel - sadece çek/senet ödemeleri için)
+  checkTracking?: CheckTracking;
+
   // Metadata
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
@@ -297,4 +356,27 @@ export interface Payment {
   deletedAt?: Timestamp;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
+}
+
+// Payment Analytics Interface (for customer payment summary)
+export interface PaymentAnalytics {
+  totalDebt: number;
+  collectedAmount: number;
+  pendingAmount: number;
+  overdueAmount: number;
+
+  onTimePaymentRate: number; // 0-100
+  avgDelayDays: number;
+  riskScore: number; // 0-10
+  riskLevel: 'DÜŞÜK' | 'ORTA' | 'YÜKSEK';
+
+  paymentMethodDistribution: Record<string, number>;
+  monthlyTrend: Array<{ month: string; amount: number; count: number }>;
+  timeline: Array<{
+    date: string;
+    amount: number;
+    status: PaymentStatus;
+    delayDays: number | null;
+    paymentMethod: PaymentMethod;
+  }>;
 }
