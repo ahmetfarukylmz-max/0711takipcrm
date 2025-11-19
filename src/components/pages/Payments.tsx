@@ -453,7 +453,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
       {/* Payments Table - Desktop */}
       {viewMode === 'list' && (
-      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>

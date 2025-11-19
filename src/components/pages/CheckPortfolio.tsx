@@ -472,7 +472,7 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
                   <ActionsDropdown actions={getCheckActions(payment)} />
                 </div>
               </div>
