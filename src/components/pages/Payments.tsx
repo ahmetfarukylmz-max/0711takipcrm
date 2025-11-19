@@ -4,6 +4,10 @@ import Modal from '../common/Modal';
 import PaymentForm from '../forms/PaymentForm';
 import SearchBar from '../common/SearchBar';
 import EmptyState from '../common/EmptyState';
+import ActionsDropdown from '../common/ActionsDropdown';
+import CollectPaymentDialog from '../common/CollectPaymentDialog';
+import PaymentCalendar from './PaymentCalendar';
+import CheckPortfolio from './CheckPortfolio';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Payment, Customer, Order } from '../../types';
@@ -32,6 +36,14 @@ const Payments: React.FC<PaymentsProps> = ({
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showOverdueModal, setShowOverdueModal] = useState(false);
   const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+
+  // Yeni state'ler
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'checks'>('list');
+  const [collectDialog, setCollectDialog] = useState<{ isOpen: boolean; payment: Payment | null; isOverdue: boolean }>({
+    isOpen: false,
+    payment: null,
+    isOverdue: false
+  });
 
   // Filtreleme ve arama
   const filteredPayments = useMemo(() => {
@@ -181,6 +193,89 @@ const Payments: React.FC<PaymentsProps> = ({
     setSelectedItems(new Set());
   };
 
+  // Hızlı tahsilat fonksiyonları
+  const handleQuickCollect = (payment: Payment, isOverdue = false) => {
+    setCollectDialog({ isOpen: true, payment, isOverdue });
+  };
+
+  const confirmQuickCollect = async (paidDate: string) => {
+    const { payment } = collectDialog;
+    if (!payment) return;
+
+    await onSave({
+      ...payment,
+      status: 'Tahsil Edildi',
+      paidDate
+    });
+
+    setCollectDialog({ isOpen: false, payment: null, isOverdue: false });
+  };
+
+  // Tahsilat iptal et
+  const handleUncollect = (payment: Payment) => {
+    onSave({
+      ...payment,
+      status: 'Bekliyor',
+      paidDate: undefined
+    });
+
+    toast.success('↩️ Tahsilat iptal edildi!');
+  };
+
+  // Takvimden ödeme seçildiğinde
+  const handleSelectPaymentFromCalendar = (payment: Payment) => {
+    handleOpenModal(payment);
+  };
+
+  // Takvimden tarih seçildiğinde (yeni ödeme ekle)
+  const handleSelectSlotFromCalendar = (slotInfo: { start: Date; end: Date }) => {
+    // TODO: Yeni ödeme modalını aç ve dueDate'i pre-fill et
+    const dueDate = slotInfo.start.toISOString().split('T')[0];
+    console.log('Yeni ödeme ekle, vade tarihi:', dueDate);
+    // Şimdilik sadece modal açalım
+    handleOpenModal();
+  };
+
+  // Actions dropdown için aksiyonlar
+  const getPaymentActions = (payment: Payment) => {
+    const actions = [
+      {
+        label: '👁️ Detay',
+        onClick: () => handleOpenModal(payment)
+      },
+      {
+        label: '✏️ Düzenle',
+        onClick: () => handleOpenModal(payment)
+      }
+    ];
+
+    // Durum bazlı aksiyonlar
+    if (payment.status === 'Bekliyor') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(payment.dueDate);
+      const isOverdue = dueDate < today;
+
+      actions.push({
+        label: isOverdue ? '✅ Tahsil Et (Gecikmeli)' : '✅ Tahsil Et',
+        onClick: () => handleQuickCollect(payment, isOverdue)
+      });
+    } else if (payment.status === 'Tahsil Edildi') {
+      actions.push({
+        label: '↩️ Tahsilat İptal Et',
+        onClick: () => handleUncollect(payment)
+      });
+    }
+
+    actions.push({
+      label: '🗑️ Sil',
+      onClick: () => handleDelete(payment),
+      destructive: true
+    });
+
+    return actions;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -227,8 +322,42 @@ const Payments: React.FC<PaymentsProps> = ({
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="mb-6 flex flex-wrap gap-2 justify-center">
+        <button
+          onClick={() => setViewMode('list')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            viewMode === 'list'
+              ? 'bg-blue-500 text-white shadow-md'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          📋 Liste
+        </button>
+        <button
+          onClick={() => setViewMode('calendar')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            viewMode === 'calendar'
+              ? 'bg-blue-500 text-white shadow-md'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          📅 Takvim
+        </button>
+        <button
+          onClick={() => setViewMode('checks')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            viewMode === 'checks'
+              ? 'bg-blue-500 text-white shadow-md'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+          }`}
+        >
+          💳 Çek Portföyü
+        </button>
+      </div>
+
       {/* Payment Alerts - Compact banners like CriticalAlerts */}
-      {(paymentStats.overdue.length > 0 || paymentStats.upcoming.length > 0) && (
+      {viewMode === 'list' && (paymentStats.overdue.length > 0 || paymentStats.upcoming.length > 0) && (
         <div className="space-y-3 mb-6 animate-fadeIn">
           {/* Overdue Payments Banner */}
           {paymentStats.overdue.length > 0 && (
@@ -281,29 +410,49 @@ const Payments: React.FC<PaymentsProps> = ({
         </div>
       )}
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Müşteri, sipariş no, çek no ile ara..."
-          />
+      {/* Filters - Sadece liste görünümünde */}
+      {viewMode === 'list' && (
+        <div className="mb-6 flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Müşteri, sipariş no, çek no ile ara..."
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-field w-full md:w-48"
+          >
+            <option value="Tümü">Tüm Durumlar</option>
+            <option value="Bekliyor">Bekliyor</option>
+            <option value="Tahsil Edildi">Tahsil Edildi</option>
+            <option value="Gecikti">Gecikti</option>
+            <option value="İptal">İptal</option>
+          </select>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="input-field w-full md:w-48"
-        >
-          <option value="Tümü">Tüm Durumlar</option>
-          <option value="Bekliyor">Bekliyor</option>
-          <option value="Tahsil Edildi">Tahsil Edildi</option>
-          <option value="Gecikti">Gecikti</option>
-          <option value="İptal">İptal</option>
-        </select>
-      </div>
+      )}
+
+      {/* Görünüm Render */}
+      {viewMode === 'calendar' && (
+        <PaymentCalendar
+          payments={payments.filter(p => !p.isDeleted)}
+          onSelectPayment={handleSelectPaymentFromCalendar}
+          onSelectSlot={handleSelectSlotFromCalendar}
+        />
+      )}
+
+      {viewMode === 'checks' && (
+        <CheckPortfolio
+          payments={payments}
+          onSave={onSave}
+          onDelete={onDelete}
+        />
+      )}
 
       {/* Payments Table - Desktop */}
+      {viewMode === 'list' && (
       <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
@@ -397,23 +546,8 @@ const Payments: React.FC<PaymentsProps> = ({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleOpenModal(payment)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        title="Düzenle"
-                        aria-label={`${payment.customerName} ödeme kaydını düzenle`}
-                      >
-                        <EditIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(payment)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        title="Sil"
-                        aria-label={`${payment.customerName} ödeme kaydını sil`}
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionsDropdown actions={getPaymentActions(payment)} />
                     </div>
                   </td>
                 </tr>
@@ -422,8 +556,10 @@ const Payments: React.FC<PaymentsProps> = ({
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Payments List - Mobile */}
+      {viewMode === 'list' && (
       <div className="md:hidden space-y-4">
         {filteredPayments.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
@@ -480,26 +616,14 @@ const Payments: React.FC<PaymentsProps> = ({
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => handleOpenModal(payment)}
-                  className="flex-1 px-3 py-2 min-h-[44px] text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label={`${payment.customerName} ödeme kaydını düzenle`}
-                >
-                  Düzenle
-                </button>
-                <button
-                  onClick={() => handleDelete(payment)}
-                  className="flex-1 px-3 py-2 min-h-[44px] text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-                  aria-label={`${payment.customerName} ödeme kaydını sil`}
-                >
-                  Sil
-                </button>
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+                <ActionsDropdown actions={getPaymentActions(payment)} />
               </div>
             </div>
           ))
         )}
       </div>
+      )}
 
       {/* Payment Form Modal */}
       <Modal
@@ -614,6 +738,15 @@ const Payments: React.FC<PaymentsProps> = ({
           </div>
         </div>
       </Modal>
+
+      {/* Collect Payment Dialog */}
+      <CollectPaymentDialog
+        payment={collectDialog.payment}
+        isOpen={collectDialog.isOpen}
+        onClose={() => setCollectDialog({ isOpen: false, payment: null, isOverdue: false })}
+        onConfirm={confirmQuickCollect}
+        isOverdue={collectDialog.isOverdue}
+      />
     </div>
   );
 };

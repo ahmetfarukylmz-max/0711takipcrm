@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
 import MeetingForm from '../forms/MeetingForm';
+import CustomerPaymentSummary from './CustomerPaymentSummary';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatCurrency, formatPhoneNumberForWhatsApp, getStatusClass } from '../../utils/formatters';
 import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
@@ -38,7 +39,7 @@ interface Activity {
     data: Order | Quote | Meeting | Shipment | Payment;
 }
 
-type TabId = 'overview' | 'timeline' | 'orders' | 'quotes' | 'top-products';
+type TabId = 'overview' | 'timeline' | 'orders' | 'quotes' | 'top-products' | 'payments';
 
 interface CustomerDetailProps {
     /** Customer to display */
@@ -739,6 +740,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         { id: 'timeline' as TabId, label: 'Aktiviteler' },
                         { id: 'orders' as TabId, label: `Siparişler (${stats.totalOrders})` },
                         { id: 'quotes' as TabId, label: `Teklifler (${stats.totalQuotes})` },
+                        { id: 'payments' as TabId, label: `Ödemeler (${stats.totalPayments})` },
                         { id: 'top-products' as TabId, label: 'Çok Satanlar' }
                     ].map(tab => (
                         <button
@@ -1036,6 +1038,14 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                             )}
                         </div>
                     </>
+                )}
+
+                {activeTab === 'payments' && (
+                    <CustomerPaymentSummary
+                        customer={customer}
+                        payments={payments}
+                        orders={orders}
+                    />
                 )}
             </div>
         </div>
