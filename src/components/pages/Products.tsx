@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import ProductForm from '../forms/ProductForm';
+import ProductDetail from './ProductDetail';
 import SearchBar from '../common/SearchBar';
 import MobileListItem from '../common/MobileListItem';
 import MobileActions from '../common/MobileActions';
@@ -12,7 +13,7 @@ import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
-import type { Product } from '../../types';
+import type { Product, Order, Quote, Customer } from '../../types';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -22,6 +23,12 @@ interface DeleteConfirmState {
 interface ProductsProps {
     /** List of products */
     products: Product[];
+    /** List of orders for product analytics */
+    orders?: Order[];
+    /** List of quotes for product analytics */
+    quotes?: Quote[];
+    /** List of customers for product analytics */
+    customers?: Customer[];
     /** Callback when product is saved */
     onSave: (product: Partial<Product>) => Promise<void> | void;
     /** Callback when product is deleted */
@@ -33,9 +40,18 @@ interface ProductsProps {
 /**
  * Products component - Product management page
  */
-const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = false }) => {
+const Products = memo<ProductsProps>(({
+    products,
+    orders = [],
+    quotes = [],
+    customers = [],
+    onSave,
+    onDelete,
+    loading = false
+}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, product: null });
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +80,32 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
             } else {
                 onDelete(deleteConfirm.product.id);
                 setDeleteConfirm({ isOpen: false, product: null });
+                // Detay sayfasındaysak, listeye dön
+                if (selectedProduct && selectedProduct.id === deleteConfirm.product.id) {
+                    setSelectedProduct(null);
+                }
             }
+        }
+    };
+
+    // Product detail handlers
+    const handleViewProduct = (product: Product) => {
+        setSelectedProduct(product);
+    };
+
+    const handleBackFromDetail = () => {
+        setSelectedProduct(null);
+    };
+
+    const handleEditFromDetail = () => {
+        if (selectedProduct) {
+            handleOpenModal(selectedProduct);
+        }
+    };
+
+    const handleDeleteFromDetail = () => {
+        if (selectedProduct) {
+            handleDelete(selectedProduct);
         }
     };
 
@@ -211,6 +252,21 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
         );
     }
 
+    // Show product detail if selected
+    if (selectedProduct) {
+        return (
+            <ProductDetail
+                product={selectedProduct}
+                orders={orders}
+                quotes={quotes}
+                customers={customers}
+                onEdit={handleEditFromDetail}
+                onDelete={handleDeleteFromDetail}
+                onBack={handleBackFromDetail}
+            />
+        );
+    }
+
     return (
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
@@ -302,7 +358,13 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">{product.name}</td>
+                                <td
+                                    className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    onClick={() => handleViewProduct(product)}
+                                    title="Detayları görmek için tıklayın"
+                                >
+                                    {product.name}
+                                </td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</td>
@@ -367,6 +429,11 @@ const Products = memo<ProductsProps>(({ products, onSave, onDelete, loading = fa
                         actions={
                             <MobileActions
                                 actions={[
+                                    {
+                                        label: 'Detay',
+                                        onClick: () => handleViewProduct(product),
+                                        variant: 'primary'
+                                    },
                                     {
                                         label: 'Düzenle',
                                         onClick: () => handleOpenModal(product),
