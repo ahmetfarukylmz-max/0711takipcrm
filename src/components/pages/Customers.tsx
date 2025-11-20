@@ -355,30 +355,108 @@ const Customers = memo<CustomersProps>(({
     // Show customer detail if selected
     if (selectedCustomer) {
         return (
-            <CustomerDetail
-                customer={selectedCustomer}
-                orders={orders}
-                quotes={quotes}
-                meetings={meetings}
-                shipments={shipments}
-                payments={payments}
-                onEdit={handleEditFromDetail}
-                onDelete={handleDeleteFromDetail}
-                onBack={handleBackFromDetail}
-                onQuoteSave={onQuoteSave}
-                onOrderSave={onOrderSave}
-                onMeetingSave={onMeetingSave}
-                onCustomerSave={async (customer) => {
-                    await onSave(customer);
-                    return customer.id;
-                }}
-                onProductSave={onProductSave}
-                products={products}
-                onViewOrder={handleViewOrder}
-                onViewQuote={handleViewQuote}
-                onViewShipment={handleViewShipment}
-                onNavigate={setActivePage}
-            />
+            <>
+                <CustomerDetail
+                    customer={selectedCustomer}
+                    orders={orders}
+                    quotes={quotes}
+                    meetings={meetings}
+                    shipments={shipments}
+                    payments={payments}
+                    onEdit={handleEditFromDetail}
+                    onDelete={handleDeleteFromDetail}
+                    onBack={handleBackFromDetail}
+                    onQuoteSave={onQuoteSave}
+                    onOrderSave={onOrderSave}
+                    onMeetingSave={onMeetingSave}
+                    onCustomerSave={async (customer) => {
+                        await onSave(customer);
+                        return customer.id;
+                    }}
+                    onProductSave={onProductSave}
+                    products={products}
+                    onViewOrder={handleViewOrder}
+                    onViewQuote={handleViewQuote}
+                    onViewShipment={handleViewShipment}
+                    onNavigate={setActivePage}
+                />
+
+                {/* Modal'lar - Detay sayfasında da çalışması için buraya eklendi */}
+                <Modal
+                    show={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    title={currentCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
+                >
+                    <CustomerForm
+                        customer={currentCustomer || undefined}
+                        onSave={handleSave}
+                        onCancel={() => setIsModalOpen(false)}
+                    />
+                </Modal>
+
+                <Modal
+                    show={isOrderViewModalOpen}
+                    onClose={handleCloseOrderView}
+                    title="Sipariş Detayı"
+                    maxWidth="max-w-4xl"
+                >
+                    {currentOrder && (
+                        <OrderForm
+                            order={currentOrder}
+                            onSave={(orderData) => {
+                                if (onOrderSave) {
+                                    onOrderSave(orderData);
+                                }
+                                handleCloseOrderView();
+                            }}
+                            onCancel={handleCloseOrderView}
+                            customers={customers}
+                            products={products}
+                        />
+                    )}
+                </Modal>
+
+                <Modal
+                    show={isQuoteViewModalOpen}
+                    onClose={handleCloseQuoteView}
+                    title="Teklif Detayı"
+                    maxWidth="max-w-4xl"
+                >
+                    {currentQuote && (
+                        <QuoteForm
+                            quote={currentQuote}
+                            onSave={(quoteData) => {
+                                if (onQuoteSave) {
+                                    onQuoteSave(quoteData);
+                                }
+                                handleCloseQuoteView();
+                            }}
+                            onCancel={handleCloseQuoteView}
+                            customers={customers}
+                            products={products}
+                        />
+                    )}
+                </Modal>
+
+                <Modal
+                    show={isShipmentViewModalOpen}
+                    onClose={handleCloseShipmentView}
+                    title="Sevkiyat Detayı"
+                    maxWidth="max-w-lg"
+                >
+                    {currentShipment && (() => {
+                        const order = orders.find(o => o.id === currentShipment.orderId);
+                        const customer = customers.find(c => c.id === order?.customerId);
+                        return (
+                            <ShipmentDetail
+                                shipment={currentShipment}
+                                order={order}
+                                customer={customer}
+                            />
+                        );
+                    })()}
+                </Modal>
+            </>
         );
     }
 
