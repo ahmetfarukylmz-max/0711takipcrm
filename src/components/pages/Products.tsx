@@ -229,8 +229,7 @@ const Products = memo<ProductsProps>(({
                 product.name?.toLowerCase().includes(query) ||
                 product.code?.toLowerCase().includes(query) ||
                 product.cost_price?.toString().includes(query) ||
-                product.selling_price?.toString().includes(query) ||
-                product.tags?.some(tag => tag.toLowerCase().includes(query));
+                product.selling_price?.toString().includes(query);
 
             const matchesCategory = categoryFilter === 'all' ||
                 categoryFilter === 'uncategorized' && !product.category ||

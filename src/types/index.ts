@@ -78,7 +78,7 @@ export interface Product {
   // Category system (optional - backward compatible)
   category?: string; // Main category (Galvaniz, DKP, Siyah, Boyalı, Baklavalı Sac, HRP)
   subcategory?: string; // @deprecated No longer used - kept for backward compatibility with existing data
-  tags?: string[]; // Tags for search and filtering
+  tags?: string[]; // @deprecated No longer used - kept for backward compatibility with existing data
 
   // Stock management (optional - backward compatible)
   stock_quantity?: number; // Current stock quantity
