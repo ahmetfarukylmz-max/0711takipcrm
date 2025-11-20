@@ -68,10 +68,14 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
         rejection_reason: ''
     });
     const [items, setItems] = useState<OrderItem[]>(
-        (quote?.items || []).map(item => ({
-            ...item,
-            unit: 'Kg'
-        }))
+        (quote?.items || []).map(item => {
+            const product = products.find(p => p.id === item.productId);
+            return {
+                ...item,
+                productName: item.productName || product?.name || '',
+                unit: item.unit || product?.unit || 'Kg'
+            };
+        })
     );
 
     const subtotal = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);
