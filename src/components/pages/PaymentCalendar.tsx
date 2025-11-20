@@ -165,7 +165,7 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
       </div>
 
       {/* Takvim */}
-      <div className="calendar-container" style={{ height: '700px' }}>
+      <div className="calendar-container overflow-auto" style={{ height: 'calc(100vh - 400px)', minHeight: '500px', maxHeight: '700px' }}>
         <Calendar
           localizer={localizer}
           events={calendarEvents}
