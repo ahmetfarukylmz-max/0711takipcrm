@@ -18,6 +18,7 @@ import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } f
 interface BestSellingProduct {
     id: string;
     name: string;
+    unit: string;
     quantity: number;
     revenue: number;
     customers: Array<{
@@ -273,6 +274,7 @@ const Dashboard = memo<DashboardProps>(({
                 return {
                     id: productId,
                     name: product?.name || 'Bilinmeyen Ürün',
+                    unit: product?.unit || 'Kg',
                     quantity: stats.quantity,
                     revenue: stats.revenue,
                     customers: customersList
@@ -321,6 +323,7 @@ const Dashboard = memo<DashboardProps>(({
                 return {
                     id: productId,
                     name: product?.name || 'Bilinmeyen Ürün',
+                    unit: product?.unit || 'Kg',
                     count: stats.count,
                     totalQuantity: stats.totalQuantity,
                     meetingsCount: stats.meetingsCount,
@@ -802,7 +805,7 @@ const Dashboard = memo<DashboardProps>(({
                                 <MobileListItem
                                     key={product.id}
                                     title={product.name}
-                                    subtitle={`${product.quantity} Kg satıldı • ${product.customers.length} müşteri`}
+                                    subtitle={`${product.quantity} ${product.unit} satıldı • ${product.customers.length} müşteri`}
                                     rightContent={
                                         <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                                             {formatCurrency(product.revenue)}
@@ -828,7 +831,7 @@ const Dashboard = memo<DashboardProps>(({
                                 <MobileListItem
                                     key={product.id}
                                     title={product.name}
-                                    subtitle={`${product.meetingsCount} görüşmede soruldu${product.totalQuantity > 0 ? ` • ${product.totalQuantity} Kg` : ''}`}
+                                    subtitle={`${product.meetingsCount} görüşmede soruldu${product.totalQuantity > 0 ? ` • ${product.totalQuantity} ${product.unit}` : ''}`}
                                     rightContent={
                                         <div className="text-right">
                                             <span className="block text-sm font-semibold text-purple-600 dark:text-purple-400">
