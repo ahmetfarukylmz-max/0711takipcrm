@@ -25,7 +25,6 @@ interface ProductFormData {
     unit: string;
     currency: Currency;
     category: string;
-    tags: string;
     track_stock: boolean;
     stock_quantity: string | number;
     minimum_stock: string | number;
@@ -41,10 +40,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         description: product?.description || '',
         cost_price: product?.cost_price || '',
         selling_price: product?.selling_price || '',
-        unit: product?.unit || 'Adet',
+        unit: product?.unit || 'Kg',
         currency: product?.currency || DEFAULT_CURRENCY,
         category: product?.category || '',
-        tags: product?.tags?.join(', ') || '',
         track_stock: product?.track_stock || false,
         stock_quantity: product?.stock_quantity || '',
         minimum_stock: product?.minimum_stock || ''
@@ -73,11 +71,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Parse tags from comma-separated string
-        const tagsArray = formData.tags
-            ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-            : [];
-
         onSave({
             ...product,
             name: formData.name,
@@ -88,7 +81,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             unit: formData.unit,
             currency: formData.currency,
             category: formData.category || undefined,
-            tags: tagsArray.length > 0 ? tagsArray : undefined,
             track_stock: formData.track_stock,
             stock_quantity: formData.track_stock && formData.stock_quantity !== ''
                 ? (typeof formData.stock_quantity === 'string' ? parseFloat(formData.stock_quantity) : formData.stock_quantity)
@@ -114,17 +106,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 value={formData.code}
                 onChange={handleChange}
             />
-            <FormSelect
-                label="Birim"
-                name="unit"
-                value={formData.unit}
-                onChange={handleChange}
-                required
-            >
-                <option value="Adet">Adet</option>
-                <option value="Kg">Kg</option>
-            </FormSelect>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <FormSelect
+                    label="Birim"
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleChange}
+                    required
+                >
+                    <option value="Kg">Kg</option>
+                    <option value="Adet">Adet</option>
+                </FormSelect>
                 <FormSelect
                     label="Para Birimi"
                     name="currency"
@@ -173,14 +165,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                     </option>
                 ))}
             </FormSelect>
-
-            <FormInput
-                label="Etiketler (Opsiyonel)"
-                name="tags"
-                value={formData.tags}
-                onChange={handleChange}
-                placeholder="Virgülle ayırarak etiket ekleyin (örn: yeni, indirimli, popüler)"
-            />
 
             {/* Stock Management */}
             <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">

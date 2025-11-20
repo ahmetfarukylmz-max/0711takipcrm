@@ -195,21 +195,6 @@ const ProductDetail = memo<ProductDetailProps>(({
                 </div>
               </div>
             )}
-            {product.tags && product.tags.length > 0 && (
-              <div className="flex items-start gap-2">
-                <span className="font-semibold">Etiketler:</span>
-                <div className="flex flex-wrap gap-1">
-                  {product.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
             {product.description && (
               <p><span className="font-semibold">Açıklama:</span> {product.description}</p>
             )}
