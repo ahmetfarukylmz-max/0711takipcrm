@@ -168,7 +168,6 @@ const ProductDetail = memo<ProductDetailProps>(({
             {product.category && (
               <p>
                 <span className="font-semibold">Kategori:</span> {getCategoryWithIcon(product.category)}
-                {product.subcategory && ` → ${product.subcategory}`}
               </p>
             )}
             <p><span className="font-semibold">Maliyet:</span> {formatCurrency(product.cost_price, product.currency)}</p>
