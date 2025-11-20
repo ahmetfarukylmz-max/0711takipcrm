@@ -101,7 +101,7 @@ const Modal = ({
     return (
         <>
             <div
-                className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-start p-4 md:pt-8 overflow-y-auto"
+                className="fixed inset-0 backdrop-blur-sm z-[9999] flex justify-center items-start p-4 md:pt-8 overflow-y-auto"
                 onClick={handleBackdropClick}
                 role="dialog"
                 aria-modal="true"
