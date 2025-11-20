@@ -25,6 +25,9 @@ interface ProductFormData {
     currency: Currency;
     category: string;
     tags: string;
+    track_stock: boolean;
+    stock_quantity: string | number;
+    minimum_stock: string | number;
 }
 
 /**
@@ -39,11 +42,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         selling_price: product?.selling_price || '',
         currency: product?.currency || DEFAULT_CURRENCY,
         category: product?.category || '',
-        tags: product?.tags?.join(', ') || ''
+        tags: product?.tags?.join(', ') || '',
+        track_stock: product?.track_stock || false,
+        stock_quantity: product?.stock_quantity || '',
+        minimum_stock: product?.minimum_stock || ''
     });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+
+        // Handle checkbox separately
+        if (type === 'checkbox') {
+            const checked = (e.target as HTMLInputElement).checked;
+            setFormData({ ...formData, [name]: checked });
+            return;
+        }
+
         let sanitizedValue = value;
 
         // Apply sanitization for text fields
@@ -72,6 +86,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             currency: formData.currency,
             category: formData.category || undefined,
             tags: tagsArray.length > 0 ? tagsArray : undefined,
+            track_stock: formData.track_stock,
+            stock_quantity: formData.track_stock && formData.stock_quantity !== ''
+                ? (typeof formData.stock_quantity === 'string' ? parseFloat(formData.stock_quantity) : formData.stock_quantity)
+                : undefined,
+            minimum_stock: formData.track_stock && formData.minimum_stock !== ''
+                ? (typeof formData.minimum_stock === 'string' ? parseFloat(formData.minimum_stock) : formData.minimum_stock)
+                : undefined,
         });
     };
 
@@ -147,6 +168,53 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 onChange={handleChange}
                 placeholder="Virgülle ayırarak etiket ekleyin (örn: yeni, indirimli, popüler)"
             />
+
+            {/* Stock Management */}
+            <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="track_stock"
+                        name="track_stock"
+                        checked={formData.track_stock}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor="track_stock" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                        Stok Takibi Yap
+                    </label>
+                </div>
+
+                {formData.track_stock && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <FormInput
+                            label="Mevcut Stok Miktarı"
+                            name="stock_quantity"
+                            type="number"
+                            inputMode="numeric"
+                            step="0.01"
+                            value={formData.stock_quantity}
+                            onChange={handleChange}
+                            placeholder="Örn: 100"
+                        />
+                        <FormInput
+                            label="Minimum Stok Seviyesi"
+                            name="minimum_stock"
+                            type="number"
+                            inputMode="numeric"
+                            step="0.01"
+                            value={formData.minimum_stock}
+                            onChange={handleChange}
+                            placeholder="Örn: 10"
+                        />
+                    </div>
+                )}
+                {formData.track_stock && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        💡 Stok miktarı minimum seviyenin altına düştüğünde uyarı alırsınız
+                    </p>
+                )}
+            </div>
 
             <FormTextarea
                 label="Açıklama"

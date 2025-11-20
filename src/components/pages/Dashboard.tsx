@@ -161,6 +161,19 @@ const Dashboard = memo<DashboardProps>(({
         });
     }, [gorusmeler, orders, customers, customTasks, today]);
 
+    // Calculate low stock products
+    const lowStockProducts = useMemo(() => {
+        return products
+            .filter(p => !p.isDeleted && p.track_stock && p.stock_quantity !== undefined && p.minimum_stock !== undefined && p.stock_quantity <= p.minimum_stock)
+            .sort((a, b) => {
+                // Sort by how critical the stock level is (lower percentage = more critical)
+                const aPercentage = a.minimum_stock ? (a.stock_quantity! / a.minimum_stock) : 1;
+                const bPercentage = b.minimum_stock ? (b.stock_quantity! / b.minimum_stock) : 1;
+                return aPercentage - bPercentage;
+            })
+            .slice(0, 5); // Show top 5 low stock items
+    }, [products]);
+
     const toggleTask = async (task: TodayTask) => {
         const newCompleted = !task.completed;
 
@@ -689,6 +702,66 @@ const Dashboard = memo<DashboardProps>(({
                         )}
                     </div>
                 </div>
+
+                {/* Low Stock Warnings */}
+                {lowStockProducts.length > 0 && (
+                    <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm border-2 border-yellow-200 dark:border-yellow-800 animate-fadeIn animate-delay-200`}>
+                        <div className="flex items-center justify-between mb-3 md:mb-4">
+                            <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                <span>⚠️</span>
+                                Düşük Stok Uyarıları
+                            </h3>
+                            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded-full">
+                                {lowStockProducts.length} ürün
+                            </span>
+                        </div>
+                        <div className="space-y-2 md:space-y-2">
+                            {lowStockProducts.map(product => {
+                                const stockPercentage = product.minimum_stock ? ((product.stock_quantity! / product.minimum_stock) * 100) : 0;
+                                const isCritical = stockPercentage < 50;
+                                return (
+                                    <MobileListItem
+                                        key={product.id}
+                                        title={
+                                            <div className="flex items-center gap-2">
+                                                <span>{product.name}</span>
+                                                {isCritical && <span className="text-red-500 text-xs">🔴 Kritik</span>}
+                                            </div>
+                                        }
+                                        subtitle={product.code ? `Kod: ${product.code}` : undefined}
+                                        rightContent={
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                    isCritical
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                }`}>
+                                                    {product.stock_quantity} {product.unit}
+                                                </span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    Min: {product.minimum_stock} {product.unit}
+                                                </span>
+                                            </div>
+                                        }
+                                        bottomContent={
+                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                Stok seviyesi: {stockPercentage.toFixed(0)}%
+                                            </div>
+                                        }
+                                    />
+                                );
+                            })}
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={() => setActivePage('products')}
+                                className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+                            >
+                                Tüm Ürünleri Görüntüle →
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className={`bg-white dark:bg-gray-800 ${widgetPadding} rounded-xl shadow-sm animate-fadeIn animate-delay-200`}>
                     <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4 flex items-center gap-2">
