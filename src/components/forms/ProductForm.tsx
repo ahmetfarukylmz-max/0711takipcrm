@@ -114,14 +114,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 value={formData.code}
                 onChange={handleChange}
             />
-            <FormInput
+            <FormSelect
                 label="Birim"
                 name="unit"
                 value={formData.unit}
                 onChange={handleChange}
-                placeholder="Örn: Adet, Kg, Metre, M², Litre"
                 required
-            />
+            >
+                <option value="Adet">Adet</option>
+                <option value="Kg">Kg</option>
+            </FormSelect>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormSelect
                     label="Para Birimi"
