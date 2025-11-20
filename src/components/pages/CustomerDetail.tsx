@@ -58,6 +58,8 @@ interface CustomerDetailProps {
     onEdit: () => void;
     /** Handler for deleting customer */
     onDelete: () => void;
+    /** Handler for going back to customer list */
+    onBack?: () => void;
     /** Handler for creating a quote */
     onCreateQuote?: () => void;
     /** Handler for creating an order */
@@ -97,6 +99,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     payments = [],
     onEdit,
     onDelete,
+    onBack,
     onCreateQuote,
     onCreateOrder,
     onViewOrder,
@@ -428,6 +431,14 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                 <div className="flex-1">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="text-blue-600 dark:text-blue-400 hover:underline mb-2 text-sm flex items-center gap-1"
+                        >
+                            ← Müşterilere Dön
+                        </button>
+                    )}
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
                         {customer.name}
                     </h2>
