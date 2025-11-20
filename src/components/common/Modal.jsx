@@ -14,6 +14,24 @@ const Modal = ({
     const modalRef = useRef(null);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
+    // Convert Tailwind max-width class to actual CSS value
+    const getMaxWidthValue = (maxWidthClass) => {
+        const widthMap = {
+            'max-w-xs': '20rem',      // 320px
+            'max-w-sm': '24rem',      // 384px
+            'max-w-md': '28rem',      // 448px
+            'max-w-lg': '32rem',      // 512px
+            'max-w-xl': '36rem',      // 576px
+            'max-w-2xl': '42rem',     // 672px
+            'max-w-3xl': '48rem',     // 768px
+            'max-w-4xl': '56rem',     // 896px
+            'max-w-5xl': '64rem',     // 1024px
+            'max-w-6xl': '72rem',     // 1152px
+            'max-w-7xl': '80rem',     // 1280px
+        };
+        return widthMap[maxWidthClass] || '42rem'; // default to max-w-2xl
+    };
+
     // Handle close with unsaved changes check
     const handleClose = () => {
         if (hasUnsavedChanges) {
@@ -38,16 +56,31 @@ const Modal = ({
 
     // Scroll to top when modal opens and focus modal
     useEffect(() => {
+        const applyMaxWidth = () => {
+            if (modalRef.current) {
+                if (window.innerWidth >= 768) {
+                    modalRef.current.style.maxWidth = getMaxWidthValue(maxWidth);
+                } else {
+                    modalRef.current.style.maxWidth = '95vw';
+                }
+            }
+        };
+
         if (show) {
             window.scrollTo(0, 0);
             // Focus modal container after a short delay
             setTimeout(() => {
                 if (modalRef.current) {
                     modalRef.current.focus();
+                    applyMaxWidth();
                 }
             }, 100);
+
+            // Handle window resize
+            window.addEventListener('resize', applyMaxWidth);
+            return () => window.removeEventListener('resize', applyMaxWidth);
         }
-    }, [show]);
+    }, [show, maxWidth]);
 
     // Handle ESC key to close modal
     useEffect(() => {
@@ -77,7 +110,7 @@ const Modal = ({
                 <div
                     ref={modalRef}
                     tabIndex={-1}
-                    className={`bg-white dark:bg-gray-700 rounded-lg shadow-xl p-4 md:p-6 w-full max-w-full md:${maxWidth} outline-none my-auto md:my-0 animate-fadeIn`}
+                    className="bg-white dark:bg-gray-700 rounded-lg shadow-xl p-4 md:p-6 w-full outline-none my-auto md:my-0 animate-fadeIn"
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-3">
