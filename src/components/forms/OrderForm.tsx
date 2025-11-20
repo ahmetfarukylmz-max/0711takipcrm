@@ -54,10 +54,14 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
         notes: ''
     });
     const [items, setItems] = useState<OrderItem[]>(
-        (order?.items || []).map(item => ({
-            ...item,
-            unit: 'Kg'
-        }))
+        (order?.items || []).map(item => {
+            const product = products.find(p => p.id === item.productId);
+            return {
+                ...item,
+                productName: item.productName || product?.name || '',
+                unit: item.unit || product?.unit || 'Kg'
+            };
+        })
     );
 
     const subtotal = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);

@@ -25,8 +25,9 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products }) =>
                 ...items,
                 {
                     productId: firstProduct.id,
+                    productName: firstProduct.name,
                     quantity: 1,
-                    unit: 'Kg',
+                    unit: firstProduct.unit,
                     unit_price: firstProduct.selling_price
                 }
             ]);
@@ -42,10 +43,12 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products }) =>
             [field]: value
         };
 
-        // Update unit price when product changes
+        // Update unit price, product name, and unit when product changes
         if (field === 'productId') {
             const product = products.find(p => p.id === value);
             if (product) {
+                newItems[index].productName = product.name;
+                newItems[index].unit = product.unit;
                 newItems[index].unit_price = product.selling_price;
             }
         }
@@ -96,7 +99,7 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products }) =>
                                 />
                             </div>
                             <div className="w-12 sm:w-16 flex items-end sm:items-center justify-center pb-2 sm:pb-0">
-                                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Kg</span>
+                                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{item.unit || 'Kg'}</span>
                             </div>
                             <div className="flex-1 sm:w-28">
                                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 sm:hidden">
