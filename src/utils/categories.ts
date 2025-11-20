@@ -1,173 +1,48 @@
 /**
  * Product Categories Configuration
  *
- * Bu dosya ürün kategorilerini tanımlar.
- * Yeni kategori eklemek veya mevcut kategorileri düzenlemek için bu dosyayı güncelleyin.
+ * Metal sac türleri için kategori tanımlamaları
  */
 
 export interface CategoryDefinition {
   id: string;
   name: string;
-  icon?: string; // Emoji or icon
-  subcategories: string[];
+  icon?: string;
 }
 
 /**
- * Predefined product categories
- * Türkiye pazarına uygun genel kategoriler
+ * Metal sac türleri kategorileri
  */
 export const PRODUCT_CATEGORIES: CategoryDefinition[] = [
   {
-    id: 'elektronik',
-    name: 'Elektronik',
-    icon: '💻',
-    subcategories: [
-      'Bilgisayar',
-      'Telefon',
-      'Tablet',
-      'Aksesuar',
-      'Ses Sistemleri',
-      'Kamera',
-      'Oyun Konsolları',
-      'Akıllı Saat',
-      'Diğer'
-    ]
+    id: 'galvaniz',
+    name: 'Galvaniz',
+    icon: '🔷'
   },
   {
-    id: 'gida',
-    name: 'Gıda',
-    icon: '🍎',
-    subcategories: [
-      'İçecek',
-      'Atıştırmalık',
-      'Temel Gıda',
-      'Şeker & Şekerleme',
-      'Baharat',
-      'Organik Ürünler',
-      'Dondurulmuş',
-      'Diğer'
-    ]
+    id: 'dkp',
+    name: 'DKP',
+    icon: '⚪'
   },
   {
-    id: 'tekstil',
-    name: 'Tekstil',
-    icon: '👕',
-    subcategories: [
-      'Giyim',
-      'Ayakkabı',
-      'Çanta',
-      'Aksesuar',
-      'Ev Tekstili',
-      'Çocuk Giyim',
-      'Spor Giyim',
-      'Diğer'
-    ]
+    id: 'siyah',
+    name: 'Siyah',
+    icon: '⚫'
   },
   {
-    id: 'mobilya',
-    name: 'Mobilya',
-    icon: '🛋️',
-    subcategories: [
-      'Oturma Odası',
-      'Yatak Odası',
-      'Mutfak',
-      'Banyo',
-      'Çalışma Odası',
-      'Çocuk Odası',
-      'Bahçe Mobilyası',
-      'Ofis Mobilyası',
-      'Diğer'
-    ]
+    id: 'boyali',
+    name: 'Boyalı',
+    icon: '🎨'
   },
   {
-    id: 'kozmetik',
-    name: 'Kozmetik',
-    icon: '💄',
-    subcategories: [
-      'Cilt Bakım',
-      'Makyaj',
-      'Saç Bakım',
-      'Parfüm',
-      'Kişisel Bakım',
-      'Erkek Bakım',
-      'Güneş Ürünleri',
-      'Diğer'
-    ]
+    id: 'baklavali-sac',
+    name: 'Baklavalı Sac',
+    icon: '◆'
   },
   {
-    id: 'ev-yasam',
-    name: 'Ev & Yaşam',
-    icon: '🏠',
-    subcategories: [
-      'Beyaz Eşya',
-      'Küçük Ev Aletleri',
-      'Mutfak Gereçleri',
-      'Temizlik Ürünleri',
-      'Dekorasyon',
-      'Aydınlatma',
-      'Bahçe',
-      'Diğer'
-    ]
-  },
-  {
-    id: 'otomotiv',
-    name: 'Otomotiv',
-    icon: '🚗',
-    subcategories: [
-      'Yedek Parça',
-      'Aksesuar',
-      'Bakım Ürünleri',
-      'Lastik',
-      'Akü',
-      'Motor Yağı',
-      'Araç İçi',
-      'Diğer'
-    ]
-  },
-  {
-    id: 'spor-outdoor',
-    name: 'Spor & Outdoor',
-    icon: '⚽',
-    subcategories: [
-      'Fitness',
-      'Futbol',
-      'Basketbol',
-      'Koşu',
-      'Yüzme',
-      'Kamp & Doğa',
-      'Bisiklet',
-      'Diğer'
-    ]
-  },
-  {
-    id: 'kitap-hobi',
-    name: 'Kitap & Hobi',
-    icon: '📚',
-    subcategories: [
-      'Kitap',
-      'Dergi',
-      'Kırtasiye',
-      'Müzik Aletleri',
-      'Sanat Malzemeleri',
-      'Oyuncak',
-      'Puzzle & Zeka Oyunları',
-      'Diğer'
-    ]
-  },
-  {
-    id: 'insaat-yapi',
-    name: 'İnşaat & Yapı',
-    icon: '🔨',
-    subcategories: [
-      'Boya',
-      'Elektrik Malzemeleri',
-      'Hırdavat',
-      'Alet & Takım',
-      'Yapı Malzemeleri',
-      'Isıtma & Soğutma',
-      'Su Tesisatı',
-      'Diğer'
-    ]
+    id: 'hrp',
+    name: 'HRP',
+    icon: '🔶'
   }
 ];
 
@@ -184,14 +59,6 @@ export const getCategoryById = (id: string): CategoryDefinition | undefined => {
 export const getCategoryName = (id: string): string => {
   const category = getCategoryById(id);
   return category ? category.name : 'Kategorisiz';
-};
-
-/**
- * Get subcategories by category ID
- */
-export const getSubcategories = (categoryId: string): string[] => {
-  const category = getCategoryById(categoryId);
-  return category ? category.subcategories : [];
 };
 
 /**

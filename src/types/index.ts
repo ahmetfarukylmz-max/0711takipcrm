@@ -76,8 +76,8 @@ export interface Product {
   currency?: Currency;
 
   // Category system (optional - backward compatible)
-  category?: string; // Main category
-  subcategory?: string; // Subcategory
+  category?: string; // Main category (Galvaniz, DKP, Siyah, Boyalı, Baklavalı Sac, HRP)
+  subcategory?: string; // @deprecated No longer used - kept for backward compatibility with existing data
   tags?: string[]; // Tags for search and filtering
 
   createdBy?: string; // User ID who created this

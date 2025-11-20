@@ -5,7 +5,7 @@ import FormTextarea from '../common/FormTextarea';
 import { currencies, DEFAULT_CURRENCY } from '../../constants';
 import type { Product, Currency } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
-import { PRODUCT_CATEGORIES, getSubcategories } from '../../utils/categories';
+import { PRODUCT_CATEGORIES } from '../../utils/categories';
 
 interface ProductFormProps {
     /** Existing product to edit (undefined for new product) */
@@ -24,7 +24,6 @@ interface ProductFormData {
     selling_price: string | number;
     currency: Currency;
     category: string;
-    subcategory: string;
     tags: string;
 }
 
@@ -40,7 +39,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         selling_price: product?.selling_price || '',
         currency: product?.currency || DEFAULT_CURRENCY,
         category: product?.category || '',
-        subcategory: product?.subcategory || '',
         tags: product?.tags?.join(', ') || ''
     });
 
@@ -53,12 +51,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             sanitizedValue = sanitizeText(value);
         }
 
-        // If category changes, reset subcategory
-        if (name === 'category') {
-            setFormData({ ...formData, category: sanitizedValue, subcategory: '' });
-        } else {
-            setFormData({ ...formData, [name]: sanitizedValue });
-        }
+        setFormData({ ...formData, [name]: sanitizedValue });
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -78,7 +71,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             selling_price: typeof formData.selling_price === 'string' ? parseFloat(formData.selling_price) : formData.selling_price,
             currency: formData.currency,
             category: formData.category || undefined,
-            subcategory: formData.subcategory || undefined,
             tags: tagsArray.length > 0 ? tagsArray : undefined,
         });
     };
@@ -134,36 +126,19 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             </div>
 
             {/* Category Selection */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormSelect
-                    label="Kategori (Opsiyonel)"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                >
-                    <option value="">Kategori Seçiniz</option>
-                    {PRODUCT_CATEGORIES.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.name}
-                        </option>
-                    ))}
-                </FormSelect>
-
-                <FormSelect
-                    label="Alt Kategori (Opsiyonel)"
-                    name="subcategory"
-                    value={formData.subcategory}
-                    onChange={handleChange}
-                    disabled={!formData.category}
-                >
-                    <option value="">Alt Kategori Seçiniz</option>
-                    {formData.category && getSubcategories(formData.category).map(subcat => (
-                        <option key={subcat} value={subcat}>
-                            {subcat}
-                        </option>
-                    ))}
-                </FormSelect>
-            </div>
+            <FormSelect
+                label="Kategori (Opsiyonel)"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+            >
+                <option value="">Kategori Seçiniz</option>
+                {PRODUCT_CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                        {cat.icon} {cat.name}
+                    </option>
+                ))}
+            </FormSelect>
 
             <FormInput
                 label="Etiketler (Opsiyonel)"
