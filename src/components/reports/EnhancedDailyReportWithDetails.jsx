@@ -250,8 +250,8 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                         </div>
                         <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e;">
                             <div style="font-size: 14px; color: #16a34a; margin-bottom: 8px;">Onaylanan Siparişler</div>
-                            <div style="font-size: 32px; font-weight: bold; color: #15803d;">${todayData.stats.convertedOrders}</div>
-                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.convertedOrdersValue)}</div>
+                            <div style="font-size: 32px; font-weight: bold; color: #15803d;">${todayData.stats.allOrders}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">${formatCurrency(todayData.stats.allOrdersValue)}</div>
                         </div>
                         <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
                             <div style="font-size: 14px; color: #059669; margin-bottom: 8px;">Tahsil Edilen</div>
@@ -641,12 +641,12 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
 
                 <MetricCard
                     title="Onaylanan Siparişler"
-                    value={todayData.stats.convertedOrders}
-                    previousValue={yesterdayData.stats.convertedOrders}
+                    value={todayData.stats.allOrders}
+                    previousValue={yesterdayData.stats.allOrders}
                     suffix=" adet"
                     icon={ClipboardListIcon}
                     color="from-green-500 to-green-600"
-                    details={formatCurrency(todayData.stats.convertedOrdersValue)}
+                    details={formatCurrency(todayData.stats.allOrdersValue)}
                     onClick={() => toggleAccordion('orders')}
                 />
 
