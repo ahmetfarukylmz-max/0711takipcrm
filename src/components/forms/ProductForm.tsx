@@ -61,7 +61,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         let sanitizedValue = value;
 
         // Apply sanitization for text fields
-        if (name === 'name' || name === 'code' || name === 'description' || name === 'tags') {
+        if (name === 'name' || name === 'code' || name === 'description') {
             sanitizedValue = sanitizeText(value);
         }
 
@@ -71,24 +71,35 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        onSave({
+        // Build product object and remove undefined values
+        const productData: Partial<Product> = {
             ...product,
             name: formData.name,
-            code: formData.code || undefined,
-            description: formData.description || undefined,
             cost_price: typeof formData.cost_price === 'string' ? parseFloat(formData.cost_price) : formData.cost_price,
             selling_price: typeof formData.selling_price === 'string' ? parseFloat(formData.selling_price) : formData.selling_price,
             unit: formData.unit,
             currency: formData.currency,
-            category: formData.category || undefined,
             track_stock: formData.track_stock,
-            stock_quantity: formData.track_stock && formData.stock_quantity !== ''
-                ? (typeof formData.stock_quantity === 'string' ? parseFloat(formData.stock_quantity) : formData.stock_quantity)
-                : undefined,
-            minimum_stock: formData.track_stock && formData.minimum_stock !== ''
-                ? (typeof formData.minimum_stock === 'string' ? parseFloat(formData.minimum_stock) : formData.minimum_stock)
-                : undefined,
-        });
+        };
+
+        // Add optional fields only if they have values
+        if (formData.code) productData.code = formData.code;
+        if (formData.description) productData.description = formData.description;
+        if (formData.category) productData.category = formData.category;
+
+        if (formData.track_stock && formData.stock_quantity !== '') {
+            productData.stock_quantity = typeof formData.stock_quantity === 'string'
+                ? parseFloat(formData.stock_quantity)
+                : formData.stock_quantity;
+        }
+
+        if (formData.track_stock && formData.minimum_stock !== '') {
+            productData.minimum_stock = typeof formData.minimum_stock === 'string'
+                ? parseFloat(formData.minimum_stock)
+                : formData.minimum_stock;
+        }
+
+        onSave(productData);
     };
 
     return (
