@@ -17,8 +17,22 @@ import {
 import { MetricCard, DetailAccordion } from './shared';
 
 // Detaylı Liste Öğesi
-const DetailListItem = ({ customer, items, total, date, notes, type, getProductName }) => {
+const DetailListItem = ({ customer, items, total, date, notes, type, getProductName, paymentType, paymentTerm, checkBank, checkNumber, checkDate }) => {
     const [showItems, setShowItems] = useState(false);
+
+    // Ödeme tipi badge rengi
+    const getPaymentTypeBadge = (type) => {
+        switch(type) {
+            case 'Peşin':
+                return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+            case 'Vadeli':
+                return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300';
+            case 'Çek':
+                return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+            default:
+                return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300';
+        }
+    };
 
     return (
         <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
@@ -28,8 +42,29 @@ const DetailListItem = ({ customer, items, total, date, notes, type, getProductN
                     {date && (
                         <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(date)}</p>
                     )}
+
+                    {/* Ödeme Şekli */}
+                    {paymentType && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getPaymentTypeBadge(paymentType)}`}>
+                                💳 {paymentType}
+                                {paymentType === 'Vadeli' && paymentTerm && ` (${paymentTerm} gün)`}
+                            </span>
+                            {paymentType === 'Çek' && (checkBank || checkNumber) && (
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                    {checkBank && `🏦 ${checkBank}`}
+                                    {checkNumber && ` #${checkNumber}`}
+                                    {checkDate && ` - Vade: ${formatDate(checkDate)}`}
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Notlar */}
                     {notes && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{notes}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">
+                            📝 {notes}
+                        </p>
                     )}
                 </div>
                 {total && (
@@ -721,9 +756,14 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                                 items={quote.items}
                                 total={quote.total_amount}
                                 date={quote.teklif_tarihi}
-                                notes={`Durum: ${quote.status || 'Bekliyor'}`}
+                                notes={quote.notes || `Durum: ${quote.status || 'Bekliyor'}`}
                                 type="quote"
                                 getProductName={getProductName}
+                                paymentType={quote.paymentType}
+                                paymentTerm={quote.paymentTerm}
+                                checkBank={quote.checkBank}
+                                checkNumber={quote.checkNumber}
+                                checkDate={quote.checkDate}
                             />
                         ))
                     ) : (
@@ -742,18 +782,26 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     onToggle={() => toggleAccordion('orders')}
                 >
                     {todayData.allOrders.length > 0 ? (
-                        todayData.allOrders.map((order) => (
-                            <DetailListItem
-                                key={order.id}
-                                customer={getCustomerName(order.customerId)}
-                                items={order.items}
-                                total={order.total_amount}
-                                date={order.order_date}
-                                notes={order.quoteId ? '✓ Tekliften dönüştürüldü' : `Durum: ${order.status || 'Bekliyor'}`}
-                                type="order"
-                                getProductName={getProductName}
-                            />
-                        ))
+                        todayData.allOrders.map((order) => {
+                            const noteText = order.notes || (order.quoteId ? '✓ Tekliften dönüştürüldü' : `Durum: ${order.status || 'Bekliyor'}`);
+                            return (
+                                <DetailListItem
+                                    key={order.id}
+                                    customer={getCustomerName(order.customerId)}
+                                    items={order.items}
+                                    total={order.total_amount}
+                                    date={order.order_date}
+                                    notes={noteText}
+                                    type="order"
+                                    getProductName={getProductName}
+                                    paymentType={order.paymentType}
+                                    paymentTerm={order.paymentTerm}
+                                    checkBank={order.checkBank}
+                                    checkNumber={order.checkNumber}
+                                    checkDate={order.checkDate}
+                                />
+                            );
+                        })
                     ) : (
                         <p className="text-gray-500 dark:text-gray-400 text-center py-4">
                             Bugün sipariş kaydı bulunmuyor.
