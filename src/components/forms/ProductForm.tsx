@@ -22,6 +22,7 @@ interface ProductFormData {
     description: string;
     cost_price: string | number;
     selling_price: string | number;
+    unit: string;
     currency: Currency;
     category: string;
     tags: string;
@@ -40,6 +41,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         description: product?.description || '',
         cost_price: product?.cost_price || '',
         selling_price: product?.selling_price || '',
+        unit: product?.unit || 'Adet',
         currency: product?.currency || DEFAULT_CURRENCY,
         category: product?.category || '',
         tags: product?.tags?.join(', ') || '',
@@ -83,6 +85,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             description: formData.description || undefined,
             cost_price: typeof formData.cost_price === 'string' ? parseFloat(formData.cost_price) : formData.cost_price,
             selling_price: typeof formData.selling_price === 'string' ? parseFloat(formData.selling_price) : formData.selling_price,
+            unit: formData.unit,
             currency: formData.currency,
             category: formData.category || undefined,
             tags: tagsArray.length > 0 ? tagsArray : undefined,
@@ -110,6 +113,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 name="code"
                 value={formData.code}
                 onChange={handleChange}
+            />
+            <FormInput
+                label="Birim"
+                name="unit"
+                value={formData.unit}
+                onChange={handleChange}
+                placeholder="Örn: Adet, Kg, Metre, M², Litre"
+                required
             />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormSelect
