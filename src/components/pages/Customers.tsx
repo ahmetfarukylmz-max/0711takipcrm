@@ -83,7 +83,7 @@ const Customers = memo<CustomersProps>(({
     loading = false
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [isQuoteViewModalOpen, setIsQuoteViewModalOpen] = useState(false);
     const [isOrderViewModalOpen, setIsOrderViewModalOpen] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
@@ -107,22 +107,27 @@ const Customers = memo<CustomersProps>(({
         setIsModalOpen(true);
     }, []);
 
-    const handleOpenDetailModal = useCallback((customer: Customer) => {
-        setCurrentCustomer(customer);
-        setIsDetailModalOpen(true);
+    const handleViewCustomer = useCallback((customer: Customer) => {
+        setSelectedCustomer(customer);
+    }, []);
+
+    const handleBackFromDetail = useCallback(() => {
+        setSelectedCustomer(null);
     }, []);
 
     const handleEditFromDetail = useCallback(() => {
-        setIsDetailModalOpen(false);
-        setIsModalOpen(true);
-    }, []);
+        if (selectedCustomer) {
+            setCurrentCustomer(selectedCustomer);
+            setIsModalOpen(true);
+        }
+    }, [selectedCustomer]);
 
     const handleDeleteFromDetail = useCallback(() => {
-        setIsDetailModalOpen(false);
-        if (currentCustomer) {
-            handleDelete(currentCustomer);
+        if (selectedCustomer) {
+            handleDelete(selectedCustomer);
+            setSelectedCustomer(null);
         }
-    }, [currentCustomer]);
+    }, [selectedCustomer]);
 
     const handleSave = (customerData: Partial<Customer>) => {
         onSave(customerData);
@@ -131,35 +136,29 @@ const Customers = memo<CustomersProps>(({
 
     const handleViewOrder = (order: Order) => {
         setCurrentOrder(order);
-        setIsDetailModalOpen(false);
         setIsOrderViewModalOpen(true);
     };
 
     const handleViewQuote = (quote: Quote) => {
         setCurrentQuote(quote);
-        setIsDetailModalOpen(false);
         setIsQuoteViewModalOpen(true);
     };
 
     const handleCloseOrderView = () => {
         setIsOrderViewModalOpen(false);
-        setIsDetailModalOpen(true);
     };
 
     const handleCloseQuoteView = () => {
         setIsQuoteViewModalOpen(false);
-        setIsDetailModalOpen(true);
     };
 
     const handleViewShipment = (shipment: Shipment) => {
         setCurrentShipment(shipment);
-        setIsDetailModalOpen(false);
         setIsShipmentViewModalOpen(true);
     };
 
     const handleCloseShipmentView = () => {
         setIsShipmentViewModalOpen(false);
-        setIsDetailModalOpen(true);
     };
 
     const handleDelete = (customer: Customer) => {
@@ -173,6 +172,10 @@ const Customers = memo<CustomersProps>(({
             } else {
                 onDelete(deleteConfirm.customer.id);
                 setDeleteConfirm({ isOpen: false, customer: null });
+                // Detay sayfasındaysak, listeye dön
+                if (selectedCustomer && selectedCustomer.id === deleteConfirm.customer.id) {
+                    setSelectedCustomer(null);
+                }
             }
         }
     };
@@ -349,6 +352,36 @@ const Customers = memo<CustomersProps>(({
         );
     }
 
+    // Show customer detail if selected
+    if (selectedCustomer) {
+        return (
+            <CustomerDetail
+                customer={selectedCustomer}
+                orders={orders}
+                quotes={quotes}
+                meetings={meetings}
+                shipments={shipments}
+                payments={payments}
+                onEdit={handleEditFromDetail}
+                onDelete={handleDeleteFromDetail}
+                onBack={handleBackFromDetail}
+                onQuoteSave={onQuoteSave}
+                onOrderSave={onOrderSave}
+                onMeetingSave={onMeetingSave}
+                onCustomerSave={async (customer) => {
+                    await onSave(customer);
+                    return customer.id;
+                }}
+                onProductSave={onProductSave}
+                products={products}
+                onViewOrder={handleViewOrder}
+                onViewQuote={handleViewQuote}
+                onViewShipment={handleViewShipment}
+                onNavigate={setActivePage}
+            />
+        );
+    }
+
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
@@ -472,7 +505,7 @@ const Customers = memo<CustomersProps>(({
                                         </td>
                                         <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
                                             <button
-                                                onClick={() => handleOpenDetailModal(customer)}
+                                                onClick={() => handleViewCustomer(customer)}
                                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold"
                                             >
                                                 {customer.name}
@@ -556,7 +589,7 @@ const Customers = memo<CustomersProps>(({
                                         key={customer.id}
                                         title={customer.name}
                                         subtitle={customer.contact_person}
-                                        onClick={() => handleOpenDetailModal(customer)}
+                                        onClick={() => handleViewCustomer(customer)}
                                         rightContent={
                                             <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
                                                 {status}
@@ -642,39 +675,6 @@ const Customers = memo<CustomersProps>(({
                 />
             </Modal>
 
-            <Modal
-                show={isDetailModalOpen}
-                onClose={() => setIsDetailModalOpen(false)}
-                title="Müşteri Detayları"
-                maxWidth="max-w-6xl"
-            >
-                {currentCustomer && (
-                    <CustomerDetail
-                        customer={currentCustomer}
-                        orders={orders}
-                        quotes={quotes}
-                        meetings={meetings}
-                        shipments={shipments}
-                        payments={payments}
-                        onEdit={handleEditFromDetail}
-                        onDelete={handleDeleteFromDetail}
-                        onClose={() => setIsDetailModalOpen(false)}
-                        onQuoteSave={onQuoteSave}
-                        onOrderSave={onOrderSave}
-                        onMeetingSave={onMeetingSave}
-                        onCustomerSave={async (customer) => {
-                            await onSave(customer);
-                            return customer.id;
-                        }}
-                        onProductSave={onProductSave}
-                        products={products}
-                        onViewOrder={handleViewOrder}
-                        onViewQuote={handleViewQuote}
-                        onViewShipment={handleViewShipment}
-                        onNavigate={setActivePage}
-                    />
-                )}
-            </Modal>
 
             <Modal
                 show={isOrderViewModalOpen}
