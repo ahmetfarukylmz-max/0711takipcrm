@@ -362,7 +362,7 @@ const Products = memo<ProductsProps>(({
                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
                             </th>
-                            {['Ürün Adı', 'Ürün Kodu', 'Maliyet Fiyatı', 'Satış Fiyatı', 'İşlemler'].map(head => (
+                            {['Ürün Adı', 'Ürün Kodu', 'Maliyet Fiyatı', 'Satış Fiyatı', 'Stok Durumu', 'İşlemler'].map(head => (
                                 <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                     {head}
                                 </th>
@@ -390,6 +390,26 @@ const Products = memo<ProductsProps>(({
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</td>
+                                <td className="p-3 text-sm">
+                                    {product.track_stock ? (
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock
+                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            }`}>
+                                                {product.stock_quantity || 0} {product.unit}
+                                            </span>
+                                            {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
+                                                <span className="text-xs text-yellow-600 dark:text-yellow-400">⚠️ Düşük stok</span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                            Takip yok
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="p-3 text-sm text-right">
                                     <div className="flex gap-3 justify-end">
                                         <button
@@ -409,7 +429,7 @@ const Products = memo<ProductsProps>(({
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={6} className="p-0">
+                                <td colSpan={7} className="p-0">
                                     <EmptyState
                                         icon={searchQuery ? 'search' : 'products'}
                                         title={searchQuery ? 'Ürün Bulunamadı' : 'Henüz Ürün Yok'}
@@ -445,6 +465,27 @@ const Products = memo<ProductsProps>(({
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-600 dark:text-gray-400">Satış:</span>
                                     <span className="text-blue-600 dark:text-blue-400 font-bold">{formatCurrency(product.selling_price, product.currency || 'TRY')}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Stok:</span>
+                                    {product.track_stock ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock
+                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            }`}>
+                                                {product.stock_quantity || 0} {product.unit}
+                                            </span>
+                                            {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
+                                                <span className="text-xs text-yellow-600 dark:text-yellow-400">⚠️</span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                            Takip yok
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         }

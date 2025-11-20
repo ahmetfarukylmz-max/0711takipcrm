@@ -173,6 +173,28 @@ const ProductDetail = memo<ProductDetailProps>(({
             <p><span className="font-semibold">Maliyet:</span> {formatCurrency(product.cost_price, product.currency)}</p>
             <p><span className="font-semibold">Satış Fiyatı:</span> {formatCurrency(product.selling_price, product.currency)}</p>
             <p><span className="font-semibold">Birim:</span> {product.unit}</p>
+            {product.track_stock && (
+              <div className="flex items-start gap-2">
+                <span className="font-semibold">Stok Durumu:</span>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                      : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                  }`}>
+                    {product.stock_quantity || 0} {product.unit}
+                  </span>
+                  {product.minimum_stock !== undefined && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      (Min: {product.minimum_stock} {product.unit})
+                    </span>
+                  )}
+                  {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
+                    <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">⚠️ Düşük stok!</span>
+                  )}
+                </div>
+              </div>
+            )}
             {product.tags && product.tags.length > 0 && (
               <div className="flex items-start gap-2">
                 <span className="font-semibold">Etiketler:</span>

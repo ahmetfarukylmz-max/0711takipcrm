@@ -80,6 +80,11 @@ export interface Product {
   subcategory?: string; // @deprecated No longer used - kept for backward compatibility with existing data
   tags?: string[]; // Tags for search and filtering
 
+  // Stock management (optional - backward compatible)
+  stock_quantity?: number; // Current stock quantity
+  minimum_stock?: number; // Minimum stock level for warnings
+  track_stock?: boolean; // Enable stock tracking for this product
+
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
