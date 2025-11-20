@@ -13,6 +13,7 @@ import { PlusIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
+import { PRODUCT_CATEGORIES, getCategoryWithIcon } from '../../utils/categories';
 import type { Product, Order, Quote, Customer } from '../../types';
 
 interface DeleteConfirmState {
@@ -55,6 +56,7 @@ const Products = memo<ProductsProps>(({
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, product: null });
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,11 +229,16 @@ const Products = memo<ProductsProps>(({
                 product.name?.toLowerCase().includes(query) ||
                 product.code?.toLowerCase().includes(query) ||
                 product.cost_price?.toString().includes(query) ||
-                product.selling_price?.toString().includes(query);
+                product.selling_price?.toString().includes(query) ||
+                product.tags?.some(tag => tag.toLowerCase().includes(query));
 
-            return matchesSearch;
+            const matchesCategory = categoryFilter === 'all' ||
+                categoryFilter === 'uncategorized' && !product.category ||
+                product.category === categoryFilter;
+
+            return matchesSearch && matchesCategory;
         });
-    }, [activeProducts, searchQuery]);
+    }, [activeProducts, searchQuery, categoryFilter]);
 
     // Show skeleton when loading
     if (loading) {
@@ -314,17 +321,32 @@ const Products = memo<ProductsProps>(({
                 </div>
             </div>
 
-            <div className="mb-4">
-                <SearchBar
-                    placeholder="Ürün ara (ad, kod, fiyat)..."
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                />
+            <div className="mb-4 flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                    <SearchBar
+                        placeholder="Ürün ara (ad, kod, fiyat, etiket)..."
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                    />
+                </div>
+                <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                >
+                    <option value="all">Tüm Kategoriler</option>
+                    <option value="uncategorized">Kategorisiz</option>
+                    {PRODUCT_CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.name}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
                 {filteredProducts.length} ürün gösteriliyor
-                {searchQuery && ` (${activeProducts.length} toplam)`}
+                {(searchQuery || categoryFilter !== 'all') && ` (${activeProducts.length} toplam)`}
             </div>
 
             {/* Desktop Table View */}

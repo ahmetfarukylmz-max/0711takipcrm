@@ -1,5 +1,6 @@
 import React, { useMemo, useState, memo } from 'react';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import { getCategoryWithIcon } from '../../utils/categories';
 import type { Product, Order, Quote, Customer } from '../../types';
 
 interface SalesStats {
@@ -164,9 +165,30 @@ const ProductDetail = memo<ProductDetailProps>(({
             {product.code && (
               <p><span className="font-semibold">Ürün Kodu:</span> {product.code}</p>
             )}
+            {product.category && (
+              <p>
+                <span className="font-semibold">Kategori:</span> {getCategoryWithIcon(product.category)}
+                {product.subcategory && ` → ${product.subcategory}`}
+              </p>
+            )}
             <p><span className="font-semibold">Maliyet:</span> {formatCurrency(product.cost_price, product.currency)}</p>
             <p><span className="font-semibold">Satış Fiyatı:</span> {formatCurrency(product.selling_price, product.currency)}</p>
             <p><span className="font-semibold">Birim:</span> {product.unit}</p>
+            {product.tags && product.tags.length > 0 && (
+              <div className="flex items-start gap-2">
+                <span className="font-semibold">Etiketler:</span>
+                <div className="flex flex-wrap gap-1">
+                  {product.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             {product.description && (
               <p><span className="font-semibold">Açıklama:</span> {product.description}</p>
             )}

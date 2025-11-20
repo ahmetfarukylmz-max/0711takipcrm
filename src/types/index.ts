@@ -68,10 +68,18 @@ export interface Customer {
 export interface Product {
   id: string;
   name: string;
+  code?: string; // Product code
   cost_price: number;
   selling_price: number;
   unit: string;
   description?: string;
+  currency?: Currency;
+
+  // Category system (optional - backward compatible)
+  category?: string; // Main category
+  subcategory?: string; // Subcategory
+  tags?: string[]; // Tags for search and filtering
+
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
