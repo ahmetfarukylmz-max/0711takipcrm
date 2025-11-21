@@ -446,6 +446,8 @@ const Payments: React.FC<PaymentsProps> = ({
       {viewMode === 'checks' && (
         <CheckPortfolio
           payments={payments}
+          customers={customers}
+          orders={orders}
           onSave={onSave}
           onDelete={onDelete}
         />

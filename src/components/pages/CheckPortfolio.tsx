@@ -5,10 +5,13 @@ import SearchBar from '../common/SearchBar';
 import EmptyState from '../common/EmptyState';
 import ActionsDropdown from '../common/ActionsDropdown';
 import Modal from '../common/Modal';
-import type { Payment, CheckStatus } from '../../types';
+import PaymentForm from '../forms/PaymentForm';
+import type { Payment, CheckStatus, Customer, Order } from '../../types';
 
 interface CheckPortfolioProps {
   payments: Payment[];
+  customers: Customer[];
+  orders: Order[];
   onSave: (payment: Partial<Payment>) => void;
   onDelete: (id: string) => void;
 }
@@ -49,10 +52,12 @@ const getCheckStatusColor = (status: CheckStatus): string => {
   }
 };
 
-const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDelete }) => {
+const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, customers, orders, onSave, onDelete }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CheckStatus | 'Tümü'>('Tümü');
   const [selectedCheck, setSelectedCheck] = useState<Payment | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
   // Sadece çek ve senet ödemelerini filtrele
   const checkPayments = useMemo(() => {
@@ -206,6 +211,17 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
     toast.error('❌ Çek karşılıksız olarak işaretlendi!');
   };
 
+  const handleEdit = (payment: Payment) => {
+    setEditingPayment(payment);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (paymentData: Partial<Payment>) => {
+    onSave(paymentData);
+    setIsEditModalOpen(false);
+    setEditingPayment(null);
+  };
+
   // Actions dropdown için aksiyonlar
   const getCheckActions = (payment: Payment) => {
     const checkStatus = payment.checkTracking?.status || 'Portföyde';
@@ -213,6 +229,10 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
     switch (checkStatus) {
       case 'Portföyde':
         return [
+          {
+            label: '✏️ Düzenle',
+            onClick: () => handleEdit(payment)
+          },
           {
             label: '🏦 Bankaya Ver',
             onClick: () => handleSubmitToBank(payment)
@@ -235,6 +255,10 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
       case 'Bankaya Verildi':
         return [
           {
+            label: '✏️ Düzenle',
+            onClick: () => handleEdit(payment)
+          },
+          {
             label: '✅ Tahsil Edildi',
             onClick: () => handleCollectCheck(payment)
           },
@@ -254,6 +278,10 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
       case 'Ciro Edildi':
       case 'İade Edildi':
         return [
+          {
+            label: '✏️ Düzenle',
+            onClick: () => handleEdit(payment)
+          },
           {
             label: '👁️ Detay',
             onClick: () => setSelectedCheck(payment)
@@ -526,6 +554,22 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, onSave, onDel
           </div>
         </Modal>
       )}
+
+      {/* Edit Payment Modal */}
+      <Modal
+        show={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Çek/Senet Düzenle"
+        maxWidth="max-w-4xl"
+      >
+        <PaymentForm
+          payment={editingPayment}
+          customers={customers}
+          orders={orders}
+          onSave={handleSaveEdit}
+          onCancel={() => setIsEditModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 };
