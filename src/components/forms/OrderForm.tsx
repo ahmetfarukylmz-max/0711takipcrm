@@ -77,10 +77,25 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
             return;
         }
 
+        // Clean items - Remove undefined values from each item
+        const cleanItems = items.map(item => {
+            const cleanItem: any = {
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity || 0,
+                unit_price: item.unit_price || 0,
+                unit: item.unit || 'Kg'
+            };
+            // Only add optional fields if they exist
+            if (item.product_code) cleanItem.product_code = item.product_code;
+            if (item.notes) cleanItem.notes = item.notes;
+            return cleanItem;
+        });
+
         // Clean data - Firestore doesn't accept undefined values
         const cleanData: any = {
             customerId: formData.customerId,
-            items,
+            items: cleanItems,
             order_date: formData.order_date,
             vatRate: formData.vatRate,
             paymentType: formData.paymentType,
@@ -104,6 +119,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
             if (formData.checkNumber) cleanData.checkNumber = formData.checkNumber;
             if (formData.checkDate) cleanData.checkDate = formData.checkDate;
         }
+
+        // Debug log to see what's being sent
+        console.log('📦 Sipariş kaydediliyor:', cleanData);
 
         onSave(cleanData);
     };
