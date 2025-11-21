@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
-import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency } from '../../types';
+import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency, CheckStatus } from '../../types';
 
 interface PaymentFormProps {
   payment: Payment | null;
@@ -62,6 +62,40 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
     if (formData.checkBank) cleanData.checkBank = formData.checkBank;
     if (formData.paidDate) cleanData.paidDate = formData.paidDate;
     if (formData.notes) cleanData.notes = formData.notes;
+
+    // Çek/Senet ise checkTracking objesini oluştur/güncelle
+    if (formData.paymentMethod === 'Çek' || formData.paymentMethod === 'Senet') {
+      // Mevcut checkTracking'i koru veya yenisini oluştur
+      const existingTracking = payment?.checkTracking;
+
+      cleanData.checkTracking = {
+        checkNumber: formData.checkNumber || '',
+        bank: formData.checkBank || '',
+        dueDate: formData.dueDate,
+        amount: Number(formData.amount),
+        currency: formData.currency,
+        status: formData.status === 'Tahsil Edildi' ? 'Tahsil Edildi' :
+                formData.status === 'İptal' ? 'İptal Edildi' :
+                existingTracking?.status || 'Portföyde',
+        collectionDate: formData.status === 'Tahsil Edildi' ? formData.paidDate : existingTracking?.collectionDate,
+        endorsements: existingTracking?.endorsements || [],
+        statusHistory: existingTracking?.statusHistory || [],
+        notes: formData.notes || existingTracking?.notes
+      };
+
+      // Durum değişikliği varsa status history'e ekle
+      if (payment?.id && existingTracking && existingTracking.status !== cleanData.checkTracking.status) {
+        cleanData.checkTracking.statusHistory = [
+          ...(existingTracking.statusHistory || []),
+          {
+            date: new Date().toISOString(),
+            status: cleanData.checkTracking.status,
+            changedBy: 'current-user', // TODO: Get from AuthContext
+            notes: `Durum güncellendi: ${existingTracking.status} → ${cleanData.checkTracking.status}`
+          }
+        ];
+      }
+    }
 
     // Mevcut ödeme düzenleme ise id'yi ekle
     if (payment?.id) {
