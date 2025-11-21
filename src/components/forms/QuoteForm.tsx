@@ -84,13 +84,68 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave({
-            ...formData,
-            items,
+
+        // Validate: Items cannot be empty
+        if (items.length === 0) {
+            alert('En az bir ürün eklemelisiniz!');
+            return;
+        }
+
+        // Clean items - Remove undefined values from each item
+        const cleanItems = items.map(item => {
+            const cleanItem: any = {
+                productId: item.productId || '',
+                productName: item.productName || 'Belirtilmemiş',
+                quantity: item.quantity || 0,
+                unit_price: item.unit_price || 0,
+                unit: item.unit || 'Kg'
+            };
+            // Only add optional fields if they exist
+            if (item.product_code) cleanItem.product_code = item.product_code;
+            if (item.notes) cleanItem.notes = item.notes;
+            return cleanItem;
+        });
+
+        // Validate items - ensure all have productId and productName
+        const invalidItems = cleanItems.filter(item => !item.productId || !item.productName);
+        if (invalidItems.length > 0) {
+            alert('Bazı ürünlerde eksik bilgi var. Lütfen tüm ürünleri düzgün seçtiğinizden emin olun.');
+            console.error('❌ Hatalı ürünler:', invalidItems);
+            return;
+        }
+
+        // Clean data - Firestore doesn't accept undefined values
+        const cleanData: any = {
+            customerId: formData.customerId,
+            items: cleanItems,
+            status: formData.status,
+            vatRate: formData.vatRate,
+            paymentType: formData.paymentType,
+            currency: formData.currency,
             subtotal,
             vatAmount,
             total_amount: total
-        });
+        };
+
+        // Add optional fields only if they have values
+        if (formData.gecerlilik_tarihi) cleanData.gecerlilik_tarihi = formData.gecerlilik_tarihi;
+        if (formData.notes) cleanData.notes = formData.notes;
+
+        // Payment-specific fields
+        if (formData.paymentType === 'Vadeli' && formData.paymentTerm) {
+            cleanData.paymentTerm = formData.paymentTerm;
+        }
+
+        // Rejection reason (only if status is Reddedildi)
+        if (formData.status === 'Reddedildi' && formData.rejection_reason) {
+            cleanData.rejection_reason = formData.rejection_reason;
+        }
+
+        // Debug log to see what's being sent
+        console.log('📋 Teklif kaydediliyor:', cleanData);
+        console.log('📋 Items detayı:', JSON.stringify(cleanItems, null, 2));
+
+        onSave(cleanData);
     };
 
     const timelineEvents = useMemo<TimelineEvent[]>(() => {
