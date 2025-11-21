@@ -76,6 +76,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
         currency: formData.currency,
         status: formData.status === 'Tahsil Edildi' ? 'Tahsil Edildi' :
                 formData.status === 'İptal' ? 'İptal Edildi' :
+                formData.status === 'Gecikti' ? 'Portföyde' : // Gecikmiş çek hala portföyde
+                formData.status === 'Bekliyor' ? (existingTracking?.status || 'Portföyde') :
                 existingTracking?.status || 'Portföyde',
         endorsements: existingTracking?.endorsements || [],
         statusHistory: existingTracking?.statusHistory || []
@@ -104,6 +106,15 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
       if (existingTracking?.returnedReason) tracking.returnedReason = existingTracking.returnedReason;
 
       cleanData.checkTracking = tracking;
+
+      // Debug: checkTracking nesnesini konsola yazdır
+      console.log('💳 checkTracking oluşturuldu:', {
+        paymentStatus: formData.status,
+        checkTrackingStatus: tracking.status,
+        checkNumber: tracking.checkNumber,
+        amount: tracking.amount,
+        existingStatus: existingTracking?.status
+      });
 
       // Durum değişikliği varsa status history'e ekle
       if (payment?.id && existingTracking && existingTracking.status !== tracking.status) {
