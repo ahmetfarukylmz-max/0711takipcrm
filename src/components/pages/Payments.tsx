@@ -6,6 +6,7 @@ import SearchBar from '../common/SearchBar';
 import EmptyState from '../common/EmptyState';
 import ActionsDropdown from '../common/ActionsDropdown';
 import CollectPaymentDialog from '../common/CollectPaymentDialog';
+import SplitPaymentDialog from '../common/SplitPaymentDialog';
 import PaymentCalendar from './PaymentCalendar';
 import CheckPortfolio from './CheckPortfolio';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
@@ -43,6 +44,10 @@ const Payments: React.FC<PaymentsProps> = ({
     isOpen: false,
     payment: null,
     isOverdue: false
+  });
+  const [splitDialog, setSplitDialog] = useState<{ isOpen: boolean; payment: Payment | null }>({
+    isOpen: false,
+    payment: null
   });
 
   // Filtreleme ve arama
@@ -222,6 +227,71 @@ const Payments: React.FC<PaymentsProps> = ({
     toast.success('↩️ Tahsilat iptal edildi!');
   };
 
+  // Kısmi ödeme (Split payment)
+  const handleSplitPayment = (payment: Payment) => {
+    setSplitDialog({ isOpen: true, payment });
+  };
+
+  const confirmSplitPayment = async (paidAmount: number, paidDate: string) => {
+    const { payment } = splitDialog;
+    if (!payment) return;
+
+    const remainingAmount = payment.amount - paidAmount;
+
+    try {
+      // 1. Tahsil edilen kısım için ödeme oluştur
+      const paidPayment: Partial<Payment> = {
+        customerId: payment.customerId,
+        customerName: payment.customerName,
+        orderId: payment.orderId,
+        orderNumber: payment.orderNumber,
+        amount: paidAmount,
+        currency: payment.currency,
+        paymentMethod: payment.paymentMethod,
+        dueDate: payment.dueDate,
+        checkNumber: payment.checkNumber,
+        checkBank: payment.checkBank,
+        status: 'Tahsil Edildi',
+        paidDate: paidDate,
+        originalAmount: payment.amount,
+        splitReason: 'Kısmi tahsilat',
+        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kısmi tahsilat`
+      };
+
+      // 2. Kalan kısım için ödeme oluştur
+      const remainingPayment: Partial<Payment> = {
+        customerId: payment.customerId,
+        customerName: payment.customerName,
+        orderId: payment.orderId,
+        orderNumber: payment.orderNumber,
+        amount: remainingAmount,
+        currency: payment.currency,
+        paymentMethod: payment.paymentMethod,
+        dueDate: payment.dueDate,
+        checkNumber: payment.checkNumber,
+        checkBank: payment.checkBank,
+        status: 'Bekliyor',
+        originalAmount: payment.amount,
+        splitReason: 'Kısmi tahsilat - Kalan bakiye',
+        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kalan bakiye`
+      };
+
+      // 3. Her iki ödemeyi de kaydet
+      await onSave(paidPayment);
+      await onSave(remainingPayment);
+
+      // 4. Orijinal ödemeyi sil
+      onDelete(payment.id);
+
+      toast.success(`💰 Ödeme bölündü: ${formatCurrency(paidAmount, payment.currency || 'TRY')} tahsil edildi, ${formatCurrency(remainingAmount, payment.currency || 'TRY')} beklemede`);
+
+      setSplitDialog({ isOpen: false, payment: null });
+    } catch (error) {
+      console.error('Split payment error:', error);
+      toast.error('Ödeme bölünürken hata oluştu');
+    }
+  };
+
   // Takvimden ödeme seçildiğinde
   const handleSelectPaymentFromCalendar = (payment: Payment) => {
     handleOpenModal(payment);
@@ -259,6 +329,12 @@ const Payments: React.FC<PaymentsProps> = ({
       actions.push({
         label: isOverdue ? '✅ Tahsil Et (Gecikmeli)' : '✅ Tahsil Et',
         onClick: () => handleQuickCollect(payment, isOverdue)
+      });
+
+      // Kısmi ödeme seçeneği
+      actions.push({
+        label: '💰 Kısmi Ödeme',
+        onClick: () => handleSplitPayment(payment)
       });
     } else if (payment.status === 'Tahsil Edildi') {
       actions.push({
@@ -520,6 +596,11 @@ const Payments: React.FC<PaymentsProps> = ({
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {payment.customerName || '-'}
                     </div>
+                    {payment.originalAmount && (
+                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                        💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 cursor-pointer" onClick={() => handleOpenModal(payment)}>
                     {payment.orderNumber || '-'}
@@ -587,6 +668,11 @@ const Payments: React.FC<PaymentsProps> = ({
                   {payment.orderNumber && (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Sipariş: {payment.orderNumber}
+                    </p>
+                  )}
+                  {payment.originalAmount && (
+                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                      💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
                     </p>
                   )}
                 </div>
@@ -749,6 +835,14 @@ const Payments: React.FC<PaymentsProps> = ({
         onClose={() => setCollectDialog({ isOpen: false, payment: null, isOverdue: false })}
         onConfirm={confirmQuickCollect}
         isOverdue={collectDialog.isOverdue}
+      />
+
+      {/* Split Payment Dialog */}
+      <SplitPaymentDialog
+        payment={splitDialog.payment}
+        isOpen={splitDialog.isOpen}
+        onClose={() => setSplitDialog({ isOpen: false, payment: null })}
+        onConfirm={confirmSplitPayment}
       />
     </div>
   );

@@ -359,6 +359,11 @@ export interface Payment {
   // Notlar
   notes?: string;
 
+  // Kısmi Ödeme (Partial Payment) Tracking
+  relatedPaymentId?: string; // Bölünmüş ödeme ise ilişkili ödeme ID'si
+  originalAmount?: number; // Orijinal beklenen tutar (split payment için)
+  splitReason?: string; // Neden bölündü (örn: "Kısmi tahsilat")
+
   // Çek Takip (Opsiyonel - sadece çek/senet ödemeleri için)
   checkTracking?: CheckTracking;
 
