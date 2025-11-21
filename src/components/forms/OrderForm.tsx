@@ -130,6 +130,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
             if (formData.checkDate) cleanData.checkDate = formData.checkDate;
         }
 
+        // Mevcut sipariş düzenleme ise id'yi ekle (yoksa yeni sipariş olarak kaydedilir!)
+        if (order?.id) {
+            cleanData.id = order.id;
+        }
+
         // Debug log to see what's being sent
         console.log('📦 Sipariş kaydediliyor:', cleanData);
         console.log('📦 Items detayı:', JSON.stringify(cleanItems, null, 2));
