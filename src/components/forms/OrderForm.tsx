@@ -115,6 +115,11 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
             total_amount: total
         };
 
+        // Preserve order status when editing (don't reset to 'Bekliyor')
+        if (order?.status) {
+            cleanData.status = order.status;
+        }
+
         // Add optional fields only if they have values
         if (formData.delivery_date) cleanData.delivery_date = formData.delivery_date;
         if (formData.notes) cleanData.notes = formData.notes;
