@@ -33,12 +33,14 @@ interface OrderFormProps {
     customers: Customer[];
     /** List of products */
     products: Product[];
+    /** If true, only allow editing prices (for shipped orders) */
+    priceOnlyMode?: boolean;
 }
 
 /**
  * OrderForm component - Form for creating and editing orders
  */
-const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customers, products }) => {
+const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customers, products, priceOnlyMode = false }) => {
     const [formData, setFormData] = useState<OrderFormData>(order || {
         customerId: customers[0]?.id || '',
         items: [],
@@ -137,12 +139,30 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            {priceOnlyMode && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 mb-4">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-amber-700 dark:text-amber-200">
+                                <strong>Sevk Edilmiş Sipariş:</strong> Bu sipariş sevk edildiği için sadece fiyat bilgileri düzenlenebilir. Müşteri, ürünler ve tarihler değiştirilemez.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <FormSelect
                 label="Müşteri"
                 name="customerId"
                 value={formData.customerId}
                 onChange={e => setFormData({ ...formData, customerId: e.target.value })}
                 required
+                disabled={priceOnlyMode}
             >
                 <option value="">Müşteri Seçin</option>
                 {customers.map(c => (
@@ -160,6 +180,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                     value={formData.order_date}
                     onChange={e => setFormData({ ...formData, order_date: e.target.value })}
                     required
+                    disabled={priceOnlyMode}
                 />
                 <FormInput
                     label="Teslim Tarihi"
@@ -167,6 +188,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                     type="date"
                     value={formData.delivery_date}
                     onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
+                    disabled={priceOnlyMode}
                 />
             </div>
 
@@ -242,7 +264,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                 )}
             </div>
 
-            <ItemEditor items={items} setItems={setItems} products={products} />
+            <ItemEditor items={items} setItems={setItems} products={products} priceOnlyMode={priceOnlyMode} />
 
             <FormTextarea
                 label="Özel Notlar"
