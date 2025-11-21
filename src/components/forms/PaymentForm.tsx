@@ -76,9 +76,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
         currency: formData.currency,
         status: formData.status === 'Tahsil Edildi' ? 'Tahsil Edildi' :
                 formData.status === 'İptal' ? 'İptal Edildi' :
-                formData.status === 'Gecikti' ? 'Portföyde' : // Gecikmiş çek hala portföyde
-                formData.status === 'Bekliyor' ? (existingTracking?.status || 'Portföyde') :
-                existingTracking?.status || 'Portföyde',
+                'Portföyde', // All other statuses (Bekliyor, Gecikti) map to Portföyde
         endorsements: existingTracking?.endorsements || [],
         statusHistory: existingTracking?.statusHistory || []
       };
