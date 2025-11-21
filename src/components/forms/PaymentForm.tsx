@@ -68,7 +68,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
       // Mevcut checkTracking'i koru veya yenisini oluştur
       const existingTracking = payment?.checkTracking;
 
-      cleanData.checkTracking = {
+      const tracking: any = {
         checkNumber: formData.checkNumber || '',
         bank: formData.checkBank || '',
         dueDate: formData.dueDate,
@@ -77,21 +77,43 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
         status: formData.status === 'Tahsil Edildi' ? 'Tahsil Edildi' :
                 formData.status === 'İptal' ? 'İptal Edildi' :
                 existingTracking?.status || 'Portföyde',
-        collectionDate: formData.status === 'Tahsil Edildi' ? formData.paidDate : existingTracking?.collectionDate,
         endorsements: existingTracking?.endorsements || [],
-        statusHistory: existingTracking?.statusHistory || [],
-        notes: formData.notes || existingTracking?.notes
+        statusHistory: existingTracking?.statusHistory || []
       };
 
+      // Opsiyonel alanları sadece değer varsa ekle (Firestore undefined kabul etmiyor)
+      if (formData.status === 'Tahsil Edildi' && formData.paidDate) {
+        tracking.collectionDate = formData.paidDate;
+      } else if (existingTracking?.collectionDate) {
+        tracking.collectionDate = existingTracking.collectionDate;
+      }
+
+      if (formData.notes) {
+        tracking.notes = formData.notes;
+      } else if (existingTracking?.notes) {
+        tracking.notes = existingTracking.notes;
+      }
+
+      // Diğer opsiyonel alanları mevcut veriden koru
+      if (existingTracking?.bankSubmissionDate) tracking.bankSubmissionDate = existingTracking.bankSubmissionDate;
+      if (existingTracking?.bankBranch) tracking.bankBranch = existingTracking.bankBranch;
+      if (existingTracking?.submittedBy) tracking.submittedBy = existingTracking.submittedBy;
+      if (existingTracking?.bouncedDate) tracking.bouncedDate = existingTracking.bouncedDate;
+      if (existingTracking?.bouncedReason) tracking.bouncedReason = existingTracking.bouncedReason;
+      if (existingTracking?.returnedDate) tracking.returnedDate = existingTracking.returnedDate;
+      if (existingTracking?.returnedReason) tracking.returnedReason = existingTracking.returnedReason;
+
+      cleanData.checkTracking = tracking;
+
       // Durum değişikliği varsa status history'e ekle
-      if (payment?.id && existingTracking && existingTracking.status !== cleanData.checkTracking.status) {
+      if (payment?.id && existingTracking && existingTracking.status !== tracking.status) {
         cleanData.checkTracking.statusHistory = [
           ...(existingTracking.statusHistory || []),
           {
             date: new Date().toISOString(),
-            status: cleanData.checkTracking.status,
+            status: tracking.status,
             changedBy: 'current-user', // TODO: Get from AuthContext
-            notes: `Durum güncellendi: ${existingTracking.status} → ${cleanData.checkTracking.status}`
+            notes: `Durum güncellendi: ${existingTracking.status} → ${tracking.status}`
           }
         ];
       }
