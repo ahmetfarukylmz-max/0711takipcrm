@@ -41,19 +41,19 @@ interface OrderFormProps {
  * OrderForm component - Form for creating and editing orders
  */
 const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customers, products, priceOnlyMode = false }) => {
-    const [formData, setFormData] = useState<OrderFormData>(order || {
-        customerId: customers[0]?.id || '',
-        items: [],
-        order_date: new Date().toISOString().slice(0, 10),
-        delivery_date: '',
-        vatRate: 20,
-        paymentType: 'Peşin',
-        paymentTerm: '',
-        checkBank: '',
-        checkNumber: '',
-        checkDate: '',
-        currency: DEFAULT_CURRENCY,
-        notes: ''
+    const [formData, setFormData] = useState<OrderFormData>({
+        customerId: order?.customerId || customers[0]?.id || '',
+        items: order?.items || [],
+        order_date: order?.order_date || new Date().toISOString().slice(0, 10),
+        delivery_date: order?.delivery_date || '',
+        vatRate: order?.vatRate || 20,
+        paymentType: order?.paymentType || 'Peşin',
+        paymentTerm: order?.paymentTerm || '',
+        checkBank: order?.checkBank || '',
+        checkNumber: order?.checkNumber || '',
+        checkDate: order?.checkDate || '',
+        currency: order?.currency || DEFAULT_CURRENCY,
+        notes: order?.notes || ''
     });
     const [items, setItems] = useState<OrderItem[]>(
         (order?.items || []).map(item => {
@@ -149,7 +149,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                         </div>
                         <div className="ml-3">
                             <p className="text-sm text-amber-700 dark:text-amber-200">
-                                <strong>Sevk Edilmiş Sipariş:</strong> Bu sipariş sevk edildiği için sadece fiyat bilgileri düzenlenebilir. Müşteri, ürünler ve tarihler değiştirilemez.
+                                <strong>Sevk Edilmiş Sipariş:</strong> Bu sipariş sevk edildiği için müşteri, ürünler ve miktarlar değiştirilemez. Fiyatlar, ödeme şekilleri ve teslim tarihi düzenlenebilir.
                             </p>
                         </div>
                     </div>
@@ -188,7 +188,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
                     type="date"
                     value={formData.delivery_date}
                     onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
-                    disabled={priceOnlyMode}
+                    disabled={false}
                 />
             </div>
 
