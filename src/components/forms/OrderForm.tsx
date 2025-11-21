@@ -70,13 +70,42 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSave({
-            ...formData,
+
+        // Validate: Items cannot be empty
+        if (items.length === 0) {
+            alert('En az bir ürün eklemelisiniz!');
+            return;
+        }
+
+        // Clean data - Firestore doesn't accept undefined values
+        const cleanData: any = {
+            customerId: formData.customerId,
             items,
+            order_date: formData.order_date,
+            vatRate: formData.vatRate,
+            paymentType: formData.paymentType,
+            currency: formData.currency,
             subtotal,
             vatAmount,
             total_amount: total
-        });
+        };
+
+        // Add optional fields only if they have values
+        if (formData.delivery_date) cleanData.delivery_date = formData.delivery_date;
+        if (formData.notes) cleanData.notes = formData.notes;
+
+        // Payment-specific fields
+        if (formData.paymentType === 'Vadeli' && formData.paymentTerm) {
+            cleanData.paymentTerm = formData.paymentTerm;
+        }
+
+        if (formData.paymentType === 'Çek') {
+            if (formData.checkBank) cleanData.checkBank = formData.checkBank;
+            if (formData.checkNumber) cleanData.checkNumber = formData.checkNumber;
+            if (formData.checkDate) cleanData.checkDate = formData.checkDate;
+        }
+
+        onSave(cleanData);
     };
 
     return (
