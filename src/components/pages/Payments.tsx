@@ -630,6 +630,7 @@ const Payments: React.FC<PaymentsProps> = ({
         show={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={currentPayment ? 'Ödeme Düzenle' : 'Yeni Ödeme'}
+        maxWidth="max-w-4xl"
       >
         <PaymentForm
           payment={currentPayment}
