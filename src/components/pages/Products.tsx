@@ -14,6 +14,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
 import { PRODUCT_CATEGORIES, getCategoryWithIcon } from '../../utils/categories';
+import { updateProductStock } from '../../services/firestoreService';
 import useStore from '../../store/useStore';
 import type { Product, Order, Quote, Customer, StockMovement } from '../../types';
 
@@ -55,6 +56,7 @@ const Products = memo<ProductsProps>(({
     const selectedProductId = useStore((state) => state.selectedProductId);
     const clearSelectedProductId = useStore((state) => state.clearSelectedProductId);
     const stockMovements = useStore((state) => state.collections.stock_movements);
+    const user = useStore((state) => state.user);
 
     // Get all data from store for ProductDetail (in case not passed as props)
     const storeOrders = useStore((state) => state.collections.orders);
@@ -76,6 +78,30 @@ const Products = memo<ProductsProps>(({
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Sorting state
+    type SortField = 'name' | 'cost_price' | 'selling_price' | 'stock' | 'profit_margin';
+    type SortDirection = 'asc' | 'desc';
+    const [sortField, setSortField] = useState<SortField>('name');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    // Advanced filters state
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [priceRangeMin, setPriceRangeMin] = useState<number | ''>('');
+    const [priceRangeMax, setPriceRangeMax] = useState<number | ''>('');
+    const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'low' | 'out' | 'normal' | 'not_tracked'>('all');
+    const [profitabilityFilter, setProfitabilityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+    const [salesStatusFilter, setSalesStatusFilter] = useState<'all' | 'never' | 'low' | 'high'>('all');
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Auto-open product detail when navigating from Dashboard
     useEffect(() => {
@@ -135,6 +161,56 @@ const Products = memo<ProductsProps>(({
     const handleDeleteFromDetail = () => {
         if (selectedProduct) {
             handleDelete(selectedProduct);
+        }
+    };
+
+    // Quick stock update handler
+    const handleQuickStockUpdate = async (product: Product, quantityChange: number) => {
+        if (!user?.uid || !user?.email) {
+            toast.error('Kullanıcı bilgisi bulunamadı');
+            return;
+        }
+
+        if (!product.track_stock) {
+            toast.error('Bu ürün için stok takibi aktif değil');
+            return;
+        }
+
+        try {
+            const success = await updateProductStock(
+                user.uid,
+                product.id,
+                quantityChange,
+                {
+                    type: 'Manuel Giriş',
+                    notes: `Hızlı stok güncellemesi: ${quantityChange > 0 ? '+' : ''}${quantityChange} ${product.unit || 'Adet'}`,
+                    createdBy: user.uid,
+                    createdByEmail: user.email
+                }
+            );
+
+            if (success) {
+                toast.success(`Stok güncellendi: ${quantityChange > 0 ? '+' : ''}${quantityChange} ${product.unit || 'Adet'}`);
+            } else {
+                toast.error('Stok güncellenemedi');
+            }
+        } catch (error) {
+            console.error('Quick stock update error:', error);
+            toast.error('Stok güncelleme hatası');
+        }
+    };
+
+    // Toggle favorite handler
+    const handleToggleFavorite = async (product: Product) => {
+        try {
+            await onSave({
+                ...product,
+                isFavorite: !product.isFavorite
+            });
+            toast.success(product.isFavorite ? 'Favorilerden çıkarıldı' : 'Favorilere eklendi');
+        } catch (error) {
+            console.error('Toggle favorite error:', error);
+            toast.error('Favori güncelleme hatası');
         }
     };
 
@@ -248,23 +324,131 @@ const Products = memo<ProductsProps>(({
     // Filter out deleted products and apply search
     const activeProducts = products.filter(p => !p.isDeleted);
 
+    // Calculate product stats (profit margin, total sales)
+    const productsWithStats = useMemo(() => {
+        return activeProducts.map(product => {
+            // Calculate profit margin percentage
+            const profitMargin = product.selling_price > 0
+                ? ((product.selling_price - product.cost_price) / product.selling_price) * 100
+                : 0;
+
+            // Calculate total sales quantity from orders
+            const productOrders = allOrders.filter(o =>
+                !o.isDeleted && o.items?.some(item => item.productId === product.id)
+            );
+
+            const totalSales = productOrders.reduce((sum, order) => {
+                const item = order.items?.find(i => i.productId === product.id);
+                return sum + (item?.quantity || 0);
+            }, 0);
+
+            return { ...product, profitMargin, totalSales };
+        });
+    }, [activeProducts, allOrders]);
+
     const filteredProducts = useMemo(() => {
-        return activeProducts.filter(product => {
+        // First apply filters
+        const filtered = productsWithStats.filter(product => {
             const query = searchQuery.toLowerCase();
 
+            // Basic search filter
             const matchesSearch = !searchQuery.trim() ||
                 product.name?.toLowerCase().includes(query) ||
                 product.code?.toLowerCase().includes(query) ||
                 product.cost_price?.toString().includes(query) ||
                 product.selling_price?.toString().includes(query);
 
+            // Category filter
             const matchesCategory = categoryFilter === 'all' ||
                 categoryFilter === 'uncategorized' && !product.category ||
                 product.category === categoryFilter;
 
-            return matchesSearch && matchesCategory;
+            // Favorites filter
+            const matchesFavorites = !showFavoritesOnly || product.isFavorite === true;
+
+            // Price range filter
+            const matchesPriceRange = (
+                (priceRangeMin === '' || product.selling_price >= priceRangeMin) &&
+                (priceRangeMax === '' || product.selling_price <= priceRangeMax)
+            );
+
+            // Stock status filter
+            let matchesStockStatus = true;
+            if (stockStatusFilter !== 'all') {
+                if (stockStatusFilter === 'not_tracked') {
+                    matchesStockStatus = !product.track_stock;
+                } else if (stockStatusFilter === 'out') {
+                    matchesStockStatus = product.track_stock && (product.stock_quantity || 0) === 0;
+                } else if (stockStatusFilter === 'low') {
+                    matchesStockStatus = product.track_stock &&
+                        product.stock_quantity !== undefined &&
+                        product.minimum_stock !== undefined &&
+                        product.stock_quantity > 0 &&
+                        product.stock_quantity <= product.minimum_stock;
+                } else if (stockStatusFilter === 'normal') {
+                    matchesStockStatus = product.track_stock &&
+                        product.stock_quantity !== undefined &&
+                        product.minimum_stock !== undefined &&
+                        product.stock_quantity > product.minimum_stock;
+                }
+            }
+
+            // Profitability filter
+            let matchesProfitability = true;
+            if (profitabilityFilter !== 'all') {
+                if (profitabilityFilter === 'high') {
+                    matchesProfitability = product.profitMargin > 25;
+                } else if (profitabilityFilter === 'medium') {
+                    matchesProfitability = product.profitMargin >= 10 && product.profitMargin <= 25;
+                } else if (profitabilityFilter === 'low') {
+                    matchesProfitability = product.profitMargin < 10;
+                }
+            }
+
+            // Sales status filter
+            let matchesSalesStatus = true;
+            if (salesStatusFilter !== 'all') {
+                if (salesStatusFilter === 'never') {
+                    matchesSalesStatus = product.totalSales === 0;
+                } else if (salesStatusFilter === 'low') {
+                    matchesSalesStatus = product.totalSales > 0 && product.totalSales < 10;
+                } else if (salesStatusFilter === 'high') {
+                    matchesSalesStatus = product.totalSales >= 10;
+                }
+            }
+
+            return matchesSearch && matchesCategory && matchesFavorites && matchesPriceRange &&
+                   matchesStockStatus && matchesProfitability && matchesSalesStatus;
         });
-    }, [activeProducts, searchQuery, categoryFilter]);
+
+        // Then apply sorting
+        return filtered.sort((a, b) => {
+            let comparison = 0;
+
+            switch (sortField) {
+                case 'name':
+                    comparison = a.name.localeCompare(b.name, 'tr');
+                    break;
+                case 'cost_price':
+                    comparison = (a.cost_price || 0) - (b.cost_price || 0);
+                    break;
+                case 'selling_price':
+                    comparison = (a.selling_price || 0) - (b.selling_price || 0);
+                    break;
+                case 'stock':
+                    comparison = (a.stock_quantity || 0) - (b.stock_quantity || 0);
+                    break;
+                case 'profit_margin':
+                    comparison = a.profitMargin - b.profitMargin;
+                    break;
+                default:
+                    comparison = 0;
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [productsWithStats, searchQuery, categoryFilter, showFavoritesOnly, sortField, sortDirection,
+        priceRangeMin, priceRangeMax, stockStatusFilter, profitabilityFilter, salesStatusFilter]);
 
     // Show skeleton when loading
     if (loading) {
@@ -369,7 +553,122 @@ const Products = memo<ProductsProps>(({
                         </option>
                     ))}
                 </select>
+                <button
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors whitespace-nowrap"
+                >
+                    {showAdvancedFilters ? '🔽' : '▶️'} Gelişmiş Filtreler
+                </button>
+                <button
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                        showFavoritesOnly
+                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                >
+                    ⭐ {showFavoritesOnly ? 'Tüm Ürünler' : 'Favoriler'}
+                </button>
             </div>
+
+            {/* Advanced Filters Panel */}
+            {showAdvancedFilters && (
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Price Range */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Fiyat Aralığı
+                            </label>
+                            <div className="flex gap-2 items-center">
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={priceRangeMin}
+                                    onChange={(e) => setPriceRangeMin(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="text-gray-500">-</span>
+                                <input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={priceRangeMax}
+                                    onChange={(e) => setPriceRangeMax(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Stock Status */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Stok Durumu
+                            </label>
+                            <select
+                                value={stockStatusFilter}
+                                onChange={(e) => setStockStatusFilter(e.target.value as any)}
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Tümü</option>
+                                <option value="normal">Normal Stok</option>
+                                <option value="low">Düşük Stok</option>
+                                <option value="out">Tükendi</option>
+                                <option value="not_tracked">Takip Yok</option>
+                            </select>
+                        </div>
+
+                        {/* Profitability */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Karlılık
+                            </label>
+                            <select
+                                value={profitabilityFilter}
+                                onChange={(e) => setProfitabilityFilter(e.target.value as any)}
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Tümü</option>
+                                <option value="high">Yüksek (&gt;%25)</option>
+                                <option value="medium">Orta (%10-25)</option>
+                                <option value="low">Düşük (&lt;%10)</option>
+                            </select>
+                        </div>
+
+                        {/* Sales Status */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Satış Durumu
+                            </label>
+                            <select
+                                value={salesStatusFilter}
+                                onChange={(e) => setSalesStatusFilter(e.target.value as any)}
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Tümü</option>
+                                <option value="high">Yüksek Satış (≥10)</option>
+                                <option value="low">Düşük Satış (1-9)</option>
+                                <option value="never">Hiç Satılmadı</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Clear Filters Button */}
+                    <div className="mt-4 flex justify-end">
+                        <button
+                            onClick={() => {
+                                setPriceRangeMin('');
+                                setPriceRangeMax('');
+                                setStockStatusFilter('all');
+                                setProfitabilityFilter('all');
+                                setSalesStatusFilter('all');
+                            }}
+                            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                        >
+                            Filtreleri Temizle
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
                 {filteredProducts.length} ürün gösteriliyor
@@ -389,11 +688,77 @@ const Products = memo<ProductsProps>(({
                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
                             </th>
-                            {['Ürün Adı', 'Ürün Kodu', 'Maliyet Fiyatı', 'Satış Fiyatı', 'Stok Durumu', 'İşlemler'].map(head => (
-                                <th key={head} className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
-                                    {head}
-                                </th>
-                            ))}
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('name')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Ürün Adı
+                                    {sortField === 'name' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                                Ürün Kodu
+                            </th>
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('cost_price')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Maliyet Fiyatı
+                                    {sortField === 'cost_price' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('selling_price')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Satış Fiyatı
+                                    {sortField === 'selling_price' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('stock')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Stok Durumu
+                                    {sortField === 'stock' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('profit_margin')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Kar Marjı
+                                    {sortField === 'profit_margin' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                                İşlemler
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -407,38 +772,87 @@ const Products = memo<ProductsProps>(({
                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td
-                                    className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                    onClick={() => handleViewProduct(product)}
-                                    title="Detayları görmek için tıklayın"
-                                >
-                                    {product.name}
+                                <td className="p-3 text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleFavorite(product);
+                                            }}
+                                            className="text-lg hover:scale-110 transition-transform"
+                                            title={product.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                                        >
+                                            {product.isFavorite ? '⭐' : '☆'}
+                                        </button>
+                                        <span
+                                            className="text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                            onClick={() => handleViewProduct(product)}
+                                            title="Detayları görmek için tıklayın"
+                                        >
+                                            {product.name}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.selling_price, product.currency || 'TRY')}</td>
                                 <td className="p-3 text-sm">
                                     {product.track_stock ? (
-                                        <div className="flex flex-col gap-1">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock
-                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                            }`}>
-                                                {product.stock_quantity || 0} {product.unit}
-                                            </span>
+                                        <div className="flex flex-col gap-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                    product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock
+                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                        : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                }`}>
+                                                    {product.stock_quantity || 0} {product.unit}
+                                                </span>
+                                                {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
+                                                    <span className="text-xs text-yellow-600 dark:text-yellow-400">⚠️</span>
+                                                )}
+                                            </div>
                                             <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                                                 Değer: {formatCurrency((product.stock_quantity || 0) * (product.cost_price || 0), product.currency || 'TRY')}
                                             </span>
-                                            {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
-                                                <span className="text-xs text-yellow-600 dark:text-yellow-400">⚠️ Düşük stok</span>
-                                            )}
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleQuickStockUpdate(product, -10);
+                                                    }}
+                                                    className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded transition-colors"
+                                                    title="10 azalt"
+                                                >
+                                                    -10
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleQuickStockUpdate(product, 10);
+                                                    }}
+                                                    className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
+                                                    title="10 ekle"
+                                                >
+                                                    +10
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
                                             Takip yok
                                         </span>
                                     )}
+                                </td>
+                                <td className="p-3 text-sm">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                                        product.profitMargin > 25
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            : product.profitMargin >= 10
+                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                    }`}>
+                                        %{product.profitMargin.toFixed(1)}
+                                    </span>
                                 </td>
                                 <td className="p-3 text-sm text-right">
                                     <div className="flex gap-3 justify-end">
@@ -484,7 +898,20 @@ const Products = memo<ProductsProps>(({
                 {filteredProducts.length > 0 ? filteredProducts.map(product => (
                     <MobileListItem
                         key={product.id}
-                        title={product.name}
+                        title={
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleFavorite(product);
+                                    }}
+                                    className="text-lg hover:scale-110 transition-transform"
+                                >
+                                    {product.isFavorite ? '⭐' : '☆'}
+                                </button>
+                                <span>{product.name}</span>
+                            </div>
+                        }
                         subtitle={`Kod: ${product.code}`}
                         bottomContent={
                             <div className="space-y-2">
@@ -517,6 +944,43 @@ const Products = memo<ProductsProps>(({
                                         </span>
                                     )}
                                 </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Kar Marjı:</span>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                        product.profitMargin > 25
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            : product.profitMargin >= 10
+                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                    }`}>
+                                        %{product.profitMargin.toFixed(1)}
+                                    </span>
+                                </div>
+                                {product.track_stock && (
+                                    <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-200 dark:border-gray-700">
+                                        <span className="text-gray-600 dark:text-gray-400">Hızlı Stok:</span>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleQuickStockUpdate(product, -10);
+                                                }}
+                                                className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded transition-colors"
+                                            >
+                                                -10
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleQuickStockUpdate(product, 10);
+                                                }}
+                                                className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
+                                            >
+                                                +10
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         }
                         actions={
