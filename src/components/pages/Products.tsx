@@ -80,7 +80,7 @@ const Products = memo<ProductsProps>(({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Sorting state
-    type SortField = 'name' | 'cost_price' | 'selling_price' | 'stock' | 'profit_margin';
+    type SortField = 'name' | 'cost_price' | 'selling_price' | 'stock' | 'profit_margin' | 'turnover_rate';
     type SortDirection = 'asc' | 'desc';
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -309,8 +309,55 @@ const Products = memo<ProductsProps>(({
     // Filter out deleted products and apply search
     const activeProducts = products.filter(p => !p.isDeleted);
 
+    // Helper function to get turnover rate display info
+    const getTurnoverRateInfo = (turnoverRate: number | null) => {
+        if (turnoverRate === null) {
+            return {
+                label: 'Satış Yok',
+                color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+                days: null
+            };
+        }
+
+        const days = Math.round(turnoverRate);
+
+        if (days < 30) {
+            return {
+                label: `${days} gün`,
+                color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                days,
+                speed: 'Hızlı'
+            };
+        } else if (days < 60) {
+            return {
+                label: `${days} gün`,
+                color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+                days,
+                speed: 'Normal'
+            };
+        } else if (days < 90) {
+            return {
+                label: `${days} gün`,
+                color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+                days,
+                speed: 'Yavaş'
+            };
+        } else {
+            return {
+                label: `${days} gün`,
+                color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                days,
+                speed: 'Çok Yavaş'
+            };
+        }
+    };
+
     // Calculate product stats (profit margin, total sales)
     const productsWithStats = useMemo(() => {
+        const now = new Date();
+        const daysToAnalyze = 90; // Analyze last 90 days
+        const cutoffDate = new Date(now.getTime() - (daysToAnalyze * 24 * 60 * 60 * 1000));
+
         return activeProducts.map(product => {
             // Calculate profit margin percentage
             const profitMargin = product.selling_price > 0
@@ -327,7 +374,26 @@ const Products = memo<ProductsProps>(({
                 return sum + (item?.quantity || 0);
             }, 0);
 
-            return { ...product, profitMargin, totalSales };
+            // Calculate stock turnover rate (last 90 days)
+            const recentOrders = productOrders.filter(o => {
+                const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+                return orderDate >= cutoffDate;
+            });
+
+            const recentSales = recentOrders.reduce((sum, order) => {
+                const item = order.items?.find(i => i.productId === product.id);
+                return sum + (item?.quantity || 0);
+            }, 0);
+
+            const dailyAverageSales = recentSales / daysToAnalyze;
+
+            // Turnover rate in days (how many days to sell current stock)
+            let turnoverRate = null;
+            if (dailyAverageSales > 0 && product.track_stock) {
+                turnoverRate = (product.stock_quantity || 0) / dailyAverageSales;
+            }
+
+            return { ...product, profitMargin, totalSales, turnoverRate, recentSales };
         });
     }, [activeProducts, allOrders]);
 
@@ -422,6 +488,13 @@ const Products = memo<ProductsProps>(({
                     break;
                 case 'profit_margin':
                     comparison = a.profitMargin - b.profitMargin;
+                    break;
+                case 'turnover_rate':
+                    // Handle null values: nulls go to end
+                    if (a.turnoverRate === null && b.turnoverRate === null) comparison = 0;
+                    else if (a.turnoverRate === null) comparison = 1;
+                    else if (b.turnoverRate === null) comparison = -1;
+                    else comparison = a.turnoverRate - b.turnoverRate;
                     break;
                 default:
                     comparison = 0;
@@ -728,6 +801,19 @@ const Products = memo<ProductsProps>(({
                                     )}
                                 </div>
                             </th>
+                            <th
+                                className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors"
+                                onClick={() => handleSort('turnover_rate')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Devir Hızı
+                                    {sortField === 'turnover_rate' && (
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {sortDirection === 'asc' ? '↑' : '↓'}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                                 İşlemler
                             </th>
@@ -812,6 +898,27 @@ const Products = memo<ProductsProps>(({
                                         %{product.profitMargin.toFixed(1)}
                                     </span>
                                 </td>
+                                <td className="p-3 text-sm">
+                                    {product.track_stock ? (
+                                        <div className="flex flex-col gap-1">
+                                            <span
+                                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}
+                                                title={product.turnoverRate !== null ? `Son 90 günde ortalama ${getTurnoverRateInfo(product.turnoverRate).days} günde bir satılıyor` : 'Son 90 günde hiç satış yok'}
+                                            >
+                                                {getTurnoverRateInfo(product.turnoverRate).label}
+                                            </span>
+                                            {product.turnoverRate !== null && getTurnoverRateInfo(product.turnoverRate).speed && (
+                                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                                    {getTurnoverRateInfo(product.turnoverRate).speed}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                            Takip yok
+                                        </span>
+                                    )}
+                                </td>
                                 <td className="p-3 text-sm text-right">
                                     <div className="flex gap-3 justify-end">
                                         <button
@@ -831,7 +938,7 @@ const Products = memo<ProductsProps>(({
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={7} className="p-0">
+                                <td colSpan={9} className="p-0">
                                     <EmptyState
                                         icon={searchQuery ? 'search' : 'products'}
                                         title={searchQuery ? 'Ürün Bulunamadı' : 'Henüz Ürün Yok'}
@@ -901,6 +1008,14 @@ const Products = memo<ProductsProps>(({
                                         %{product.profitMargin.toFixed(1)}
                                     </span>
                                 </div>
+                                {product.track_stock && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Devir Hızı:</span>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}>
+                                            {getTurnoverRateInfo(product.turnoverRate).label}
+                                        </span>
+                                    </div>
+                                )}
                                 {product.track_stock && (
                                     <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-200 dark:border-gray-700">
                                         <span className="text-gray-600 dark:text-gray-400">Hızlı Stok:</span>
