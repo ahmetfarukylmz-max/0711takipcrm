@@ -6,6 +6,7 @@ interface Action {
     icon?: React.ReactNode;
     variant?: 'primary' | 'secondary' | 'danger';
     disabled?: boolean;
+    tooltip?: string;
 }
 
 interface MobileActionsProps {
@@ -44,6 +45,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                     key={index}
                     onClick={action.onClick}
                     disabled={action.disabled}
+                    title={action.tooltip || ''}
                     className={getButtonClasses(action.variant)}
                 >
                     {action.icon && <span>{action.icon}</span>}
