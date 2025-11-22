@@ -404,15 +404,6 @@ const Dashboard = memo<DashboardProps>(({
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
                 <div className="animate-fadeIn">
                     <MobileStat
-                        label="Toplam Müşteri"
-                        value={customers.filter(c => !c.isDeleted).length}
-                        icon={<UsersIcon className="w-6 h-6" />}
-                        color="blue"
-                        onClick={() => setActivePage('Müşteriler')}
-                    />
-                </div>
-                <div className="animate-fadeIn animate-delay-100">
-                    <MobileStat
                         label="Açık Siparişler"
                         value={openOrders.length}
                         icon={<ClipboardListIcon className="w-6 h-6" />}
@@ -420,7 +411,7 @@ const Dashboard = memo<DashboardProps>(({
                         onClick={() => setShowOpenOrdersModal(true)}
                     />
                 </div>
-                <div className="animate-fadeIn animate-delay-200">
+                <div className="animate-fadeIn animate-delay-100">
                     <MobileStat
                         label="Bekleyen Teklifler"
                         value={teklifler.filter(t => !t.isDeleted && t.status === 'Hazırlandı').length}
@@ -429,7 +420,7 @@ const Dashboard = memo<DashboardProps>(({
                         onClick={() => setShowPendingQuotesModal(true)}
                     />
                 </div>
-                <div className="animate-fadeIn animate-delay-300">
+                <div className="animate-fadeIn animate-delay-200">
                     <MobileStat
                         label="Planlanan Eylemler"
                         value={upcomingActions.length}
@@ -438,7 +429,7 @@ const Dashboard = memo<DashboardProps>(({
                         onClick={() => setShowUpcomingModal(true)}
                     />
                 </div>
-                <div className="animate-fadeIn animate-delay-400">
+                <div className="animate-fadeIn animate-delay-300">
                     <MobileStat
                         label="Gecikmiş Eylemler"
                         value={overdueItems.length}
@@ -447,7 +438,7 @@ const Dashboard = memo<DashboardProps>(({
                         onClick={() => setIsOverdueModalOpen(true)}
                     />
                 </div>
-                <div className="animate-fadeIn animate-delay-500">
+                <div className="animate-fadeIn animate-delay-400">
                     <MobileStat
                         label="İptal Edilen"
                         value={cancelledOrders.length}
