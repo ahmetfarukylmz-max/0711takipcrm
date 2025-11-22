@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useRef, ChangeEvent } from 'react';
+import React, { useState, useMemo, memo, useRef, ChangeEvent, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -14,7 +14,8 @@ import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
 import { PRODUCT_CATEGORIES, getCategoryWithIcon } from '../../utils/categories';
-import type { Product, Order, Quote, Customer } from '../../types';
+import useStore from '../../store/useStore';
+import type { Product, Order, Quote, Customer, StockMovement } from '../../types';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -50,6 +51,10 @@ const Products = memo<ProductsProps>(({
     onDelete,
     loading = false
 }) => {
+    // Zustand store - for navigation from Dashboard
+    const selectedProductId = useStore((state) => state.selectedProductId);
+    const clearSelectedProductId = useStore((state) => state.clearSelectedProductId);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -60,6 +65,17 @@ const Products = memo<ProductsProps>(({
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Auto-open product detail when navigating from Dashboard
+    useEffect(() => {
+        if (selectedProductId && !loading) {
+            const product = products.find(p => p.id === selectedProductId && !p.isDeleted);
+            if (product) {
+                setSelectedProduct(product);
+                clearSelectedProductId();
+            }
+        }
+    }, [selectedProductId, products, loading, clearSelectedProductId]);
 
     const handleOpenModal = (product: Product | null = null) => {
         setCurrentProduct(product);
@@ -266,6 +282,7 @@ const Products = memo<ProductsProps>(({
                 orders={orders}
                 quotes={quotes}
                 customers={customers}
+                stockMovements={useStore.getState().collections.stock_movements}
                 onEdit={handleEditFromDetail}
                 onDelete={handleDeleteFromDetail}
                 onBack={handleBackFromDetail}
@@ -398,6 +415,9 @@ const Products = memo<ProductsProps>(({
                                                     : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                             }`}>
                                                 {product.stock_quantity || 0} {product.unit}
+                                            </span>
+                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                                Değer: {formatCurrency((product.stock_quantity || 0) * (product.cost_price || 0), product.currency || 'TRY')}
                                             </span>
                                             {product.stock_quantity !== undefined && product.minimum_stock !== undefined && product.stock_quantity <= product.minimum_stock && (
                                                 <span className="text-xs text-yellow-600 dark:text-yellow-400">⚠️ Düşük stok</span>

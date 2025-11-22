@@ -172,7 +172,8 @@ const CrmApp = () => {
         'teklifler',
         'gorusmeler',
         'customTasks',
-        'payments'
+        'payments',
+        'stock_movements'
     ]);
 
     // Sync Firestore data to Zustand store
@@ -640,7 +641,7 @@ const CrmApp = () => {
     const handleDelivery = async (shipmentId) => {
         const shipment = shipments.find(s => s.id === shipmentId);
         if (shipment) {
-            await markShipmentDelivered(user.uid, shipmentId, shipment.orderId);
+            await markShipmentDelivered(user.uid, shipmentId, shipment.orderId, user.email);
             const order = orders.find(o => o.id === shipment.orderId);
             const customerName = customers.find(c => c.id === order?.customerId)?.name || '';
             logUserActivity('MARK_SHIPMENT_DELIVERED', { message: `${customerName} müşterisinin sevkiyatı teslim edildi olarak işaretlendi` });
