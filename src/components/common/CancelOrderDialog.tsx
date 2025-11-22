@@ -200,12 +200,13 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
       {/* Onay dialog'u */}
       {showConfirm && (
         <ConfirmDialog
+          isOpen={showConfirm}
           title="Emin misiniz?"
           message={`"${order.customerName}" müşterisinin ${formatCurrency(order.total_amount)} tutarındaki siparişi iptal edilecek. Bu işlem geri alınamaz.`}
           confirmText="Evet, İptal Et"
           cancelText="Hayır"
           onConfirm={handleConfirm}
-          onCancel={() => setShowConfirm(false)}
+          onClose={() => setShowConfirm(false)}
         />
       )}
     </>
