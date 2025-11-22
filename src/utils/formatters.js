@@ -79,6 +79,8 @@ export const getStatusClass = (status) => {
         case 'Bekliyor':
         case 'Reddedildi':
             return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        case 'İptal Edildi':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
 
         // Meeting Status
         case 'İlgileniyor':

@@ -14,7 +14,8 @@ import {
     deleteDocument,
     undoDelete,
     logActivity,
-    setStoreInstance
+    setStoreInstance,
+    cancelOrder
 } from './services/firestoreService';
 import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils.jsx';
 
@@ -522,6 +523,37 @@ const CrmApp = () => {
             }
         });
     };
+
+    const handleOrderCancel = async (orderId, cancellationData) => {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const customer = customers.find(c => c.id === order?.customerId);
+        const customerName = customer?.name || 'Bilinmeyen müşteri';
+
+        try {
+            const success = await cancelOrder(user.uid, orderId, {
+                ...cancellationData,
+                cancelledByEmail: user.email
+            });
+
+            if (success) {
+                toast.success('Sipariş başarıyla iptal edildi');
+                logUserActivity('CANCEL_ORDER', {
+                    message: `${customerName} müşterisinin siparişi iptal edildi`,
+                    orderId: orderId,
+                    reason: cancellationData.reason,
+                    amount: order.total_amount
+                });
+            } else {
+                toast.error('Sipariş iptal edilemedi');
+            }
+        } catch (error) {
+            console.error('Cancel order error:', error);
+            toast.error('Bir hata oluştu');
+        }
+    };
+
     const handleQuoteDelete = (id) => {
         const quote = teklifler.find(q => q.id === id);
         if (!quote) return;
@@ -686,6 +718,7 @@ const CrmApp = () => {
                         orders={orders}
                         onSave={handleOrderSave}
                         onDelete={handleOrderDelete}
+                        onCancel={handleOrderCancel}
                         onShipment={handleShipmentSave}
                         customers={customers}
                         products={products}
