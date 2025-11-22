@@ -509,10 +509,14 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
 
                             // Check if order can be cancelled
                             const cancelCheck = canCancelOrder(order, shipments);
+                            console.log('Cancel check for order:', order.id, 'canCancel:', cancelCheck.canCancel, 'onCancel:', !!onCancel);
                             if (cancelCheck.canCancel && onCancel) {
                                 orderActions.push({
                                     label: '🚫 İptal Et',
-                                    onClick: () => setCancellingOrder(order),
+                                    onClick: () => {
+                                        console.log('Cancel button clicked for order:', order.id);
+                                        setCancellingOrder(order);
+                                    },
                                     destructive: true
                                 });
                             }
@@ -671,13 +675,16 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
 
             {/* Cancel Order Dialog */}
             {cancellingOrder && (
-                <CancelOrderDialog
-                    order={cancellingOrder}
-                    shipments={shipments}
-                    payments={payments}
-                    onCancel={handleCancelOrder}
-                    onClose={() => setCancellingOrder(null)}
-                />
+                <>
+                    {console.log('Rendering CancelOrderDialog for order:', cancellingOrder.id)}
+                    <CancelOrderDialog
+                        order={cancellingOrder}
+                        shipments={shipments}
+                        payments={payments}
+                        onCancel={handleCancelOrder}
+                        onClose={() => setCancellingOrder(null)}
+                    />
+                </>
             )}
 
             <ConfirmDialog
