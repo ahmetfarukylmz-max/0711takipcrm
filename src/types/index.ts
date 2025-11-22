@@ -291,6 +291,39 @@ export interface CustomTask {
   updatedAt?: Timestamp;
 }
 
+// Stock Movement Types
+export type StockMovementType =
+  | 'Manuel Giriş' // Manual stock addition
+  | 'Sevkiyat' // Order shipment (decrease)
+  | 'İptal İadesi' // Cancelled order return (increase)
+  | 'Sayım Düzeltmesi' // Physical count adjustment
+  | 'Fire/Kayıp' // Damage/loss (decrease)
+  | 'Müşteri İadesi' // Customer return (increase)
+  | 'Transfer'; // Warehouse transfer
+
+// Stock Movement Interface (for tracking all stock changes)
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string; // Denormalized for easy display
+  productUnit: string; // Denormalized unit
+
+  type: StockMovementType;
+  quantity: number; // Positive or negative value
+  previousStock: number; // Stock before this movement
+  newStock: number; // Stock after this movement
+
+  // Relations
+  relatedId?: string; // orderId, shipmentId, etc.
+  relatedType?: string; // 'order', 'shipment', 'manual', etc.
+  relatedReference?: string; // Order number, shipment number, etc.
+
+  notes?: string;
+  createdBy: string; // User ID
+  createdByEmail: string; // User email
+  createdAt: Timestamp;
+}
+
 // Check/Promissory Note Endorsement Interface
 export interface CheckEndorsement {
   id: string;

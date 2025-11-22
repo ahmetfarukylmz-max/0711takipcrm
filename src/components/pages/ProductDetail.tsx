@@ -1,7 +1,7 @@
 import React, { useMemo, useState, memo } from 'react';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { getCategoryWithIcon } from '../../utils/categories';
-import type { Product, Order, Quote, Customer } from '../../types';
+import type { Product, Order, Quote, Customer, StockMovement } from '../../types';
 
 interface SalesStats {
   id: string;
@@ -24,13 +24,14 @@ interface SaleHistory {
   status: string;
 }
 
-type TabId = 'overview' | 'sales-history' | 'customers' | 'profit-analysis';
+type TabId = 'overview' | 'sales-history' | 'customers' | 'profit-analysis' | 'stock-movements';
 
 interface ProductDetailProps {
   product: Product;
   orders: Order[];
   quotes: Quote[];
   customers: Customer[];
+  stockMovements?: StockMovement[]; // Stock movement history
   onEdit: () => void;
   onDelete: () => void;
   onBack: () => void;
@@ -41,6 +42,7 @@ const ProductDetail = memo<ProductDetailProps>(({
   orders,
   quotes,
   customers,
+  stockMovements = [],
   onEdit,
   onDelete,
   onBack
@@ -106,6 +108,13 @@ const ProductDetail = memo<ProductDetailProps>(({
         : null
     };
   }, [product.id, orders, product.cost_price]);
+
+  // Filter stock movements for this product
+  const productStockMovements = useMemo(() => {
+    return stockMovements
+      .filter(m => m.productId === product.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [stockMovements, product.id]);
 
   // Satış geçmişi
   const salesHistory = useMemo<SaleHistory[]>(() => {
@@ -281,7 +290,8 @@ const ProductDetail = memo<ProductDetailProps>(({
             { id: 'overview' as TabId, label: 'Özet' },
             { id: 'sales-history' as TabId, label: `Satış Geçmişi (${salesHistory.length})` },
             { id: 'customers' as TabId, label: `Müşteriler (${salesData.customerSales.length})` },
-            { id: 'profit-analysis' as TabId, label: 'Kar Analizi' }
+            { id: 'profit-analysis' as TabId, label: 'Kar Analizi' },
+            ...(product.track_stock ? [{ id: 'stock-movements' as TabId, label: `Stok Hareketleri (${productStockMovements.length})` }] : [])
           ].map(tab => (
             <button
               key={tab.id}
@@ -601,6 +611,90 @@ const ProductDetail = memo<ProductDetailProps>(({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Stok Hareketleri */}
+        {activeTab === 'stock-movements' && product.track_stock && (
+          <div className="space-y-4">
+            {productStockMovements.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Tarih
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          İşlem Tipi
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Miktar
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Önceki Stok
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Yeni Stok
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          İlişkili
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Not
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {productStockMovements.map((movement) => (
+                        <tr key={movement.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                            {formatDate(movement.createdAt)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              movement.type === 'Sevkiyat' || movement.type === 'Fire/Kayıp'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                : movement.type === 'Manuel Giriş' || movement.type === 'İptal İadesi' || movement.type === 'Müşteri İadesi'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                            }`}>
+                              {movement.type}
+                            </span>
+                          </td>
+                          <td className={`px-4 py-3 text-sm font-semibold text-right whitespace-nowrap ${
+                            movement.quantity > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }`}>
+                            {movement.quantity > 0 ? '+' : ''}{movement.quantity} {movement.productUnit}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 text-right whitespace-nowrap">
+                            {movement.previousStock} {movement.productUnit}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 text-right whitespace-nowrap">
+                            {movement.newStock} {movement.productUnit}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            {movement.relatedReference || '-'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                            {movement.notes || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-gray-500 dark:text-gray-400">
+                  Henüz stok hareketi bulunmuyor
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

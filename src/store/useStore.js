@@ -17,6 +17,7 @@ const useStore = create((set, get) => ({
   overdueItems: [],
   prefilledQuote: null,
   refreshing: false,
+  selectedProductId: null, // For navigating from Dashboard to Product Detail
 
   // Data Collections
   collections: {
@@ -28,6 +29,7 @@ const useStore = create((set, get) => ({
     gorusmeler: [],
     customTasks: [],
     payments: [],
+    stock_movements: [], // Stock movement history
   },
 
   // Loading & Connection Status
@@ -53,6 +55,10 @@ const useStore = create((set, get) => ({
   clearPrefilledQuote: () => set({ prefilledQuote: null }),
 
   setRefreshing: (refreshing) => set({ refreshing }),
+
+  setSelectedProductId: (productId) => set({ selectedProductId: productId }),
+
+  clearSelectedProductId: () => set({ selectedProductId: null }),
 
   // ============================================================================
   // ACTIONS - Data Collections

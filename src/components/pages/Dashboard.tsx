@@ -13,6 +13,7 @@ import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
+import useStore from '../../store/useStore';
 import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
 
 interface BestSellingProduct {
@@ -85,6 +86,9 @@ const Dashboard = memo<DashboardProps>(({
     onCustomTaskSave,
     loading = false
 }) => {
+    // Zustand store actions
+    const setSelectedProductId = useStore((state) => state.setSelectedProductId);
+
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
@@ -922,7 +926,10 @@ const Dashboard = memo<DashboardProps>(({
                                             {formatCurrency(product.revenue)}
                                         </span>
                                     }
-                                    onClick={() => setSelectedProduct(product)}
+                                    onClick={() => {
+                                        setSelectedProductId(product.id);
+                                        setActivePage('Ürünler');
+                                    }}
                                 />
                             ))
                         ) : (
@@ -953,6 +960,10 @@ const Dashboard = memo<DashboardProps>(({
                                             </span>
                                         </div>
                                     }
+                                    onClick={() => {
+                                        setSelectedProductId(product.id);
+                                        setActivePage('Ürünler');
+                                    }}
                                 />
                             ))
                         ) : (
@@ -992,6 +1003,52 @@ const Dashboard = memo<DashboardProps>(({
                         )}
                     </div>
                 </div>
+
+                {/* Düşük Stok Uyarısı */}
+                {lowStockProducts.length > 0 && (
+                    <div className={`bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 ${widgetPadding} rounded-xl border-2 border-yellow-300 dark:border-yellow-700 shadow-sm animate-fadeIn animate-delay-600`}>
+                        <h3 className="text-lg md:text-xl font-semibold text-yellow-800 dark:text-yellow-200 mb-3 md:mb-4 flex items-center gap-2">
+                            <span>⚠️</span>
+                            Düşük Stok Uyarısı
+                        </h3>
+                        <div className="space-y-2">
+                            {lowStockProducts.map(product => {
+                                const stockPercentage = product.minimum_stock
+                                    ? ((product.stock_quantity! / product.minimum_stock) * 100).toFixed(0)
+                                    : '0';
+                                const isCritical = product.stock_quantity === 0;
+
+                                return (
+                                    <MobileListItem
+                                        key={product.id}
+                                        title={product.name}
+                                        subtitle={`Min: ${product.minimum_stock || 0} ${product.unit} • Mevcut: ${product.stock_quantity || 0} ${product.unit}`}
+                                        rightContent={
+                                            <div className="text-right">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                    isCritical
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                }`}>
+                                                    {isCritical ? '🚨 Tükendi' : `%${stockPercentage}`}
+                                                </span>
+                                            </div>
+                                        }
+                                        onClick={() => {
+                                            setSelectedProductId(product.id);
+                                            setActivePage('Ürünler');
+                                        }}
+                                    />
+                                );
+                            })}
+                        </div>
+                        <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                                💡 <strong>{lowStockProducts.length} ürün</strong> minimum stok seviyesinde veya altında. Stok yenilemeyi düşünün.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Import store for optimistic updates (will be used by saveDocumentOptimistic)
@@ -138,23 +138,147 @@ export const convertQuoteToOrder = async (userId, quote) => {
 };
 
 /**
- * Mark shipment as delivered
+ * Log stock movement to stock_movements collection
+ * @param {string} userId - User ID
+ * @param {Object} movementData - Stock movement data
+ * @returns {Promise<string>} Movement ID
+ */
+export const logStockMovement = async (userId, movementData) => {
+    if (!userId) return null;
+
+    try {
+        const movementRef = await addDoc(collection(db, `users/${userId}/stock_movements`), {
+            ...movementData,
+            createdAt: new Date().toISOString()
+        });
+        return movementRef.id;
+    } catch (error) {
+        console.error('Error logging stock movement:', error);
+        return null;
+    }
+};
+
+/**
+ * Update product stock quantity
+ * @param {string} userId - User ID
+ * @param {string} productId - Product ID
+ * @param {number} quantityChange - Quantity change (positive or negative)
+ * @param {Object} movementData - Additional movement data (type, relatedId, notes, etc.)
+ * @returns {Promise<boolean>} Success status
+ */
+export const updateProductStock = async (userId, productId, quantityChange, movementData = {}) => {
+    if (!userId || !productId) return false;
+
+    try {
+        const productRef = doc(db, `users/${userId}/products`, productId);
+        const productDoc = await getDoc(productRef);
+
+        if (!productDoc.exists()) {
+            console.error('Product not found:', productId);
+            return false;
+        }
+
+        const product = productDoc.data();
+
+        // Only update stock if tracking is enabled
+        if (!product.track_stock) {
+            console.log('Stock tracking not enabled for product:', productId);
+            return false;
+        }
+
+        const previousStock = product.stock_quantity || 0;
+        const newStock = previousStock + quantityChange;
+
+        // Update product stock
+        await updateDoc(productRef, {
+            stock_quantity: newStock,
+            updatedAt: new Date().toISOString()
+        });
+
+        // Log the stock movement
+        await logStockMovement(userId, {
+            productId,
+            productName: product.name,
+            productUnit: product.unit || 'Adet',
+            quantity: quantityChange,
+            previousStock,
+            newStock,
+            ...movementData
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        return false;
+    }
+};
+
+/**
+ * Mark shipment as delivered and update product stock
  * @param {string} userId - User ID
  * @param {string} shipmentId - Shipment ID
  * @param {string} orderId - Order ID
+ * @param {string} userEmail - User email for logging
  * @returns {Promise<void>}
  */
-export const markShipmentDelivered = async (userId, shipmentId, orderId) => {
+export const markShipmentDelivered = async (userId, shipmentId, orderId, userEmail = 'system') => {
     if (!userId) return;
 
-    const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
-    await updateDoc(shipmentRef, {
-        status: 'Teslim Edildi',
-        delivery_date: new Date().toISOString().slice(0, 10)
-    });
+    try {
+        // Get shipment details
+        const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
+        const shipmentDoc = await getDoc(shipmentRef);
 
-    const orderRef = doc(db, `users/${userId}/orders`, orderId);
-    await updateDoc(orderRef, { status: 'Tamamlandı' });
+        if (!shipmentDoc.exists()) {
+            console.error('Shipment not found:', shipmentId);
+            return;
+        }
+
+        const shipment = shipmentDoc.data();
+
+        // Update shipment status
+        await updateDoc(shipmentRef, {
+            status: 'Teslim Edildi',
+            delivery_date: new Date().toISOString().slice(0, 10),
+            updatedAt: new Date().toISOString()
+        });
+
+        // Update order status
+        const orderRef = doc(db, `users/${userId}/orders`, orderId);
+        await updateDoc(orderRef, {
+            status: 'Tamamlandı',
+            updatedAt: new Date().toISOString()
+        });
+
+        // Update stock for each shipped item
+        if (shipment.items && Array.isArray(shipment.items)) {
+            for (const item of shipment.items) {
+                await updateProductStock(userId, item.productId, -item.quantity, {
+                    type: 'Sevkiyat',
+                    relatedId: shipmentId,
+                    relatedType: 'shipment',
+                    relatedReference: shipment.orderNumber || orderId,
+                    notes: `Sevkiyat teslim edildi: ${shipment.customerName || 'Müşteri'}`,
+                    createdBy: userId,
+                    createdByEmail: userEmail
+                });
+            }
+        }
+
+        // Log activity
+        await logActivity(userId, 'SHIPMENT_DELIVERED', {
+            shipmentId,
+            orderId,
+            items: shipment.items?.map(i => ({
+                productId: i.productId,
+                productName: i.productName,
+                quantity: i.quantity
+            }))
+        });
+    } catch (error) {
+        console.error('Error marking shipment as delivered:', error);
+        throw error;
+    }
 };
 
 /**
