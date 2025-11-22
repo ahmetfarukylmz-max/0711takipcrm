@@ -13,13 +13,22 @@ export type VATRate = 0 | 1 | 10 | 20;
 export type UserRole = 'admin' | 'user';
 
 // Durum tipleri
-export type OrderStatus = 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı';
+export type OrderStatus = 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı' | 'İptal Edildi';
 export type QuoteStatus = 'Hazırlandı' | 'Onaylandı' | 'Reddedildi';
 export type MeetingOutcome = 'İlgileniyor' | 'İlgilenmiyor' | 'Teklif Bekliyor';
-export type ShipmentStatus = 'Hazırlanıyor' | 'Gönderildi' | 'Yolda' | 'Teslim Edildi';
+export type ShipmentStatus = 'Hazırlanıyor' | 'Gönderildi' | 'Yolda' | 'Teslim Edildi' | 'İptal Edildi';
 export type PaymentStatus = 'Bekliyor' | 'Tahsil Edildi' | 'Gecikti' | 'İptal';
 export type PaymentMethod = 'Nakit' | 'Havale/EFT' | 'Kredi Kartı' | 'Çek' | 'Senet' | 'Belirtilmemiş';
 export type CheckStatus = 'Portföyde' | 'Bankaya Verildi' | 'Tahsil Edildi' | 'Ciro Edildi' | 'Karşılıksız' | 'İade Edildi';
+
+// İptal nedenleri
+export type CancellationReason =
+  | 'Müşteri Talebi'
+  | 'Stok Yetersizliği'
+  | 'Fiyat Anlaşmazlığı'
+  | 'Teslimat Süresi'
+  | 'Ödeme Sorunu'
+  | 'Diğer';
 
 // User Interface
 export interface User {
@@ -157,6 +166,13 @@ export interface Order {
   updatedAt?: Timestamp;
   quoteId?: string; // If created from quote
   orderNumber?: string; // Sipariş numarası
+
+  // Cancellation fields
+  cancelledAt?: Timestamp; // İptal tarihi
+  cancelledBy?: string; // User ID who cancelled
+  cancelledByEmail?: string; // Email of canceller
+  cancellationReason?: CancellationReason; // İptal nedeni
+  cancellationNotes?: string; // İptal açıklaması
 }
 
 // Inquired Product Interface (Products asked about during meetings)

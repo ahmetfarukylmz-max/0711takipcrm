@@ -2,6 +2,7 @@ import React, { useState, useMemo, memo } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
+import CancelOrderDialog from '../common/CancelOrderDialog';
 import OrderForm from '../forms/OrderForm';
 import OrderDetail from './OrderDetail';
 import ShipmentForm from '../forms/ShipmentForm';
@@ -14,6 +15,7 @@ import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
+import { canCancelOrder } from '../../utils/orderHelpers';
 import type { Order, Customer, Product, Shipment, Payment } from '../../types';
 
 interface DeleteConfirmState {
@@ -28,6 +30,8 @@ interface OrdersProps {
     onSave: (order: Partial<Order>) => void;
     /** Callback when order is deleted */
     onDelete: (id: string) => void;
+    /** Callback when order is cancelled */
+    onCancel?: (orderId: string, cancellationData: any) => void;
     /** Callback when shipment is created */
     onShipment: (shipment: Partial<Shipment>) => void;
     /** List of customers */
@@ -51,7 +55,7 @@ interface OrdersProps {
 /**
  * Orders component - Order management page
  */
-const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, customers, products, shipments = [], payments = [], onMarkAsPaid, onGoToPayment, onGeneratePdf, loading = false }) => {
+const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipment, customers, products, shipments = [], payments = [], onMarkAsPaid, onGoToPayment, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -61,6 +65,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
     const [orderToShip, setOrderToShip] = useState<Order | null>(null);
+    const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
 
     const handleOpenModal = (order: Order | null = null) => {
         setCurrentOrder(order);
@@ -92,6 +97,14 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                 setDeleteConfirm({ isOpen: false, item: null });
             }
         }
+    };
+
+    // Cancel order handler
+    const handleCancelOrder = (cancellationData: any) => {
+        if (!cancellingOrder || !onCancel) return;
+
+        onCancel(cancellingOrder.id, cancellationData);
+        setCancellingOrder(null);
     };
 
     // Excel Export handler
@@ -494,6 +507,16 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                                 orderActions.unshift({ label: 'Sevk Et', onClick: () => handleOpenShipmentModal(order) });
                             }
 
+                            // Check if order can be cancelled
+                            const cancelCheck = canCancelOrder(order, shipments);
+                            if (cancelCheck.canCancel && onCancel) {
+                                orderActions.push({
+                                    label: '🚫 İptal Et',
+                                    onClick: () => setCancellingOrder(order),
+                                    destructive: true
+                                });
+                            }
+
                             orderActions.push({ label: 'Sil', onClick: () => handleDelete(order), destructive: true });
 
                             return (
@@ -645,6 +668,17 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onShipment, custom
                     />
                 )}
             </Modal>
+
+            {/* Cancel Order Dialog */}
+            {cancellingOrder && (
+                <CancelOrderDialog
+                    order={cancellingOrder}
+                    shipments={shipments}
+                    payments={payments}
+                    onCancel={handleCancelOrder}
+                    onClose={() => setCancellingOrder(null)}
+                />
+            )}
 
             <ConfirmDialog
                 isOpen={deleteConfirm.isOpen}

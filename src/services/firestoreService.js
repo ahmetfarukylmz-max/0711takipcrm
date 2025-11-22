@@ -360,3 +360,64 @@ export const deleteDocumentOptimistic = async (userId, collectionName, docId, op
         return false;
     }
 };
+
+/**
+ * Cancel an order and related shipments/payments
+ * @param {string} userId - User ID
+ * @param {string} orderId - Order ID
+ * @param {Object} cancellationData - Cancellation details
+ * @param {string} cancellationData.reason - Cancellation reason
+ * @param {string} cancellationData.notes - Additional notes
+ * @param {string} cancellationData.cancelledByEmail - Email of user who cancelled
+ * @param {string[]} cancellationData.shipmentIds - Shipment IDs to cancel
+ * @param {string[]} cancellationData.paymentIds - Payment IDs to cancel
+ * @returns {Promise<boolean>} Success status
+ */
+export const cancelOrder = async (userId, orderId, cancellationData) => {
+    if (!userId || !orderId) return false;
+
+    try {
+        const {
+            reason,
+            notes,
+            cancelledByEmail,
+            shipmentIds = [],
+            paymentIds = []
+        } = cancellationData;
+
+        // 1. Siparişi iptal et
+        const orderRef = doc(db, `users/${userId}/orders`, orderId);
+        await updateDoc(orderRef, {
+            status: 'İptal Edildi',
+            cancelledAt: new Date().toISOString(),
+            cancelledBy: userId,
+            cancelledByEmail: cancelledByEmail || '',
+            cancellationReason: reason,
+            cancellationNotes: notes || ''
+        });
+
+        // 2. İlgili sevkiyatları iptal et (eğer varsa)
+        for (const shipmentId of shipmentIds) {
+            const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
+            await updateDoc(shipmentRef, {
+                status: 'İptal Edildi',
+                cancelledAt: new Date().toISOString(),
+                notes: `Sipariş iptali nedeniyle iptal edildi`
+            });
+        }
+
+        // 3. İlgili ödemeleri iptal et (eğer varsa)
+        for (const paymentId of paymentIds) {
+            const paymentRef = doc(db, `users/${userId}/payments`, paymentId);
+            await updateDoc(paymentRef, {
+                status: 'İptal',
+                notes: `Sipariş iptali nedeniyle iptal edildi`
+            });
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Order cancellation error:', error);
+        return false;
+    }
+};
