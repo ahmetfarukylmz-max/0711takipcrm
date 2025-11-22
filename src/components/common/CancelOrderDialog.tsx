@@ -71,8 +71,14 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
