@@ -101,7 +101,7 @@ const Modal = ({
     return (
         <>
             <div
-                className="fixed inset-0 backdrop-blur-sm z-[9999] flex justify-center items-start p-4 md:pt-8 overflow-y-auto"
+                className="fixed inset-0 backdrop-blur-sm z-[9999] flex justify-center items-center p-4 overflow-y-auto"
                 onClick={handleBackdropClick}
                 role="dialog"
                 aria-modal="true"
@@ -129,7 +129,7 @@ const Modal = ({
                             &times;
                         </button>
                     </div>
-                    <div className="mt-4 max-h-[60vh] md:max-h-[70vh] overflow-y-auto pr-2">
+                    <div className="mt-4 max-h-[75vh] overflow-y-auto pr-2">
                         {children}
                     </div>
                 </div>
