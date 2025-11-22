@@ -56,6 +56,16 @@ const Products = memo<ProductsProps>(({
     const clearSelectedProductId = useStore((state) => state.clearSelectedProductId);
     const stockMovements = useStore((state) => state.collections.stock_movements);
 
+    // Get all data from store for ProductDetail (in case not passed as props)
+    const storeOrders = useStore((state) => state.collections.orders);
+    const storeQuotes = useStore((state) => state.collections.teklifler);
+    const storeCustomers = useStore((state) => state.collections.customers);
+
+    // Use props if available, otherwise fallback to store
+    const allOrders = orders.length > 0 ? orders : storeOrders;
+    const allQuotes = quotes.length > 0 ? quotes : storeQuotes;
+    const allCustomers = customers.length > 0 ? customers : storeCustomers;
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -280,9 +290,9 @@ const Products = memo<ProductsProps>(({
         return (
             <ProductDetail
                 product={selectedProduct}
-                orders={orders}
-                quotes={quotes}
-                customers={customers}
+                orders={allOrders}
+                quotes={allQuotes}
+                customers={allCustomers}
                 stockMovements={stockMovements}
                 onEdit={handleEditFromDetail}
                 onDelete={handleDeleteFromDetail}

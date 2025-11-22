@@ -695,7 +695,17 @@ const CrmApp = () => {
                     />
                 );
             case 'Ürünler':
-                return <Products products={products} onSave={handleProductSave} onDelete={handleProductDelete} loading={dataLoading} />;
+                return (
+                    <Products
+                        products={products}
+                        orders={orders}
+                        quotes={teklifler}
+                        customers={customers}
+                        onSave={handleProductSave}
+                        onDelete={handleProductDelete}
+                        loading={dataLoading}
+                    />
+                );
             case 'Teklifler':
                 return (
                     <Quotes
