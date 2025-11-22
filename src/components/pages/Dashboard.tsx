@@ -400,8 +400,8 @@ const Dashboard = memo<DashboardProps>(({
                 onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
 
-            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 6 on desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-8">
+            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on larger screens */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-8">
                 <div className="animate-fadeIn">
                     <MobileStat
                         label="Toplam Müşteri"
@@ -616,7 +616,10 @@ const Dashboard = memo<DashboardProps>(({
                                     <div>
                                         <span className="text-gray-600 dark:text-gray-400">Toplam Tutar:</span>
                                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                            {formatCurrency(cancelledOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0))}
+                                            {formatCurrency(cancelledOrders.reduce((sum, o) => {
+                                                const amount = typeof o.total_amount === 'number' ? o.total_amount : 0;
+                                                return sum + amount;
+                                            }, 0))}
                                         </p>
                                     </div>
                                     <div>
@@ -632,10 +635,15 @@ const Dashboard = memo<DashboardProps>(({
                                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                             {cancelledOrders.filter(o => {
                                                 if (!o.cancelledAt) return false;
-                                                const cancelDate = new Date(o.cancelledAt);
-                                                const thirtyDaysAgo = new Date();
-                                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                                return cancelDate >= thirtyDaysAgo;
+                                                try {
+                                                    const cancelDate = new Date(o.cancelledAt);
+                                                    if (isNaN(cancelDate.getTime())) return false;
+                                                    const thirtyDaysAgo = new Date();
+                                                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                                    return cancelDate >= thirtyDaysAgo;
+                                                } catch {
+                                                    return false;
+                                                }
                                             }).length}
                                         </p>
                                     </div>
@@ -667,7 +675,7 @@ const Dashboard = memo<DashboardProps>(({
                                                         {order.cancelledAt ? formatDate(order.cancelledAt) : 'N/A'}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                                        {formatCurrency(order.total_amount, order.currency)}
+                                                        {formatCurrency(order.total_amount || 0, order.currency || 'TRY')}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                                         {order.cancellationReason || 'Belirtilmemiş'}
