@@ -452,7 +452,7 @@ const Dashboard = memo<DashboardProps>(({
                         label="İptal Edilen"
                         value={cancelledOrders.length}
                         icon={<ClipboardListIcon className="w-6 h-6" />}
-                        color="gray"
+                        color="purple"
                         onClick={() => setShowCancelledOrdersModal(true)}
                     />
                 </div>
