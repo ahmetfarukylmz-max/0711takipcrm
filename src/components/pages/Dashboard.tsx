@@ -91,8 +91,10 @@ const Dashboard = memo<DashboardProps>(({
     const [showUpcomingModal, setShowUpcomingModal] = useState(false);
     const [showOpenOrdersModal, setShowOpenOrdersModal] = useState(false);
     const [showPendingQuotesModal, setShowPendingQuotesModal] = useState(false);
+    const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
+    const cancelledOrders = orders.filter(o => !o.isDeleted && o.status === 'İptal Edildi');
     const today = new Date().toISOString().slice(0, 10);
     const upcomingActions = gorusmeler
         .filter(g => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
@@ -398,8 +400,8 @@ const Dashboard = memo<DashboardProps>(({
                 onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
 
-            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
+            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 6 on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6 mb-8">
                 <div className="animate-fadeIn">
                     <MobileStat
                         label="Toplam Müşteri"
@@ -443,6 +445,15 @@ const Dashboard = memo<DashboardProps>(({
                         icon={<BellIcon className="w-6 h-6" />}
                         color="red"
                         onClick={() => setIsOverdueModalOpen(true)}
+                    />
+                </div>
+                <div className="animate-fadeIn animate-delay-500">
+                    <MobileStat
+                        label="İptal Edilen"
+                        value={cancelledOrders.length}
+                        icon={<ClipboardListIcon className="w-6 h-6" />}
+                        color="gray"
+                        onClick={() => setShowCancelledOrdersModal(true)}
                     />
                 </div>
             </div>
@@ -580,6 +591,107 @@ const Dashboard = memo<DashboardProps>(({
                         setActivePage('Teklifler');
                     }}
                 />
+            </Modal>
+
+            {/* Cancelled Orders Modal */}
+            <Modal
+                show={showCancelledOrdersModal}
+                onClose={() => setShowCancelledOrdersModal(false)}
+                title="İptal Edilen Siparişler"
+                maxWidth="max-w-5xl"
+            >
+                <div className="space-y-4">
+                    {cancelledOrders.length === 0 ? (
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                            İptal edilen sipariş bulunmamaktadır.
+                        </p>
+                    ) : (
+                        <>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">Toplam İptal:</span>
+                                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{cancelledOrders.length}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">Toplam Tutar:</span>
+                                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                            {formatCurrency(cancelledOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0))}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">İptal Oranı:</span>
+                                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                            {orders.filter(o => !o.isDeleted).length > 0
+                                                ? ((cancelledOrders.length / orders.filter(o => !o.isDeleted).length) * 100).toFixed(1)
+                                                : 0}%
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">Son 30 Gün:</span>
+                                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                            {cancelledOrders.filter(o => {
+                                                if (!o.cancelledAt) return false;
+                                                const cancelDate = new Date(o.cancelledAt);
+                                                const thirtyDaysAgo = new Date();
+                                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                                return cancelDate >= thirtyDaysAgo;
+                                            }).length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Müşteri</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Sipariş Tarihi</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">İptal Tarihi</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tutar</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">İptal Nedeni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {cancelledOrders.map(order => {
+                                            const customer = customers.find(c => c.id === order.customerId);
+                                            return (
+                                                <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                                        {customer?.name || 'Bilinmeyen'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                                        {formatDate(order.order_date)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                                                        {order.cancelledAt ? formatDate(order.cancelledAt) : 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                        {formatCurrency(order.total_amount, order.currency)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                                        {order.cancellationReason || 'Belirtilmemiş'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => {
+                                        setShowCancelledOrdersModal(false);
+                                        setActivePage('Siparişler');
+                                    }}
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                >
+                                    Tüm Siparişleri Görüntüle
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </Modal>
 
             <div className={widgetGridClass}>

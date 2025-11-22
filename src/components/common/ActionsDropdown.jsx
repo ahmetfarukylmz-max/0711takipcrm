@@ -73,19 +73,27 @@ const ActionsDropdown = ({ actions }) => {
                             <button
                                 key={index}
                                 onClick={() => {
-                                    action.onClick();
-                                    setIsOpen(false);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
+                                    if (!action.disabled) {
                                         action.onClick();
                                         setIsOpen(false);
                                     }
                                 }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        if (!action.disabled) {
+                                            action.onClick();
+                                            setIsOpen(false);
+                                        }
+                                    }
+                                }}
                                 role="menuitem"
+                                disabled={action.disabled}
+                                title={action.tooltip || ''}
                                 className={`block w-full text-left px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
-                                    action.destructive
+                                    action.disabled
+                                        ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
+                                        : action.destructive
                                         ? 'text-red-700 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900'
                                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}

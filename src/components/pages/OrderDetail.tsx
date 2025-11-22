@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import { formatCancellationReason } from '../../utils/orderHelpers';
 import type { Order, Customer, Product, Payment } from '../../types';
 
 interface OrderDetailProps {
@@ -88,7 +89,34 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment
                         <p><span className="font-semibold">Sipariş No:</span> #{order.id.substring(0, 8)}</p>
                         <p><span className="font-semibold">Sipariş Tarihi:</span> {formatDate(order.order_date)}</p>
                         <p><span className="font-semibold">Teslim Tarihi:</span> {formatDate(order.delivery_date)}</p>
-                        <p><span className="font-semibold">Durum:</span> <span className="font-bold">{order.status}</span></p>
+                        <p>
+                            <span className="font-semibold">Durum:</span>{' '}
+                            <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${getStatusClass(order.status)}`}>
+                                {order.status}
+                            </span>
+                        </p>
+                        {order.status === 'İptal Edildi' && (
+                            <>
+                                <p className="pt-2 border-t border-gray-300 dark:border-gray-600">
+                                    <span className="font-semibold text-red-600 dark:text-red-400">İptal Tarihi:</span>{' '}
+                                    {order.cancelledAt ? formatDate(order.cancelledAt) : 'N/A'}
+                                </p>
+                                <p>
+                                    <span className="font-semibold text-red-600 dark:text-red-400">İptal Nedeni:</span>{' '}
+                                    {order.cancellationReason ? formatCancellationReason(order.cancellationReason) : 'Belirtilmemiş'}
+                                </p>
+                                {order.cancellationNotes && (
+                                    <p>
+                                        <span className="font-semibold text-red-600 dark:text-red-400">İptal Açıklaması:</span>{' '}
+                                        <span className="italic">{order.cancellationNotes}</span>
+                                    </p>
+                                )}
+                                <p>
+                                    <span className="font-semibold text-red-600 dark:text-red-400">İptal Eden:</span>{' '}
+                                    {order.cancelledByEmail || 'N/A'}
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
