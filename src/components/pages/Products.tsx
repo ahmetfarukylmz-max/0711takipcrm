@@ -101,7 +101,6 @@ const Products = memo<ProductsProps>(({
     const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'low' | 'out' | 'normal' | 'not_tracked'>('all');
     const [profitabilityFilter, setProfitabilityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
     const [salesStatusFilter, setSalesStatusFilter] = useState<'all' | 'never' | 'low' | 'high'>('all');
-    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Auto-open product detail when navigating from Dashboard
     useEffect(() => {
@@ -197,20 +196,6 @@ const Products = memo<ProductsProps>(({
         } catch (error) {
             console.error('Quick stock update error:', error);
             toast.error('Stok güncelleme hatası');
-        }
-    };
-
-    // Toggle favorite handler
-    const handleToggleFavorite = async (product: Product) => {
-        try {
-            await onSave({
-                ...product,
-                isFavorite: !product.isFavorite
-            });
-            toast.success(product.isFavorite ? 'Favorilerden çıkarıldı' : 'Favorilere eklendi');
-        } catch (error) {
-            console.error('Toggle favorite error:', error);
-            toast.error('Favori güncelleme hatası');
         }
     };
 
@@ -363,9 +348,6 @@ const Products = memo<ProductsProps>(({
                 categoryFilter === 'uncategorized' && !product.category ||
                 product.category === categoryFilter;
 
-            // Favorites filter
-            const matchesFavorites = !showFavoritesOnly || product.isFavorite === true;
-
             // Price range filter
             const matchesPriceRange = (
                 (priceRangeMin === '' || product.selling_price >= priceRangeMin) &&
@@ -417,7 +399,7 @@ const Products = memo<ProductsProps>(({
                 }
             }
 
-            return matchesSearch && matchesCategory && matchesFavorites && matchesPriceRange &&
+            return matchesSearch && matchesCategory && matchesPriceRange &&
                    matchesStockStatus && matchesProfitability && matchesSalesStatus;
         });
 
@@ -447,7 +429,7 @@ const Products = memo<ProductsProps>(({
 
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [productsWithStats, searchQuery, categoryFilter, showFavoritesOnly, sortField, sortDirection,
+    }, [productsWithStats, searchQuery, categoryFilter, sortField, sortDirection,
         priceRangeMin, priceRangeMax, stockStatusFilter, profitabilityFilter, salesStatusFilter]);
 
     // Show skeleton when loading
@@ -558,16 +540,6 @@ const Products = memo<ProductsProps>(({
                     className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors whitespace-nowrap"
                 >
                     {showAdvancedFilters ? '🔽' : '▶️'} Gelişmiş Filtreler
-                </button>
-                <button
-                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                        showFavoritesOnly
-                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
-                >
-                    ⭐ {showFavoritesOnly ? 'Tüm Ürünler' : 'Favoriler'}
                 </button>
             </div>
 
@@ -772,26 +744,12 @@ const Products = memo<ProductsProps>(({
                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                 </td>
-                                <td className="p-3 text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleToggleFavorite(product);
-                                            }}
-                                            className="text-lg hover:scale-110 transition-transform"
-                                            title={product.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
-                                        >
-                                            {product.isFavorite ? '⭐' : '☆'}
-                                        </button>
-                                        <span
-                                            className="text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                            onClick={() => handleViewProduct(product)}
-                                            title="Detayları görmek için tıklayın"
-                                        >
-                                            {product.name}
-                                        </span>
-                                    </div>
+                                <td
+                                    className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    onClick={() => handleViewProduct(product)}
+                                    title="Detayları görmek için tıklayın"
+                                >
+                                    {product.name}
                                 </td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
                                 <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatCurrency(product.cost_price, product.currency || 'TRY')}</td>
@@ -898,20 +856,7 @@ const Products = memo<ProductsProps>(({
                 {filteredProducts.length > 0 ? filteredProducts.map(product => (
                     <MobileListItem
                         key={product.id}
-                        title={
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleToggleFavorite(product);
-                                    }}
-                                    className="text-lg hover:scale-110 transition-transform"
-                                >
-                                    {product.isFavorite ? '⭐' : '☆'}
-                                </button>
-                                <span>{product.name}</span>
-                            </div>
-                        }
+                        title={product.name}
                         subtitle={`Kod: ${product.code}`}
                         bottomContent={
                             <div className="space-y-2">

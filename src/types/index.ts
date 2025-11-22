@@ -94,9 +94,6 @@ export interface Product {
   minimum_stock?: number; // Minimum stock level for warnings
   track_stock?: boolean; // Enable stock tracking for this product
 
-  // Favorites
-  isFavorite?: boolean; // Mark product as favorite for quick access
-
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
