@@ -54,6 +54,7 @@ const Products = memo<ProductsProps>(({
     // Zustand store - for navigation from Dashboard
     const selectedProductId = useStore((state) => state.selectedProductId);
     const clearSelectedProductId = useStore((state) => state.clearSelectedProductId);
+    const stockMovements = useStore((state) => state.collections.stock_movements);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -282,7 +283,7 @@ const Products = memo<ProductsProps>(({
                 orders={orders}
                 quotes={quotes}
                 customers={customers}
-                stockMovements={useStore.getState().collections.stock_movements}
+                stockMovements={stockMovements}
                 onEdit={handleEditFromDetail}
                 onDelete={handleDeleteFromDetail}
                 onBack={handleBackFromDetail}
