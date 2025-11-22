@@ -94,7 +94,7 @@ const Dashboard = memo<DashboardProps>(({
     const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
 
     const openOrders = orders.filter(o => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status));
-    const cancelledOrders = orders.filter(o => !o.isDeleted && o.status === 'İptal Edildi');
+    const cancelledOrders = orders?.filter(o => !o.isDeleted && o.status === 'İptal Edildi') || [];
     const today = new Date().toISOString().slice(0, 10);
     const upcomingActions = gorusmeler
         .filter(g => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
@@ -400,8 +400,8 @@ const Dashboard = memo<DashboardProps>(({
                 onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
             />
 
-            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on larger screens */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-8">
+            {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
                 <div className="animate-fadeIn">
                     <MobileStat
                         label="Toplam Müşteri"
@@ -625,8 +625,8 @@ const Dashboard = memo<DashboardProps>(({
                                     <div>
                                         <span className="text-gray-600 dark:text-gray-400">İptal Oranı:</span>
                                         <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                                            {orders.filter(o => !o.isDeleted).length > 0
-                                                ? ((cancelledOrders.length / orders.filter(o => !o.isDeleted).length) * 100).toFixed(1)
+                                            {orders?.filter(o => !o.isDeleted).length > 0
+                                                ? ((cancelledOrders.length / (orders?.filter(o => !o.isDeleted).length || 1)) * 100).toFixed(1)
                                                 : 0}%
                                         </p>
                                     </div>
