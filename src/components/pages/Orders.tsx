@@ -578,6 +578,43 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
             <div className="md:hidden space-y-3">
                 {filteredOrders.length > 0 ? filteredOrders.map(order => {
                     const customer = customers.find(c => c.id === order.customerId);
+                    const cancelCheck = orderCancelChecks[order.id];
+
+                    // Build mobile actions array
+                    const mobileActions = [
+                        {
+                            label: 'Düzenle',
+                            onClick: (e) => { e?.stopPropagation(); handleOpenModal(order); },
+                            variant: 'secondary'
+                        },
+                        {
+                            label: 'PDF',
+                            onClick: (e) => { e?.stopPropagation(); handlePrint(order); },
+                            variant: 'secondary'
+                        }
+                    ];
+
+                    // Add cancel button if callback exists
+                    if (onCancel) {
+                        mobileActions.push({
+                            label: '🚫 İptal Et',
+                            onClick: (e) => {
+                                e?.stopPropagation();
+                                if (cancelCheck?.canCancel) {
+                                    setCancellingOrder(order);
+                                }
+                            },
+                            variant: cancelCheck?.canCancel ? 'danger' : 'secondary',
+                            disabled: !cancelCheck?.canCancel,
+                            tooltip: !cancelCheck?.canCancel ? cancelCheck?.reason : 'Siparişi iptal et'
+                        });
+                    }
+
+                    mobileActions.push({
+                        label: 'Sil',
+                        onClick: (e) => { e?.stopPropagation(); handleDelete(order); },
+                        variant: 'danger'
+                    });
 
                     return (
                         <MobileListItem
@@ -600,25 +637,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
                                             Sevk Et
                                         </button>
                                     )}
-                                    <MobileActions
-                                        actions={[
-                                            {
-                                                label: 'Düzenle',
-                                                onClick: (e) => { e?.stopPropagation(); handleOpenModal(order); },
-                                                variant: 'secondary'
-                                            },
-                                            {
-                                                label: 'PDF',
-                                                onClick: (e) => { e?.stopPropagation(); handlePrint(order); },
-                                                variant: 'secondary'
-                                            },
-                                            {
-                                                label: 'Sil',
-                                                onClick: (e) => { e?.stopPropagation(); handleDelete(order); },
-                                                variant: 'danger'
-                                            }
-                                        ]}
-                                    />
+                                    <MobileActions actions={mobileActions} />
                                 </div>
                             }
                         />
