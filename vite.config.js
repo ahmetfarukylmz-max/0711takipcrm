@@ -32,6 +32,7 @@ export default defineConfig({
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'portrait',
         start_url: '/0711takipcrm/',
         scope: '/0711takipcrm/',
         icons: [
@@ -39,9 +40,17 @@ export default defineConfig({
             src: '/0711takipcrm/vite.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/0711takipcrm/vite.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'maskable'
           }
-        ]
+        ],
+        categories: ['business', 'productivity'],
+        screenshots: []
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
