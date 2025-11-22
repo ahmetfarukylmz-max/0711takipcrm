@@ -107,6 +107,15 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
         setCancellingOrder(null);
     };
 
+    // Memoize cancel check results for performance (prevent 27 checks per render)
+    const orderCancelChecks = useMemo(() => {
+        const checks: Record<string, any> = {};
+        orders.forEach(order => {
+            checks[order.id] = canCancelOrder(order, shipments);
+        });
+        return checks;
+    }, [orders, shipments]);
+
     // Excel Export handler
     const handleExport = () => {
         try {
@@ -507,16 +516,12 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
                                 orderActions.unshift({ label: 'Sevk Et', onClick: () => handleOpenShipmentModal(order) });
                             }
 
-                            // Check if order can be cancelled
-                            const cancelCheck = canCancelOrder(order, shipments);
-                            console.log('Cancel check for order:', order.id, 'canCancel:', cancelCheck.canCancel, 'onCancel:', !!onCancel);
-                            if (cancelCheck.canCancel && onCancel) {
+                            // Check if order can be cancelled (memoized for performance)
+                            const cancelCheck = orderCancelChecks[order.id];
+                            if (cancelCheck?.canCancel && onCancel) {
                                 orderActions.push({
                                     label: '🚫 İptal Et',
-                                    onClick: () => {
-                                        console.log('Cancel button clicked for order:', order.id);
-                                        setCancellingOrder(order);
-                                    },
+                                    onClick: () => setCancellingOrder(order),
                                     destructive: true
                                 });
                             }
@@ -675,16 +680,13 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
 
             {/* Cancel Order Dialog */}
             {cancellingOrder && (
-                <>
-                    {console.log('Rendering CancelOrderDialog for order:', cancellingOrder.id)}
-                    <CancelOrderDialog
-                        order={cancellingOrder}
-                        shipments={shipments}
-                        payments={payments}
-                        onCancel={handleCancelOrder}
-                        onClose={() => setCancellingOrder(null)}
-                    />
-                </>
+                <CancelOrderDialog
+                    order={cancellingOrder}
+                    shipments={shipments}
+                    payments={payments}
+                    onCancel={handleCancelOrder}
+                    onClose={() => setCancellingOrder(null)}
+                />
             )}
 
             <ConfirmDialog
