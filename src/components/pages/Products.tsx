@@ -79,6 +79,14 @@ const Products = memo<ProductsProps>(({
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Bulk stock operations state
+    const [isBulkStockModalOpen, setIsBulkStockModalOpen] = useState(false);
+    const [bulkStockOperation, setBulkStockOperation] = useState<'add' | 'subtract'>('add');
+    const [bulkStockMode, setBulkStockMode] = useState<'same' | 'individual'>('same');
+    const [bulkStockAmount, setBulkStockAmount] = useState<number | ''>('');
+    const [individualStockAmounts, setIndividualStockAmounts] = useState<Record<string, number>>({});
+    const [bulkStockNote, setBulkStockNote] = useState('');
+
     // Sorting state
     type SortField = 'name' | 'cost_price' | 'selling_price' | 'stock' | 'profit_margin' | 'turnover_rate';
     type SortDirection = 'asc' | 'desc';
@@ -304,6 +312,108 @@ const Products = memo<ProductsProps>(({
         selectedItems.forEach(id => onDelete(id));
         setSelectedItems(new Set());
         setDeleteConfirm({ isOpen: false, product: null });
+    };
+
+    // Bulk stock operations handlers
+    const handleOpenBulkStockModal = () => {
+        if (selectedItems.size === 0) {
+            toast.error('Lütfen en az bir ürün seçin');
+            return;
+        }
+
+        // Check if all selected products have stock tracking enabled
+        const selectedProducts = products.filter(p => selectedItems.has(p.id));
+        const nonTrackedProducts = selectedProducts.filter(p => !p.track_stock);
+
+        if (nonTrackedProducts.length > 0) {
+            toast.error(`${nonTrackedProducts.length} ürünün stok takibi aktif değil`);
+            return;
+        }
+
+        // Initialize individual amounts
+        const initialAmounts: Record<string, number> = {};
+        selectedProducts.forEach(p => {
+            initialAmounts[p.id] = 0;
+        });
+        setIndividualStockAmounts(initialAmounts);
+
+        setIsBulkStockModalOpen(true);
+    };
+
+    const handleCloseBulkStockModal = () => {
+        setIsBulkStockModalOpen(false);
+        setBulkStockOperation('add');
+        setBulkStockMode('same');
+        setBulkStockAmount('');
+        setIndividualStockAmounts({});
+        setBulkStockNote('');
+    };
+
+    const handleBulkStockUpdate = async () => {
+        if (!user?.uid || !user?.email) {
+            toast.error('Kullanıcı bilgisi bulunamadı');
+            return;
+        }
+
+        const selectedProducts = products.filter(p => selectedItems.has(p.id));
+
+        if (bulkStockMode === 'same') {
+            if (bulkStockAmount === '' || bulkStockAmount === 0) {
+                toast.error('Lütfen bir miktar girin');
+                return;
+            }
+
+            const amount = bulkStockOperation === 'add' ? Number(bulkStockAmount) : -Number(bulkStockAmount);
+
+            try {
+                const promises = selectedProducts.map(product =>
+                    updateProductStock(user.uid, product.id, amount, {
+                        type: 'Manuel Giriş',
+                        notes: bulkStockNote || `Toplu ${bulkStockOperation === 'add' ? 'ekleme' : 'çıkarma'}: ${Math.abs(amount)} ${product.unit || 'Adet'}`,
+                        createdBy: user.uid,
+                        createdByEmail: user.email
+                    })
+                );
+
+                await Promise.all(promises);
+                toast.success(`${selectedProducts.length} ürünün stoğu güncellendi`);
+                handleCloseBulkStockModal();
+                setSelectedItems(new Set());
+            } catch (error) {
+                console.error('Bulk stock update error:', error);
+                toast.error('Toplu stok güncelleme hatası');
+            }
+        } else {
+            // Individual mode
+            const updates = selectedProducts.map(product => {
+                const amount = individualStockAmounts[product.id] || 0;
+                const finalAmount = bulkStockOperation === 'add' ? amount : -amount;
+
+                if (amount === 0) return null;
+
+                return updateProductStock(user.uid, product.id, finalAmount, {
+                    type: 'Manuel Giriş',
+                    notes: bulkStockNote || `Toplu ${bulkStockOperation === 'add' ? 'ekleme' : 'çıkarma'}: ${Math.abs(finalAmount)} ${product.unit || 'Adet'}`,
+                    createdBy: user.uid,
+                    createdByEmail: user.email
+                });
+            }).filter(Boolean);
+
+            if (updates.length === 0) {
+                toast.error('Hiçbir ürün için miktar girilmedi');
+                return;
+            }
+
+            try {
+                await Promise.all(updates);
+                toast.success(`${updates.length} ürünün stoğu güncellendi`);
+                handleCloseBulkStockModal();
+                setSelectedItems(new Set());
+            } catch (error) {
+                console.error('Bulk stock update error:', error);
+                toast.error('Toplu stok güncelleme hatası');
+            }
+        }
     };
 
     // Filter out deleted products and apply search
@@ -546,16 +656,28 @@ const Products = memo<ProductsProps>(({
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Ürün Yönetimi</h1>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     {selectedItems.size > 0 && (
-                        <button
-                            onClick={handleBatchDelete}
-                            className="flex items-center flex-1 sm:flex-none bg-red-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-red-600"
-                        >
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            <span className="hidden sm:inline">Seçili {selectedItems.size} Ürünü Sil</span>
-                            <span className="sm:hidden">Sil ({selectedItems.size})</span>
-                        </button>
+                        <>
+                            <button
+                                onClick={handleOpenBulkStockModal}
+                                className="flex items-center flex-1 sm:flex-none bg-orange-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-orange-600"
+                            >
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                <span className="hidden sm:inline">Toplu Stok İşlemi ({selectedItems.size})</span>
+                                <span className="sm:hidden">Stok ({selectedItems.size})</span>
+                            </button>
+                            <button
+                                onClick={handleBatchDelete}
+                                className="flex items-center flex-1 sm:flex-none bg-red-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-red-600"
+                            >
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                <span className="hidden sm:inline">Sil ({selectedItems.size})</span>
+                                <span className="sm:hidden">Sil ({selectedItems.size})</span>
+                            </button>
+                        </>
                     )}
                     <button
                         onClick={handleExport}
@@ -1157,6 +1279,151 @@ const Products = memo<ProductsProps>(({
                             <li>Satış fiyatı maliyet fiyatından düşükse uyarı verilir</li>
                             <li>Hatalı satırlar atlanacaktır</li>
                         </ul>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Bulk Stock Operations Modal */}
+            <Modal
+                show={isBulkStockModalOpen}
+                onClose={handleCloseBulkStockModal}
+                title={`Toplu Stok ${bulkStockOperation === 'add' ? 'Ekleme' : 'Çıkarma'}`}
+            >
+                <div className="space-y-4">
+                    {/* Operation Type */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            İşlem Tipi
+                        </label>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setBulkStockOperation('add')}
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    bulkStockOperation === 'add'
+                                        ? 'bg-green-500 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Stok Ekle
+                            </button>
+                            <button
+                                onClick={() => setBulkStockOperation('subtract')}
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    bulkStockOperation === 'subtract'
+                                        ? 'bg-red-500 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Stok Çıkar
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Mode Selection */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Güncelleme Şekli
+                        </label>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setBulkStockMode('same')}
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    bulkStockMode === 'same'
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Tüm Ürünlere Aynı
+                            </button>
+                            <button
+                                onClick={() => setBulkStockMode('individual')}
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    bulkStockMode === 'individual'
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Her Ürün İçin Ayrı
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Amount Input */}
+                    {bulkStockMode === 'same' ? (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Miktar ({selectedItems.size} ürün için)
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={bulkStockAmount}
+                                onChange={(e) => setBulkStockAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Miktar girin"
+                            />
+                        </div>
+                    ) : (
+                        <div className="max-h-64 overflow-y-auto space-y-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                Her ürün için ayrı miktar girin:
+                            </p>
+                            {products.filter(p => selectedItems.has(p.id)).map(product => (
+                                <div key={product.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                    <span className="flex-1 text-sm text-gray-900 dark:text-gray-100">
+                                        {product.name}
+                                    </span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={individualStockAmounts[product.id] || ''}
+                                        onChange={(e) => setIndividualStockAmounts(prev => ({
+                                            ...prev,
+                                            [product.id]: e.target.value === '' ? 0 : Number(e.target.value)
+                                        }))}
+                                        className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="0"
+                                    />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                        {product.unit}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Note */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            İşlem Notu (İsteğe Bağlı)
+                        </label>
+                        <textarea
+                            value={bulkStockNote}
+                            onChange={(e) => setBulkStockNote(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows={2}
+                            placeholder="Örn: Tedarikçi X'den mal girişi..."
+                        />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={handleCloseBulkStockModal}
+                            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            İptal
+                        </button>
+                        <button
+                            onClick={handleBulkStockUpdate}
+                            className={`flex-1 px-4 py-2 rounded-lg text-white transition-colors ${
+                                bulkStockOperation === 'add'
+                                    ? 'bg-green-500 hover:bg-green-600'
+                                    : 'bg-red-500 hover:bg-red-600'
+                            }`}
+                        >
+                            Uygula
+                        </button>
                     </div>
                 </div>
             </Modal>
