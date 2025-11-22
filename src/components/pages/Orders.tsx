@@ -682,6 +682,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
             {cancellingOrder && (
                 <CancelOrderDialog
                     order={cancellingOrder}
+                    customers={customers}
                     shipments={shipments}
                     payments={payments}
                     onCancel={handleCancelOrder}
