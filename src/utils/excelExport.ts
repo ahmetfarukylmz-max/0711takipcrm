@@ -145,7 +145,7 @@ export const exportOrders = (
   // Export için format
   const exportData = filteredOrders.map(order => {
     const customer = customerMap.get(order.customerId);
-    return {
+    const baseData: any = {
       'Sipariş No': order.id,
       'Müşteri': customer?.name || order.customerName || 'Bilinmiyor',
       'Sipariş Tarihi': order.order_date,
@@ -159,6 +159,16 @@ export const exportOrders = (
       'Ürün Sayısı': order.items.length,
       'Notlar': order.notes || '',
     };
+
+    // İptal bilgilerini ekle
+    if (order.status === 'İptal Edildi') {
+      baseData['İptal Tarihi'] = order.cancelledAt || '';
+      baseData['İptal Nedeni'] = order.cancellationReason || '';
+      baseData['İptal Açıklaması'] = order.cancellationNotes || '';
+      baseData['İptal Eden'] = order.cancelledByEmail || '';
+    }
+
+    return baseData;
   });
 
   exportToExcel(exportData, filename, 'Siparişler');
@@ -301,7 +311,7 @@ export const exportOrdersDetailed = (
 
     order.items.forEach((item, index) => {
       const product = productMap.get(item.productId);
-      exportData.push({
+      const rowData: any = {
         'Sipariş No': order.id,
         'Müşteri': customer?.name || order.customerName || 'Bilinmiyor',
         'Sipariş Tarihi': order.order_date,
@@ -313,7 +323,15 @@ export const exportOrdersDetailed = (
         'Birim Fiyat': item.unit_price,
         'Satır Toplamı': item.quantity * item.unit_price,
         'Sipariş Toplamı': order.total_amount,
-      });
+      };
+
+      // İptal bilgilerini ekle
+      if (order.status === 'İptal Edildi') {
+        rowData['İptal Tarihi'] = order.cancelledAt || '';
+        rowData['İptal Nedeni'] = order.cancellationReason || '';
+      }
+
+      exportData.push(rowData);
     });
   });
 

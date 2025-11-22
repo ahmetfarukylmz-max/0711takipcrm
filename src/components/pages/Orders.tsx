@@ -391,7 +391,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
         return filtered;
     }, [orders, searchQuery, statusFilter, customers]);
 
-    const statusOptions = ['Tümü', 'Bekliyor', 'Hazırlanıyor', 'Tamamlandı'];
+    const statusOptions = ['Tümü', 'Bekliyor', 'Hazırlanıyor', 'Tamamlandı', 'İptal Edildi'];
 
     // Show skeleton when loading
     if (loading) {
@@ -518,11 +518,13 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
 
                             // Check if order can be cancelled (memoized for performance)
                             const cancelCheck = orderCancelChecks[order.id];
-                            if (cancelCheck?.canCancel && onCancel) {
+                            if (onCancel) {
                                 orderActions.push({
                                     label: '🚫 İptal Et',
                                     onClick: () => setCancellingOrder(order),
-                                    destructive: true
+                                    destructive: true,
+                                    disabled: !cancelCheck?.canCancel,
+                                    tooltip: !cancelCheck?.canCancel ? cancelCheck?.reason : 'Siparişi iptal et'
                                 });
                             }
 
