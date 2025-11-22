@@ -926,10 +926,7 @@ const Dashboard = memo<DashboardProps>(({
                                             {formatCurrency(product.revenue)}
                                         </span>
                                     }
-                                    onClick={() => {
-                                        setSelectedProductId(product.id);
-                                        setActivePage('Ürünler');
-                                    }}
+                                    onClick={() => setSelectedProduct(product)}
                                 />
                             ))
                         ) : (
@@ -960,10 +957,6 @@ const Dashboard = memo<DashboardProps>(({
                                             </span>
                                         </div>
                                     }
-                                    onClick={() => {
-                                        setSelectedProductId(product.id);
-                                        setActivePage('Ürünler');
-                                    }}
                                 />
                             ))
                         ) : (
@@ -1035,6 +1028,7 @@ const Dashboard = memo<DashboardProps>(({
                                             </div>
                                         }
                                         onClick={() => {
+                                            // For low stock, navigate to Products page to see details
                                             setSelectedProductId(product.id);
                                             setActivePage('Ürünler');
                                         }}
