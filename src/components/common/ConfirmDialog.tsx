@@ -33,7 +33,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
     return (
         <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[10000]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[999999]"
             onClick={onClose}
             role="alertdialog"
             aria-modal="true"
