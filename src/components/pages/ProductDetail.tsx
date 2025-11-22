@@ -78,9 +78,10 @@ const ProductDetail = memo<ProductDetailProps>(({
       // Müşteri bazlı satış
       const customerId = order.customerId;
       if (!customerSales[customerId]) {
+        const customer = customers.find(c => c.id === customerId && !c.isDeleted);
         customerSales[customerId] = {
           id: customerId,
-          customerName: order.customerName || 'Bilinmeyen Müşteri',
+          customerName: customer?.name || order.customerName || 'Bilinmeyen Müşteri',
           quantity: 0,
           revenue: 0,
           profit: 0,
@@ -126,6 +127,7 @@ const ProductDetail = memo<ProductDetailProps>(({
         const item = order.items?.find(i => i.productId === product.id);
         if (!item) return;
 
+        const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
         const quantity = item.quantity || 0;
         const unitPrice = item.unit_price || 0;
         const revenue = quantity * unitPrice;
@@ -135,7 +137,7 @@ const ProductDetail = memo<ProductDetailProps>(({
         history.push({
           orderId: order.id,
           orderNumber: order.orderNumber || order.id.slice(0, 8),
-          customerName: order.customerName || 'Bilinmeyen Müşteri',
+          customerName: customer?.name || order.customerName || 'Bilinmeyen Müşteri',
           date: order.order_date,
           quantity,
           unitPrice,
