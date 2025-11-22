@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import Modal from './Modal';
 import ConfirmDialog from './ConfirmDialog';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { formatCancellationReason } from '../../utils/orderHelpers';
@@ -72,8 +71,23 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
 
   return (
     <>
-      <Modal show={true} onClose={onClose} title="Sipariş İptali" maxWidth="max-w-lg">
-        <div className="space-y-4">
+      <div className="fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+              Sipariş İptali
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 text-2xl font-bold"
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-4">
           {/* Uyarı */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <div className="flex gap-2">
@@ -173,8 +187,9 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
               🚫 İptal Et
             </button>
           </div>
+          </div>
         </div>
-      </Modal>
+      </div>
 
       {/* Onay dialog'u */}
       {showConfirm && (
