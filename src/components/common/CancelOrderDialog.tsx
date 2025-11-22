@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import Modal from './Modal';
 import ConfirmDialog from './ConfirmDialog';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { formatCancellationReason } from '../../utils/orderHelpers';
-import type { Order, Shipment, Payment, CancellationReason } from '../../types';
+import type { Order, Shipment, Payment, Customer, CancellationReason } from '../../types';
 
 interface CancellationData {
   reason: CancellationReason;
@@ -15,6 +16,7 @@ interface CancellationData {
 
 interface CancelOrderDialogProps {
   order: Order;
+  customers: Customer[];
   shipments: Shipment[];
   payments: Payment[];
   onCancel: (data: CancellationData) => void;
@@ -32,6 +34,7 @@ const CANCELLATION_REASONS: CancellationReason[] = [
 
 const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
   order,
+  customers,
   shipments,
   payments,
   onCancel,
@@ -40,6 +43,10 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
   const [reason, setReason] = useState<CancellationReason | ''>('');
   const [notes, setNotes] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Müşteri bilgisini al
+  const customer = customers.find(c => c.id === order.customerId);
+  const customerName = customer?.name || 'Bilinmeyen müşteri';
 
   // İlgili sevkiyatlar (iptal edilecek)
   const relatedShipments = shipments.filter(
@@ -71,29 +78,8 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
 
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/50 z-[99999] flex items-center justify-center p-4"
-        onClick={onClose}
-      >
-        <div
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-              Sipariş İptali
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 text-2xl font-bold"
-            >
-              &times;
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-4">
+      <Modal show={true} onClose={onClose} title="Sipariş İptali" maxWidth="max-w-lg">
+        <div className="space-y-4">
           {/* Uyarı */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <div className="flex gap-2">
@@ -113,7 +99,7 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <h4 className="font-medium mb-2">Sipariş Bilgileri</h4>
             <div className="text-sm space-y-1">
-              <p><strong>Müşteri:</strong> {order.customerName}</p>
+              <p><strong>Müşteri:</strong> {customerName}</p>
               <p><strong>Tutar:</strong> {formatCurrency(order.total_amount)}</p>
               <p><strong>Tarih:</strong> {formatDate(order.order_date)}</p>
               <p><strong>Durum:</strong> <span className="text-blue-600 dark:text-blue-400">{order.status}</span></p>
@@ -193,16 +179,15 @@ const CancelOrderDialog: React.FC<CancelOrderDialogProps> = ({
               🚫 İptal Et
             </button>
           </div>
-          </div>
         </div>
-      </div>
+      </Modal>
 
       {/* Onay dialog'u */}
       {showConfirm && (
         <ConfirmDialog
           isOpen={showConfirm}
           title="Emin misiniz?"
-          message={`"${order.customerName}" müşterisinin ${formatCurrency(order.total_amount)} tutarındaki siparişi iptal edilecek. Bu işlem geri alınamaz.`}
+          message={`"${customerName}" müşterisinin ${formatCurrency(order.total_amount)} tutarındaki siparişi iptal edilecek. Bu işlem geri alınamaz.`}
           confirmText="Evet, İptal Et"
           cancelText="Hayır"
           onConfirm={handleConfirm}
