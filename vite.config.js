@@ -136,6 +136,11 @@ export default defineConfig({
             return 'charts';
           }
 
+          // Recharts - separate chunk to ensure correct version loading
+          if (id.includes('recharts')) {
+            return 'recharts';
+          }
+
           // Calendar library
           if (id.includes('react-big-calendar') || id.includes('moment')) {
             return 'calendar';
