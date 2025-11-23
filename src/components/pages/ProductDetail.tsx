@@ -2,6 +2,10 @@ import React, { useMemo, useState, memo } from 'react';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { getCategoryWithIcon } from '../../utils/categories';
 import type { Product, Order, Quote, Customer, StockMovement } from '../../types';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
 
 interface SalesStats {
   id: string;
@@ -24,7 +28,7 @@ interface SaleHistory {
   status: string;
 }
 
-type TabId = 'overview' | 'sales-history' | 'customers' | 'profit-analysis' | 'stock-movements';
+type TabId = 'overview' | 'sales-history' | 'customers' | 'profit-analysis' | 'sales-analytics' | 'stock-movements';
 
 interface ProductDetailProps {
   product: Product;
@@ -48,6 +52,7 @@ const ProductDetail = memo<ProductDetailProps>(({
   onBack
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<30 | 90 | 180 | 365 | 'all'>(90);
 
   // Tüm satışları hesapla
   const salesData = useMemo(() => {
@@ -116,6 +121,106 @@ const ProductDetail = memo<ProductDetailProps>(({
       .filter(m => m.productId === product.id)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [stockMovements, product.id]);
+
+  // Sales Analytics Data
+  const analyticsData = useMemo(() => {
+    const now = new Date();
+    const cutoffDate = analyticsPeriod === 'all'
+      ? new Date(0)
+      : new Date(now.getTime() - (analyticsPeriod * 24 * 60 * 60 * 1000));
+
+    const filteredOrders = orders.filter(o => {
+      if (o.isDeleted) return false;
+      if (!o.items?.some(item => item.productId === product.id)) return false;
+      const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+      return orderDate >= cutoffDate;
+    });
+
+    // Monthly sales data for line chart
+    const monthlySales = new Map<string, { quantity: number; revenue: number }>();
+    filteredOrders.forEach(order => {
+      const orderDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
+      const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
+
+      const item = order.items?.find(i => i.productId === product.id);
+      if (!item) return;
+
+      const existing = monthlySales.get(monthKey) || { quantity: 0, revenue: 0 };
+      monthlySales.set(monthKey, {
+        quantity: existing.quantity + (item.quantity || 0),
+        revenue: existing.revenue + (item.total || item.quantity * item.unit_price)
+      });
+    });
+
+    const monthlyData = Array.from(monthlySales.entries())
+      .map(([month, data]) => ({ month, ...data }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Customer distribution for bar chart
+    const customerSalesMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+    filteredOrders.forEach(order => {
+      const item = order.items?.find(i => i.productId === product.id);
+      if (!item) return;
+
+      const customer = customers.find(c => c.id === order.customerId && !c.isDeleted);
+      const customerName = customer?.name || order.customerName || 'Bilinmeyen Müşteri';
+
+      const existing = customerSalesMap.get(order.customerId) || { name: customerName, quantity: 0, revenue: 0 };
+      customerSalesMap.set(order.customerId, {
+        name: customerName,
+        quantity: existing.quantity + (item.quantity || 0),
+        revenue: existing.revenue + (item.total || item.quantity * item.unit_price)
+      });
+    });
+
+    const customerData = Array.from(customerSalesMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10); // Top 10 customers
+
+    // Period comparison
+    const currentPeriodDays = analyticsPeriod === 'all' ? 365 : Number(analyticsPeriod);
+    const previousCutoff = new Date(cutoffDate.getTime() - (currentPeriodDays * 24 * 60 * 60 * 1000));
+
+    const previousOrders = orders.filter(o => {
+      if (o.isDeleted) return false;
+      if (!o.items?.some(item => item.productId === product.id)) return false;
+      const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+      return orderDate >= previousCutoff && orderDate < cutoffDate;
+    });
+
+    const currentStats = filteredOrders.reduce((acc, order) => {
+      const item = order.items?.find(i => i.productId === product.id);
+      if (!item) return acc;
+      return {
+        quantity: acc.quantity + (item.quantity || 0),
+        revenue: acc.revenue + (item.total || item.quantity * item.unit_price)
+      };
+    }, { quantity: 0, revenue: 0 });
+
+    const previousStats = previousOrders.reduce((acc, order) => {
+      const item = order.items?.find(i => i.productId === product.id);
+      if (!item) return acc;
+      return {
+        quantity: acc.quantity + (item.quantity || 0),
+        revenue: acc.revenue + (item.total || item.quantity * item.unit_price)
+      };
+    }, { quantity: 0, revenue: 0 });
+
+    return {
+      monthlyData,
+      customerData,
+      comparison: {
+        current: currentStats,
+        previous: previousStats,
+        quantityChange: previousStats.quantity > 0
+          ? ((currentStats.quantity - previousStats.quantity) / previousStats.quantity) * 100
+          : 0,
+        revenueChange: previousStats.revenue > 0
+          ? ((currentStats.revenue - previousStats.revenue) / previousStats.revenue) * 100
+          : 0
+      }
+    };
+  }, [orders, product.id, customers, analyticsPeriod]);
 
   // Satış geçmişi
   const salesHistory = useMemo<SaleHistory[]>(() => {
@@ -293,6 +398,7 @@ const ProductDetail = memo<ProductDetailProps>(({
             { id: 'sales-history' as TabId, label: `Satış Geçmişi (${salesHistory.length})` },
             { id: 'customers' as TabId, label: `Müşteriler (${salesData.customerSales.length})` },
             { id: 'profit-analysis' as TabId, label: 'Kar Analizi' },
+            { id: 'sales-analytics' as TabId, label: '📊 Satış Analizi' },
             ...(product.track_stock ? [{ id: 'stock-movements' as TabId, label: `Stok Hareketleri (${productStockMovements.length})` }] : [])
           ].map(tab => (
             <button
@@ -613,6 +719,166 @@ const ProductDetail = memo<ProductDetailProps>(({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Satış Analizi */}
+        {activeTab === 'sales-analytics' && (
+          <div className="space-y-6">
+            {/* Period Filter */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 30, label: 'Son 30 Gün' },
+                { value: 90, label: 'Son 3 Ay' },
+                { value: 180, label: 'Son 6 Ay' },
+                { value: 365, label: 'Son 1 Yıl' },
+                { value: 'all', label: 'Tümü' }
+              ].map(period => (
+                <button
+                  key={period.value}
+                  onClick={() => setAnalyticsPeriod(period.value as any)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    analyticsPeriod === period.value
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Period Comparison Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Dönem Satış Miktarı</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analyticsData.comparison.current.quantity} {product.unit}
+                </div>
+                <div className={`text-sm mt-1 ${
+                  analyticsData.comparison.quantityChange >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {analyticsData.comparison.quantityChange >= 0 ? '▲' : '▼'}
+                  {' '}{Math.abs(analyticsData.comparison.quantityChange).toFixed(1)}% önceki döneme göre
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Dönem Ciro</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {formatCurrency(analyticsData.comparison.current.revenue, product.currency || 'TRY')}
+                </div>
+                <div className={`text-sm mt-1 ${
+                  analyticsData.comparison.revenueChange >= 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {analyticsData.comparison.revenueChange >= 0 ? '▲' : '▼'}
+                  {' '}{Math.abs(analyticsData.comparison.revenueChange).toFixed(1)}% önceki döneme göre
+                </div>
+              </div>
+            </div>
+
+            {/* Monthly Sales Chart */}
+            {analyticsData.monthlyData.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Aylık Satış Trendi
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={analyticsData.monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#6B7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      stroke="#6B7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#6B7280"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#F3F4F6'
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="quantity"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      name={`Miktar (${product.unit})`}
+                      dot={{ fill: '#3B82F6' }}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      name="Ciro (TRY)"
+                      dot={{ fill: '#10B981' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-gray-500 dark:text-gray-400">Bu dönem için satış verisi bulunamadı</p>
+              </div>
+            )}
+
+            {/* Customer Distribution Chart */}
+            {analyticsData.customerData.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  En Çok Satış Yapılan Müşteriler (Top 10)
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={analyticsData.customerData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#6B7280"
+                      style={{ fontSize: '12px' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                    />
+                    <YAxis stroke="#6B7280" style={{ fontSize: '12px' }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#F3F4F6'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="quantity" fill="#3B82F6" name={`Miktar (${product.unit})`} />
+                    <Bar dataKey="revenue" fill="#10B981" name="Ciro (TRY)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-gray-500 dark:text-gray-400">Müşteri verisi bulunamadı</p>
+              </div>
+            )}
           </div>
         )}
 
