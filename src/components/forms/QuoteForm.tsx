@@ -141,10 +141,6 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
             cleanData.rejection_reason = formData.rejection_reason;
         }
 
-        // Debug log to see what's being sent
-        console.log('📋 Teklif kaydediliyor:', cleanData);
-        console.log('📋 Items detayı:', JSON.stringify(cleanItems, null, 2));
-
         onSave(cleanData);
     };
 

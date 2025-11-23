@@ -140,10 +140,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onSave, onCancel, customer
             cleanData.id = order.id;
         }
 
-        // Debug log to see what's being sent
-        console.log('📦 Sipariş kaydediliyor:', cleanData);
-        console.log('📦 Items detayı:', JSON.stringify(cleanItems, null, 2));
-
         onSave(cleanData);
     };
 

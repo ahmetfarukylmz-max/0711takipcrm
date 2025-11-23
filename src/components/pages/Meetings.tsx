@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -56,12 +56,16 @@ interface MeetingsProps {
     onCreateQuote?: (customerId: string, products: any[]) => void;
     /** Loading state */
     loading?: boolean;
+    /** Selected customer ID from navigation */
+    selectedCustomerId?: string | null;
+    /** Callback when customer is selected */
+    onCustomerSelected?: () => void;
 }
 
 /**
  * Meetings component - Meeting management page with calendar view
  */
-const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, onDelete, onCustomerSave, onProductSave, onCreateQuote, loading = false }) => {
+const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, onDelete, onCustomerSave, onProductSave, onCreateQuote, loading = false, selectedCustomerId, onCustomerSelected }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);
@@ -76,6 +80,26 @@ const Meetings = memo<MeetingsProps>(({ meetings, customers, products, onSave, o
     });
     const [sortBy, setSortBy] = useState<'date' | 'next_action_date' | 'status' | 'customer'>('date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    // Handle selected customer from navigation
+    useEffect(() => {
+        if (selectedCustomerId) {
+            // Create a new meeting with pre-selected customer
+            const customer = customers.find(c => c.id === selectedCustomerId);
+            if (customer) {
+                setCurrentMeeting({
+                    customerId: selectedCustomerId,
+                    customerName: customer.name
+                } as Meeting);
+                setIsModalOpen(true);
+                setViewMode('list'); // Switch to list view to show the modal
+                // Clear the selection after opening
+                if (onCustomerSelected) {
+                    onCustomerSelected();
+                }
+            }
+        }
+    }, [selectedCustomerId, customers, onCustomerSelected]);
 
     const handleOpenModal = (meeting: Meeting | null = null) => {
         setCurrentMeeting(meeting);

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
 import SearchBar from '../common/SearchBar';
 import EmptyState from '../common/EmptyState';
 import ActionsDropdown from '../common/ActionsDropdown';
@@ -53,6 +54,7 @@ const getCheckStatusColor = (status: CheckStatus): string => {
 };
 
 const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, customers, orders, onSave, onDelete }) => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CheckStatus | 'Tümü'>('Tümü');
   const [selectedCheck, setSelectedCheck] = useState<Payment | null>(null);
@@ -133,7 +135,7 @@ const CheckPortfolio: React.FC<CheckPortfolioProps> = ({ payments, customers, or
           {
             date: new Date().toISOString(),
             status: 'Bankaya Verildi',
-            changedBy: 'current-user', // TODO: Get from AuthContext
+            changedBy: user?.email || 'unknown',
             notes: 'Bankaya teslim edildi'
           }
         ]
