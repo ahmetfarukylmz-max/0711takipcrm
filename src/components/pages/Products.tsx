@@ -14,9 +14,9 @@ import { formatCurrency } from '../../utils/formatters';
 import { exportProducts } from '../../utils/excelExport';
 import { importProducts, downloadProductTemplate } from '../../utils/excelImport';
 import { PRODUCT_CATEGORIES, getCategoryWithIcon } from '../../utils/categories';
-import { updateProductStock } from '../../services/firestoreService';
+import { updateProductStock, saveStockCountSession, applyStockCountAdjustments } from '../../services/firestoreService';
 import useStore from '../../store/useStore';
-import type { Product, Order, Quote, Customer, StockMovement } from '../../types';
+import type { Product, Order, Quote, Customer, StockMovement, StockCountItem } from '../../types';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -86,6 +86,13 @@ const Products = memo<ProductsProps>(({
     const [bulkStockAmount, setBulkStockAmount] = useState<number | ''>('');
     const [individualStockAmounts, setIndividualStockAmounts] = useState<Record<string, number>>({});
     const [bulkStockNote, setBulkStockNote] = useState('');
+
+    // Stock count state
+    const [isStockCountModalOpen, setIsStockCountModalOpen] = useState(false);
+    const [stockCountStep, setStockCountStep] = useState<'select' | 'count' | 'review'>('select');
+    const [stockCountItems, setStockCountItems] = useState<StockCountItem[]>([]);
+    const [stockCountNotes, setStockCountNotes] = useState('');
+    const [isApplyingCount, setIsApplyingCount] = useState(false);
 
     // Sorting state
     type SortField = 'name' | 'cost_price' | 'selling_price' | 'stock' | 'profit_margin' | 'turnover_rate';
@@ -416,6 +423,138 @@ const Products = memo<ProductsProps>(({
         }
     };
 
+    // Stock count handlers
+    const handleOpenStockCountModal = () => {
+        // Get all products with stock tracking enabled
+        const trackedProducts = activeProducts.filter(p => p.track_stock);
+
+        if (trackedProducts.length === 0) {
+            toast.error('Stok takibi aktif olan ürün bulunamadı');
+            return;
+        }
+
+        // Initialize count items with current stock
+        const countItems: StockCountItem[] = trackedProducts.map(product => ({
+            productId: product.id,
+            productName: product.name,
+            productUnit: product.unit || 'Adet',
+            systemStock: product.stock_quantity || 0,
+            physicalCount: null,
+            variance: 0,
+            variancePercentage: 0,
+            notes: ''
+        }));
+
+        setStockCountItems(countItems);
+        setStockCountStep('count');
+        setIsStockCountModalOpen(true);
+    };
+
+    const handleCloseStockCountModal = () => {
+        setIsStockCountModalOpen(false);
+        setStockCountStep('select');
+        setStockCountItems([]);
+        setStockCountNotes('');
+        setIsApplyingCount(false);
+    };
+
+    const handlePhysicalCountChange = (productId: string, value: string) => {
+        const numValue = value === '' ? null : Number(value);
+
+        setStockCountItems(prev => prev.map(item => {
+            if (item.productId !== productId) return item;
+
+            const physicalCount = numValue;
+            const variance = physicalCount !== null ? physicalCount - item.systemStock : 0;
+            const variancePercentage = item.systemStock > 0
+                ? (variance / item.systemStock) * 100
+                : 0;
+
+            return {
+                ...item,
+                physicalCount,
+                variance,
+                variancePercentage
+            };
+        }));
+    };
+
+    const handleItemNoteChange = (productId: string, notes: string) => {
+        setStockCountItems(prev => prev.map(item =>
+            item.productId === productId ? { ...item, notes } : item
+        ));
+    };
+
+    const handleProceedToReview = () => {
+        // Check if all products have been counted
+        const uncountedProducts = stockCountItems.filter(item => item.physicalCount === null);
+
+        if (uncountedProducts.length > 0) {
+            toast.error(`${uncountedProducts.length} ürün sayılmadı. Devam etmek için tüm ürünleri sayın.`);
+            return;
+        }
+
+        setStockCountStep('review');
+    };
+
+    const handleApplyStockCount = async () => {
+        if (!user?.uid || !user?.email) {
+            toast.error('Kullanıcı bilgisi bulunamadı');
+            return;
+        }
+
+        setIsApplyingCount(true);
+
+        try {
+            const productsWithVariance = stockCountItems.filter(item => item.variance !== 0);
+            const totalVarianceValue = productsWithVariance.reduce((sum, item) => {
+                const product = products.find(p => p.id === item.productId);
+                return sum + (product ? Math.abs(item.variance) * product.cost_price : 0);
+            }, 0);
+
+            // Create count session
+            const countSession = {
+                countDate: new Date().toISOString().slice(0, 10),
+                startedAt: new Date().toISOString(),
+                completedAt: new Date().toISOString(),
+                status: 'in_progress' as const,
+                items: stockCountItems,
+                totalProducts: stockCountItems.length,
+                productsWithVariance: productsWithVariance.length,
+                totalVarianceValue,
+                notes: stockCountNotes,
+                createdBy: user.uid,
+                createdByEmail: user.email
+            };
+
+            const sessionId = await saveStockCountSession(user.uid, countSession);
+
+            if (!sessionId) {
+                throw new Error('Sayım oturumu kaydedilemedi');
+            }
+
+            // Apply adjustments
+            const success = await applyStockCountAdjustments(
+                user.uid,
+                sessionId,
+                stockCountItems,
+                user.email
+            );
+
+            if (success) {
+                toast.success(`Stok sayımı tamamlandı. ${productsWithVariance.length} üründe düzeltme yapıldı.`);
+                handleCloseStockCountModal();
+            } else {
+                toast.error('Stok düzeltmeleri uygulanırken hata oluştu');
+            }
+        } catch (error) {
+            console.error('Stock count application error:', error);
+            toast.error('Stok sayımı hatası');
+        } finally {
+            setIsApplyingCount(false);
+        }
+    };
+
     // Filter out deleted products and apply search
     const activeProducts = products.filter(p => !p.isDeleted);
 
@@ -696,6 +835,16 @@ const Products = memo<ProductsProps>(({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                         <span className="hidden md:inline">Yükle</span>
+                    </button>
+                    <button
+                        onClick={handleOpenStockCountModal}
+                        className="flex items-center flex-1 sm:flex-none bg-indigo-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-indigo-600"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        <span className="hidden md:inline">Stok Sayımı</span>
+                        <span className="md:hidden">Sayım</span>
                     </button>
                     <button
                         onClick={() => handleOpenModal()}
@@ -1426,6 +1575,191 @@ const Products = memo<ProductsProps>(({
                         </button>
                     </div>
                 </div>
+            </Modal>
+
+            {/* Stock Count Modal */}
+            <Modal
+                show={isStockCountModalOpen}
+                onClose={handleCloseStockCountModal}
+                title={
+                    stockCountStep === 'count' ? 'Stok Sayımı - Fiziksel Sayım' :
+                    stockCountStep === 'review' ? 'Stok Sayımı - İnceleme ve Onay' :
+                    'Stok Sayımı'
+                }
+            >
+                {stockCountStep === 'count' && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                            <p className="text-sm text-blue-800 dark:text-blue-200">
+                                Her ürün için fiziksel olarak saydığınız miktarı girin. Sistem stoğu ile karşılaştırma otomatik olarak yapılacaktır.
+                            </p>
+                        </div>
+
+                        <div className="max-h-96 overflow-y-auto space-y-3">
+                            {stockCountItems.map(item => (
+                                <div key={item.productId} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                                                {item.productName}
+                                            </h4>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                Sistem Stoğu: <span className="font-semibold">{item.systemStock} {item.productUnit}</span>
+                                            </p>
+                                        </div>
+                                        {item.physicalCount !== null && item.variance !== 0 && (
+                                            <span className={`text-xs px-2 py-1 rounded ${
+                                                item.variance > 0
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                            }`}>
+                                                {item.variance > 0 ? '+' : ''}{item.variance} {item.productUnit}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={item.physicalCount ?? ''}
+                                            onChange={(e) => handlePhysicalCountChange(item.productId, e.target.value)}
+                                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder={`Fiziksel sayım (${item.productUnit})`}
+                                        />
+                                    </div>
+
+                                    {item.variance !== 0 && item.physicalCount !== null && (
+                                        <input
+                                            type="text"
+                                            value={item.notes || ''}
+                                            onChange={(e) => handleItemNoteChange(item.productId, e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Fark nedeni (opsiyonel)"
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={handleCloseStockCountModal}
+                                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={handleProceedToReview}
+                                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                İncele ve Onayla
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {stockCountStep === 'review' && (
+                    <div className="space-y-4">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                                <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Toplam Ürün</p>
+                                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                                    {stockCountItems.length}
+                                </p>
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+                                <p className="text-xs text-orange-600 dark:text-orange-400 mb-1">Fark Olan</p>
+                                <p className="text-xl font-bold text-orange-900 dark:text-orange-100">
+                                    {stockCountItems.filter(item => item.variance !== 0).length}
+                                </p>
+                            </div>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">Toplam Fark</p>
+                                <p className="text-xl font-bold text-purple-900 dark:text-purple-100">
+                                    {stockCountItems.reduce((sum, item) => sum + Math.abs(item.variance), 0).toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Variance Details */}
+                        <div className="max-h-64 overflow-y-auto space-y-2">
+                            <h4 className="font-medium text-gray-900 dark:text-gray-100 sticky top-0 bg-white dark:bg-gray-800 py-2">
+                                Farklar:
+                            </h4>
+                            {stockCountItems.filter(item => item.variance !== 0).length === 0 ? (
+                                <p className="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                                    Hiçbir üründe fark tespit edilmedi. Tüm stoklar uyumlu!
+                                </p>
+                            ) : (
+                                stockCountItems.filter(item => item.variance !== 0).map(item => (
+                                    <div key={item.productId} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h5 className="font-medium text-gray-900 dark:text-gray-100">
+                                                    {item.productName}
+                                                </h5>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Sistem: {item.systemStock} → Fiziksel: {item.physicalCount} {item.productUnit}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${
+                                                    item.variance > 0
+                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                                }`}>
+                                                    {item.variance > 0 ? '+' : ''}{item.variance} {item.productUnit}
+                                                </span>
+                                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                    {item.variancePercentage > 0 ? '+' : ''}{item.variancePercentage.toFixed(1)}%
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {item.notes && (
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                                                Not: {item.notes}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* General Notes */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Genel Notlar (İsteğe Bağlı)
+                            </label>
+                            <textarea
+                                value={stockCountNotes}
+                                onChange={(e) => setStockCountNotes(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={2}
+                                placeholder="Sayım hakkında genel notlar..."
+                            />
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={() => setStockCountStep('count')}
+                                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Geri
+                            </button>
+                            <button
+                                onClick={handleApplyStockCount}
+                                disabled={isApplyingCount}
+                                className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isApplyingCount ? 'Uygulanıyor...' : 'Stok Düzeltmelerini Uygula'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <ConfirmDialog

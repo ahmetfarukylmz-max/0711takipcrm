@@ -447,3 +447,40 @@ export interface PaymentAnalytics {
     paymentMethod: PaymentMethod;
   }>;
 }
+
+// Stock Count Item Interface (individual product count in a session)
+export interface StockCountItem {
+  productId: string;
+  productName: string; // Denormalized
+  productUnit: string; // Denormalized
+  systemStock: number; // Stock in system at count time
+  physicalCount: number | null; // Actual counted quantity
+  variance: number; // Difference (physicalCount - systemStock)
+  variancePercentage: number; // (variance / systemStock) * 100
+  notes?: string; // Notes for this specific product
+}
+
+// Stock Count Session Interface (full inventory count session)
+export interface StockCountSession {
+  id: string;
+  countDate: string; // YYYY-MM-DD
+  startedAt: Timestamp; // When count started
+  completedAt?: Timestamp; // When count was completed
+  status: 'in_progress' | 'completed' | 'cancelled'; // Count status
+
+  items: StockCountItem[]; // All products in this count
+
+  totalProducts: number; // Total products counted
+  productsWithVariance: number; // Products with discrepancies
+  totalVarianceValue: number; // Total value of variances (in currency)
+
+  appliedAt?: Timestamp; // When adjustments were applied to stock
+  appliedBy?: string; // User ID who applied adjustments
+  appliedByEmail?: string; // Email of applier
+
+  notes?: string; // General notes for this count session
+  createdBy: string; // User ID who created this count
+  createdByEmail: string; // Email of creator
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}

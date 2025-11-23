@@ -545,3 +545,81 @@ export const cancelOrder = async (userId, orderId, cancellationData) => {
         return false;
     }
 };
+
+/**
+ * Save stock count session
+ * @param {string} userId - User ID
+ * @param {Object} countSession - Count session data
+ * @returns {Promise<string>} Session ID
+ */
+export const saveStockCountSession = async (userId, countSession) => {
+    if (!userId) return null;
+
+    try {
+        const { id, ...dataToSave } = countSession;
+
+        if (id) {
+            // Update existing session
+            await updateDoc(doc(db, `users/${userId}/stock_counts`, id), {
+                ...dataToSave,
+                updatedAt: new Date().toISOString()
+            });
+            return id;
+        } else {
+            // Create new session
+            const newSessionRef = await addDoc(collection(db, `users/${userId}/stock_counts`), {
+                ...dataToSave,
+                createdAt: new Date().toISOString()
+            });
+            return newSessionRef.id;
+        }
+    } catch (error) {
+        console.error('Error saving stock count session:', error);
+        return null;
+    }
+};
+
+/**
+ * Apply stock count adjustments to inventory
+ * @param {string} userId - User ID
+ * @param {string} sessionId - Count session ID
+ * @param {Array} countItems - Array of count items with variances
+ * @param {string} userEmail - User email for logging
+ * @returns {Promise<boolean>} Success status
+ */
+export const applyStockCountAdjustments = async (userId, sessionId, countItems, userEmail) => {
+    if (!userId || !sessionId) return false;
+
+    try {
+        // Apply adjustments for each product with variance
+        const adjustmentPromises = countItems
+            .filter(item => item.variance !== 0 && item.physicalCount !== null)
+            .map(item => {
+                return updateProductStock(userId, item.productId, item.variance, {
+                    type: 'Sayım Düzeltmesi',
+                    relatedId: sessionId,
+                    relatedType: 'stock_count',
+                    relatedReference: `Stok Sayımı - ${new Date().toISOString().slice(0, 10)}`,
+                    notes: item.notes || `Stok sayımı düzeltmesi: ${item.systemStock} → ${item.physicalCount}`,
+                    createdBy: userId,
+                    createdByEmail: userEmail
+                });
+            });
+
+        await Promise.all(adjustmentPromises);
+
+        // Update count session as applied
+        await updateDoc(doc(db, `users/${userId}/stock_counts`, sessionId), {
+            appliedAt: new Date().toISOString(),
+            appliedBy: userId,
+            appliedByEmail: userEmail,
+            status: 'completed',
+            updatedAt: new Date().toISOString()
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error applying stock count adjustments:', error);
+        return false;
+    }
+};
