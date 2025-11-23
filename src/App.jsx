@@ -92,6 +92,8 @@ const CrmApp = () => {
     const setConnectionStatus = useStore((state) => state.setConnectionStatus);
 
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+    const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
     // Initialize store instance for optimistic UI
     useEffect(() => {
@@ -388,7 +390,6 @@ const CrmApp = () => {
     };
 
     const handlePaymentSave = async (data) => {
-        console.log('💰 Saving payment:', data);
         const action = data.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
         const customerName = customers.find(c => c.id === data.customerId)?.name || '';
 
@@ -407,9 +408,7 @@ const CrmApp = () => {
             data.createdBy = user.uid;
             data.createdByEmail = user.email;
         }
-        console.log('💾 Calling saveDocument for payments...');
         await saveDocument(user.uid, 'payments', data);
-        console.log('✅ Payment saved successfully');
         logUserActivity(action, details);
         toast.success(`Ödeme başarıyla ${data.id ? 'güncellendi' : 'kaydedildi'}!`);
     };
@@ -670,6 +669,7 @@ const CrmApp = () => {
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
                         onCustomTaskSave={handleCustomTaskSave}
+                        onScheduleMeeting={(customerId) => setSelectedCustomerId(customerId)}
                         loading={dataLoading}
                     />
                 );
@@ -744,8 +744,8 @@ const CrmApp = () => {
                             }
                         }}
                         onGoToPayment={(paymentId) => {
+                            setSelectedPaymentId(paymentId);
                             setActivePage('Ödemeler');
-                            // TODO: Filter to specific payment
                         }}
                         onGeneratePdf={handleGeneratePdf}
                         loading={dataLoading}
@@ -763,12 +763,25 @@ const CrmApp = () => {
                         onProductSave={handleProductSave}
                         onCreateQuote={handleCreateQuoteFromMeeting}
                         loading={dataLoading}
+                        selectedCustomerId={selectedCustomerId}
+                        onCustomerSelected={() => setSelectedCustomerId(null)}
                     />
                 );
             case 'Sevkiyat':
                 return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
             case 'Ödemeler':
-                return <Payments payments={payments} customers={customers} orders={orders} onSave={handlePaymentSave} onDelete={handlePaymentDelete} loading={dataLoading} />;
+                return (
+                    <Payments
+                        payments={payments}
+                        customers={customers}
+                        orders={orders}
+                        onSave={handlePaymentSave}
+                        onDelete={handlePaymentDelete}
+                        loading={dataLoading}
+                        selectedPaymentId={selectedPaymentId}
+                        onPaymentSelected={() => setSelectedPaymentId(null)}
+                    />
+                );
             case 'Cari Hesaplar':
                 return (
                     <Balances
@@ -813,6 +826,7 @@ const CrmApp = () => {
                         setActivePage={setActivePage}
                         onMeetingSave={handleMeetingSave}
                         onCustomTaskSave={handleCustomTaskSave}
+                        onScheduleMeeting={(customerId) => setSelectedCustomerId(customerId)}
                         loading={dataLoading}
                     />
                 );

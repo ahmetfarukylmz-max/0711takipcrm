@@ -210,8 +210,10 @@ const InactiveCustomers = memo<InactiveCustomersProps>(({
 
                                     <button
                                         onClick={() => {
+                                            if (onScheduleMeeting) {
+                                                onScheduleMeeting(item.customer.id);
+                                            }
                                             setActivePage('Görüşmeler');
-                                            // TODO: Auto-fill customer in meeting form
                                         }}
                                         className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                                         title="Görüşme planla"

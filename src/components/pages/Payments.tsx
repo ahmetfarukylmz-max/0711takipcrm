@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import PaymentForm from '../forms/PaymentForm';
@@ -20,6 +20,8 @@ interface PaymentsProps {
   onSave: (payment: Partial<Payment>) => Promise<void> | void;
   onDelete: (id: string) => void;
   loading?: boolean;
+  selectedPaymentId?: string | null;
+  onPaymentSelected?: () => void;
 }
 
 const Payments: React.FC<PaymentsProps> = ({
@@ -28,7 +30,9 @@ const Payments: React.FC<PaymentsProps> = ({
   orders,
   onSave,
   onDelete,
-  loading = false
+  loading = false,
+  selectedPaymentId,
+  onPaymentSelected
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
@@ -49,6 +53,22 @@ const Payments: React.FC<PaymentsProps> = ({
     isOpen: false,
     payment: null
   });
+
+  // Handle selected payment from navigation
+  useEffect(() => {
+    if (selectedPaymentId) {
+      const payment = payments.find(p => p.id === selectedPaymentId);
+      if (payment) {
+        setCurrentPayment(payment);
+        setIsModalOpen(true);
+        setViewMode('list'); // Switch to list view to show the modal
+        // Clear the selection after opening
+        if (onPaymentSelected) {
+          onPaymentSelected();
+        }
+      }
+    }
+  }, [selectedPaymentId, payments, onPaymentSelected]);
 
   // Filtreleme ve arama
   const filteredPayments = useMemo(() => {
@@ -299,11 +319,10 @@ const Payments: React.FC<PaymentsProps> = ({
 
   // Takvimden tarih seçildiğinde (yeni ödeme ekle)
   const handleSelectSlotFromCalendar = (slotInfo: { start: Date; end: Date }) => {
-    // TODO: Yeni ödeme modalını aç ve dueDate'i pre-fill et
     const dueDate = slotInfo.start.toISOString().split('T')[0];
-    console.log('Yeni ödeme ekle, vade tarihi:', dueDate);
-    // Şimdilik sadece modal açalım
-    handleOpenModal();
+    // Vade tarihi önceden doldurulmuş yeni ödeme oluştur
+    setCurrentPayment({ dueDate } as Payment);
+    setIsModalOpen(true);
   };
 
   // Actions dropdown için aksiyonlar

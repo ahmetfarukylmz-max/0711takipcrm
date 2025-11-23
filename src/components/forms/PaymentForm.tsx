@@ -1,6 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import FormInput from '../common/FormInput';
 import { formatCurrency } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
 import type { Payment, Customer, Order, PaymentMethod, PaymentStatus, Currency, CheckStatus } from '../../types';
 
 interface PaymentFormProps {
@@ -12,6 +13,7 @@ interface PaymentFormProps {
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, onSave, onCancel }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     customerId: payment?.customerId || '',
     orderId: payment?.orderId || '',
@@ -106,15 +108,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
 
       cleanData.checkTracking = tracking;
 
-      // Debug: checkTracking nesnesini konsola yazdır
-      console.log('💳 checkTracking oluşturuldu:', {
-        paymentStatus: formData.status,
-        checkTrackingStatus: tracking.status,
-        checkNumber: tracking.checkNumber,
-        amount: tracking.amount,
-        existingStatus: existingTracking?.status
-      });
-
       // Durum değişikliği varsa status history'e ekle
       if (payment?.id && existingTracking && existingTracking.status !== tracking.status) {
         cleanData.checkTracking.statusHistory = [
@@ -122,7 +115,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ payment, customers, orders, o
           {
             date: new Date().toISOString(),
             status: tracking.status,
-            changedBy: 'current-user', // TODO: Get from AuthContext
+            changedBy: user?.email || 'unknown',
             notes: `Durum güncellendi: ${existingTracking.status} → ${tracking.status}`
           }
         ];
