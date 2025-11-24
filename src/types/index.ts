@@ -94,6 +94,19 @@ export interface Product {
   minimum_stock?: number; // Minimum stock level for warnings
   track_stock?: boolean; // Enable stock tracking for this product
 
+  // Hybrid Costing System (optional - backward compatible)
+  costingMethod?: CostingMethod; // Default method: 'fifo' | 'lifo' | 'average' | 'manual'
+  allowManualLotSelection?: boolean; // Allow manual lot selection during sales
+  requireLotApproval?: boolean; // Require approval for FIFO violations
+  lotTrackingEnabled?: boolean; // Enable lot tracking for this product
+
+  // Weighted Average (for average method)
+  averageCost?: number; // Weighted average cost
+  totalStockValue?: number; // Total stock value
+
+  // Cost History
+  costHistory?: CostHistoryEntry[]; // Last 12 months cost history
+
   createdBy?: string; // User ID who created this
   createdByEmail?: string; // Email of creator (for display)
   isDeleted?: boolean;
@@ -110,6 +123,31 @@ export interface OrderItem {
   unit_price: number;
   unit?: string;
   total?: number;
+
+  // HYBRID COSTING SYSTEM - Dual Cost Tracking
+
+  // ACCOUNTING COST (FIFO-based)
+  accountingCost?: number; // FIFO total cost: 7,000 TL
+  accountingCostPerUnit?: number; // FIFO unit cost: 35 TL/kg
+  accountingLotConsumptions?: LotConsumption[]; // Lots according to FIFO
+
+  // PHYSICAL COST (Actual)
+  physicalCost?: number; // Actual cost: 7,200 TL
+  physicalCostPerUnit?: number; // Actual unit cost: 36 TL/kg
+  physicalLotConsumptions?: LotConsumption[]; // Actual lots used
+
+  // VARIANCE ANALYSIS
+  costVariance?: number; // Variance: 200 TL (physical - accounting)
+  costVariancePercentage?: number; // Variance %: 2.86%
+  varianceReason?: string; // "Manual lot selection - LIFO used"
+  hasCostVariance?: boolean; // FIFO violation?
+
+  // LOT SELECTION METHOD
+  lotSelectionMethod?: LotSelectionMethod; // 'auto-fifo' | 'auto-lifo' | 'manual' | 'average'
+  manualLotSelectionApprovedBy?: string; // Approver
+
+  // USER NOTES
+  costingNotes?: string; // "Picked from front of warehouse"
 }
 
 // Quote Interface
@@ -481,6 +519,149 @@ export interface StockCountSession {
   notes?: string; // General notes for this count session
   createdBy: string; // User ID who created this count
   createdByEmail: string; // Email of creator
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// ============================================================================
+// HYBRID COSTING SYSTEM - LOT TRACKING & COST MANAGEMENT
+// ============================================================================
+
+// Costing Methods
+export type CostingMethod = 'fifo' | 'lifo' | 'average' | 'manual';
+export type LotSelectionMethod = 'auto-fifo' | 'auto-lifo' | 'manual' | 'average';
+export type LotStatus = 'active' | 'consumed' | 'expired' | 'returned';
+export type ConsumptionType = 'fifo' | 'lifo' | 'manual' | 'average';
+export type ReconciliationStatus = 'pending' | 'approved' | 'adjusted' | 'rejected';
+export type AdjustmentType = 'accounting-to-physical' | 'physical-to-accounting';
+
+// Stock Lot Interface (Physical Stock - LOT Based)
+export interface StockLot {
+  // Basic Information
+  id: string;
+  productId: string;
+  productName: string; // Denormalized
+  productUnit: string; // Denormalized
+
+  // Lot Information
+  lotNumber: string; // "LOT-2024-11-22-001"
+  purchaseDate: string; // "2024-11-22" (YYYY-MM-DD)
+  purchaseReference?: string; // "FT-2024-1234" (Invoice number)
+  supplierName?: string; // "ABC Çelik Ltd."
+  invoiceNumber?: string; // "FT-001"
+
+  // Quantity Information
+  initialQuantity: number; // Initial: 500 kg
+  remainingQuantity: number; // Remaining: 350 kg
+  consumedQuantity: number; // Used: 150 kg
+
+  // Cost Information
+  unitCost: number; // Unit cost: 35.50 TL/kg
+  totalCost: number; // Total: 17,750 TL
+  currency: Currency; // 'TRY' | 'USD' | 'EUR'
+  exchangeRate?: number; // Exchange rate (for USD/EUR)
+
+  // Quality & Location (Optional)
+  batchNumber?: string; // Manufacturer batch number
+  expiryDate?: string; // Expiry date (for food products)
+  qualityGrade?: string; // "A", "B", "C" quality class
+  warehouseLocation?: string; // "Warehouse-A / Shelf-12"
+
+  // Status
+  status: LotStatus;
+  isConsumed: boolean; // Fully consumed?
+  consumedAt?: string; // Consumption date
+
+  // Notes
+  notes?: string;
+
+  // Metadata
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Lot Consumption Interface (Lot Usage Record)
+export interface LotConsumption {
+  id: string;
+  lotId: string;
+  lotNumber: string; // Denormalized
+
+  // Related Records
+  orderId: string;
+  orderNumber?: string;
+  shipmentId?: string;
+
+  // Consumption Information
+  quantityUsed: number; // Used from this lot: 150 kg
+  unitCost: number; // Cost at that time: 35.50
+  totalCost: number; // Total cost: 5,325 TL
+
+  // Consumption Type
+  consumptionType: ConsumptionType;
+
+  // Date
+  consumptionDate: string; // "2024-11-25"
+
+  // Metadata
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: Timestamp;
+}
+
+// Cost History Entry Interface
+export interface CostHistoryEntry {
+  date: string; // "2024-11-01"
+  averageCost: number; // Average at that time: 35.25
+  stockQuantity: number; // Stock at that time: 850
+  method: CostingMethod;
+  reason: 'purchase' | 'sale' | 'adjustment' | 'reconciliation';
+  notes?: string;
+}
+
+// Lot Reconciliation Interface (Monthly reconciliation)
+export interface LotReconciliation {
+  id: string;
+
+  // Period
+  period: string; // "2024-11" (YYYY-MM)
+  periodStart: string; // "2024-11-01"
+  periodEnd: string; // "2024-11-30"
+
+  // Product
+  productId: string;
+  productName: string; // Denormalized
+
+  // LOT Information
+  lotId: string;
+  lotNumber: string;
+
+  // VARIANCES
+  accountingBalance: number; // Accounting stock: 300 kg
+  physicalBalance: number; // Physical stock: 500 kg
+  variance: number; // Variance: +200 kg
+  varianceValue: number; // Value variance: +7,000 TL
+
+  // STATUS
+  status: ReconciliationStatus;
+  adjustmentNeeded: boolean;
+
+  // ADJUSTMENT
+  adjustmentType?: AdjustmentType;
+  adjustmentDate?: string;
+  adjustedBy?: string;
+  adjustedByEmail?: string;
+  adjustmentNotes?: string;
+
+  // APPROVAL
+  approvedBy?: string;
+  approvedByEmail?: string;
+  approvedAt?: string;
+
+  // Metadata
+  createdBy: string;
+  createdByEmail: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }
