@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, memo } from 'react';
+import React, { useMemo, useCallback, memo, useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +38,18 @@ const AdjustmentsIcon = (props) => (
     </svg>
 );
 
+const ChevronDownIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+);
+
+const ChevronRightIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+);
+
 // Memoized NavLink component for better performance
 const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
     const isActive = activePage === page;
@@ -67,8 +79,92 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
 
 NavLink.displayName = 'NavLink';
 
+// Memoized ParentNavLink component with expand/collapse for submenus
+const ParentNavLink = memo(({ page, children, Icon, hasSubmenu, isExpanded, onToggleExpand, badge }) => {
+    return (
+        <button
+            onClick={onToggleExpand}
+            aria-label={children}
+            aria-expanded={isExpanded}
+            className="group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]"
+            title={children}
+        >
+            <Icon className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+            <span className="flex-1 text-left font-medium text-sm">{children}</span>
+            {badge > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+                    {badge > 99 ? '99+' : badge}
+                </span>
+            )}
+            {hasSubmenu && (
+                isExpanded
+                    ? <ChevronDownIcon className="w-4 h-4 transition-transform duration-200" aria-hidden="true" />
+                    : <ChevronRightIcon className="w-4 h-4 transition-transform duration-200" aria-hidden="true" />
+            )}
+        </button>
+    );
+});
+
+ParentNavLink.displayName = 'ParentNavLink';
+
+// Memoized SubNavLink component for submenu items
+const SubNavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
+    const isActive = activePage === page;
+
+    return (
+        <button
+            onClick={() => onNavigate(page)}
+            aria-label={children}
+            aria-current={isActive ? 'page' : undefined}
+            className={`group w-full flex items-center gap-3 pl-12 pr-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
+                    : 'text-gray-400 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
+            }`}
+            title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
+        >
+            <Icon className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} aria-hidden="true" />
+            <span className="flex-1 text-left font-medium text-sm">{children}</span>
+            {badge > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+                    {badge > 99 ? '99+' : badge}
+                </span>
+            )}
+        </button>
+    );
+});
+
+SubNavLink.displayName = 'SubNavLink';
+
 const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, overdueItems, isOpen, onClose }) => {
     const { user, isAdmin } = useAuth();
+
+    // State for expanded menu items (persisted to localStorage)
+    const [expandedMenus, setExpandedMenus] = useState(() => {
+        try {
+            const saved = localStorage.getItem('sidebarExpandedMenus');
+            return saved ? JSON.parse(saved) : {};
+        } catch {
+            return {};
+        }
+    });
+
+    // Save expanded menus to localStorage whenever they change
+    useEffect(() => {
+        try {
+            localStorage.setItem('sidebarExpandedMenus', JSON.stringify(expandedMenus));
+        } catch {
+            // Ignore localStorage errors
+        }
+    }, [expandedMenus]);
+
+    // Toggle expanded state for a parent menu
+    const handleToggleExpand = useCallback((menuKey) => {
+        setExpandedMenus(prev => ({
+            ...prev,
+            [menuKey]: !prev[menuKey]
+        }));
+    }, []);
 
     // Memoized logout handler
     const handleLogout = useCallback(async () => {
@@ -88,21 +184,29 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
         }
     }, [setActivePage, onClose]);
 
-    // Navigation items configuration with badges
+    // Navigation items configuration with badges and hierarchical structure
     const navigationItems = useMemo(() => {
         const items = [
             { page: 'Anasayfa', label: 'Anasayfa', Icon: HomeIcon, badge: 0 },
             { page: 'Müşteriler', label: 'Müşteriler', Icon: UsersIcon, badge: 0 },
-            { page: 'Ürünler', label: 'Ürünler', Icon: BoxIcon, badge: 0 },
+            {
+                page: 'Ürünler',
+                label: 'Ürünler',
+                Icon: BoxIcon,
+                badge: 0,
+                hasSubmenu: true,
+                submenu: [
+                    { page: 'Lot Yönetimi', label: 'Lot Yönetimi', Icon: CubeIcon, badge: 0 },
+                    { page: 'Uzlaştırma', label: 'Uzlaştırma', Icon: AdjustmentsIcon, badge: 0 }
+                ]
+            },
             { page: 'Teklifler', label: 'Teklifler', Icon: DocumentTextIcon, badge: 0 },
             { page: 'Siparişler', label: 'Siparişler', Icon: ClipboardListIcon, badge: 0 },
             { page: 'Görüşmeler', label: 'Görüşmeler', Icon: CalendarIcon, badge: 0 },
             { page: 'Sevkiyat', label: 'Sevkiyat', Icon: TruckIcon, badge: 0 },
-            { page: 'Ödemeler', label: 'Ödemeler', Icon: CreditCardIcon, badge: overdueItems?.payments || 0 },
             { page: 'Cari Hesaplar', label: 'Cari Hesaplar', Icon: ScaleIcon, badge: 0 },
+            { page: 'Ödemeler', label: 'Ödemeler', Icon: CreditCardIcon, badge: overdueItems?.payments || 0 },
             { page: 'Raporlar', label: 'Raporlar', Icon: ChartBarIcon, badge: 0 },
-            { page: 'Lot Yönetimi', label: 'Lot Yönetimi', Icon: CubeIcon, badge: 0 },
-            { page: 'Uzlaştırma', label: 'Uzlaştırma', Icon: AdjustmentsIcon, badge: 0 },
         ];
 
         // Add admin panel if user is admin
@@ -147,18 +251,65 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                     </button>
                 </div>
                 <nav className="flex flex-col gap-1 px-3 overflow-y-auto flex-1" role="navigation" aria-label="Sayfalar">
-                    {navigationItems.map(({ page, label, Icon, badge }) => (
-                        <NavLink
-                            key={page}
-                            page={page}
-                            Icon={Icon}
-                            activePage={activePage}
-                            onNavigate={handleNavClick}
-                            badge={badge}
-                        >
-                            {label}
-                        </NavLink>
-                    ))}
+                    {navigationItems.map((item) => {
+                        const { page, label, Icon, badge, hasSubmenu, submenu } = item;
+
+                        if (hasSubmenu && submenu) {
+                            // Parent item with submenu
+                            const isExpanded = expandedMenus[page] || false;
+
+                            return (
+                                <div key={page}>
+                                    <ParentNavLink
+                                        page={page}
+                                        Icon={Icon}
+                                        hasSubmenu={hasSubmenu}
+                                        isExpanded={isExpanded}
+                                        onToggleExpand={() => handleToggleExpand(page)}
+                                        badge={badge}
+                                    >
+                                        {label}
+                                    </ParentNavLink>
+
+                                    {/* Submenu with smooth expand/collapse animation */}
+                                    <div
+                                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                                            isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col gap-1 mt-1">
+                                            {submenu.map((subItem) => (
+                                                <SubNavLink
+                                                    key={subItem.page}
+                                                    page={subItem.page}
+                                                    Icon={subItem.Icon}
+                                                    activePage={activePage}
+                                                    onNavigate={handleNavClick}
+                                                    badge={subItem.badge}
+                                                >
+                                                    {subItem.label}
+                                                </SubNavLink>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        } else {
+                            // Regular item without submenu
+                            return (
+                                <NavLink
+                                    key={page}
+                                    page={page}
+                                    Icon={Icon}
+                                    activePage={activePage}
+                                    onNavigate={handleNavClick}
+                                    badge={badge}
+                                >
+                                    {label}
+                                </NavLink>
+                            );
+                        }
+                    })}
 
                     {/* Guide Button */}
                     <button
