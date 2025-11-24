@@ -43,6 +43,9 @@ const Balances = lazy(() => import('./components/pages/Balances'));
 const Reports = lazy(() => import('./components/pages/Reports'));
 const Admin = lazy(() => import('./components/pages/Admin'));
 const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
+// Hybrid Costing System Pages
+const StockLotManagement = lazy(() => import('./components/pages/StockLotManagement'));
+const LotReconciliation = lazy(() => import('./components/pages/LotReconciliation'));
 
 const LoadingScreen = () => (
     <div className="flex h-screen items-center justify-center bg-gray-100">
@@ -808,6 +811,10 @@ const CrmApp = () => {
                         onGuideClick={handleToggleGuide}
                     />
                 );
+            case 'Lot Yönetimi':
+                return <StockLotManagement />;
+            case 'Uzlaştırma':
+                return <LotReconciliation />;
             case 'Admin':
                 return <Admin />;
             case 'belge-hazirla':

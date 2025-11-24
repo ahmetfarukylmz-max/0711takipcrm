@@ -28,6 +28,11 @@ interface ProductFormData {
     track_stock: boolean;
     stock_quantity: string | number;
     minimum_stock: string | number;
+    // Hybrid Costing System
+    lotTrackingEnabled: boolean;
+    costingMethod: 'fifo' | 'lifo' | 'average';
+    allowManualLotSelection: boolean;
+    requireLotApproval: boolean;
 }
 
 /**
@@ -45,7 +50,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         category: product?.category || '',
         track_stock: product?.track_stock || false,
         stock_quantity: product?.stock_quantity || '',
-        minimum_stock: product?.minimum_stock || ''
+        minimum_stock: product?.minimum_stock || '',
+        // Hybrid Costing System
+        lotTrackingEnabled: product?.lotTrackingEnabled || false,
+        costingMethod: product?.costingMethod || 'average',
+        allowManualLotSelection: product?.allowManualLotSelection || false,
+        requireLotApproval: product?.requireLotApproval || false
     });
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -98,6 +108,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 ? parseFloat(formData.minimum_stock)
                 : formData.minimum_stock;
         }
+
+        // Add hybrid costing system fields
+        productData.lotTrackingEnabled = formData.lotTrackingEnabled;
+        productData.costingMethod = formData.costingMethod;
+        productData.allowManualLotSelection = formData.allowManualLotSelection;
+        productData.requireLotApproval = formData.requireLotApproval;
 
         onSave(productData);
     };
@@ -220,6 +236,94 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 {formData.track_stock && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                         💡 Stok miktarı minimum seviyenin altına düştüğünde uyarı alırsınız
+                    </p>
+                )}
+            </div>
+
+            {/* Hybrid Costing System */}
+            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">📦</span>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        Lot Takibi ve Maliyet Yönetimi
+                    </h3>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="lotTrackingEnabled"
+                        name="lotTrackingEnabled"
+                        checked={formData.lotTrackingEnabled}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor="lotTrackingEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                        Lot/Parti Takibi Aktif (Maliyetler lot bazlı takip edilir)
+                    </label>
+                </div>
+
+                {formData.lotTrackingEnabled && (
+                    <div className="space-y-4 pt-3 border-t border-blue-200 dark:border-blue-700">
+                        <FormSelect
+                            label="Maliyet Yöntemi"
+                            name="costingMethod"
+                            value={formData.costingMethod}
+                            onChange={handleChange}
+                        >
+                            <option value="average">Ağırlıklı Ortalama (Average)</option>
+                            <option value="fifo">İlk Giren İlk Çıkar (FIFO)</option>
+                            <option value="lifo">Son Giren İlk Çıkar (LIFO)</option>
+                        </FormSelect>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="allowManualLotSelection"
+                                name="allowManualLotSelection"
+                                checked={formData.allowManualLotSelection}
+                                onChange={handleChange}
+                                disabled={formData.costingMethod === 'average'}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50"
+                            />
+                            <label htmlFor="allowManualLotSelection" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                Manuel lot seçimine izin ver (Satış sırasında kullanıcı istediği lotu seçebilir)
+                            </label>
+                        </div>
+
+                        {formData.allowManualLotSelection && (
+                            <div className="flex items-center gap-2 pl-6">
+                                <input
+                                    type="checkbox"
+                                    id="requireLotApproval"
+                                    name="requireLotApproval"
+                                    checked={formData.requireLotApproval}
+                                    onChange={handleChange}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                />
+                                <label htmlFor="requireLotApproval" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    FIFO ihlalleri için onay gerektir
+                                </label>
+                            </div>
+                        )}
+
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-sm">
+                            <p className="text-gray-600 dark:text-gray-400 mb-2">
+                                <strong className="text-gray-900 dark:text-gray-100">ℹ️ Açıklamalar:</strong>
+                            </p>
+                            <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                                <li><strong>FIFO:</strong> En eski stok önce kullanılır (muhasebe standardı)</li>
+                                <li><strong>LIFO:</strong> En yeni stok önce kullanılır</li>
+                                <li><strong>Ortalama:</strong> Tüm lotların ağırlıklı ortalaması kullanılır</li>
+                                <li><strong>Manuel Seçim:</strong> Kullanıcı depoda hangi lotu kullandıysa onu seçer</li>
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
+                {!formData.lotTrackingEnabled && (
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                        💡 Lot takibi, aynı ürünün farklı zamanlarda farklı maliyetlerle alındığında kar analizini doğru yapmanızı sağlar.
                     </p>
                 )}
             </div>
