@@ -26,6 +26,18 @@ const ChartBarIcon = (props) => (
     </svg>
 );
 
+const CubeIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+);
+
+const AdjustmentsIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+    </svg>
+);
+
 // Memoized NavLink component for better performance
 const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
     const isActive = activePage === page;
@@ -89,6 +101,8 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
             { page: 'Ödemeler', label: 'Ödemeler', Icon: CreditCardIcon, badge: overdueItems?.payments || 0 },
             { page: 'Cari Hesaplar', label: 'Cari Hesaplar', Icon: ScaleIcon, badge: 0 },
             { page: 'Raporlar', label: 'Raporlar', Icon: ChartBarIcon, badge: 0 },
+            { page: 'Lot Yönetimi', label: 'Lot Yönetimi', Icon: CubeIcon, badge: 0 },
+            { page: 'Uzlaştırma', label: 'Uzlaştırma', Icon: AdjustmentsIcon, badge: 0 },
         ];
 
         // Add admin panel if user is admin
