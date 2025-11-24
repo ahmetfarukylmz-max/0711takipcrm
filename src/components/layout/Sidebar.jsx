@@ -80,16 +80,34 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
 NavLink.displayName = 'NavLink';
 
 // Memoized ParentNavLink component with expand/collapse for submenus
-const ParentNavLink = memo(({ page, children, Icon, hasSubmenu, isExpanded, onToggleExpand, badge }) => {
+const ParentNavLink = memo(({ page, children, Icon, hasSubmenu, isExpanded, onToggleExpand, onNavigate, activePage, badge }) => {
+    const isActive = activePage === page;
+
+    const handleClick = () => {
+        // First navigate to the page
+        if (onNavigate) {
+            onNavigate(page);
+        }
+        // Then toggle the submenu
+        if (onToggleExpand) {
+            onToggleExpand();
+        }
+    };
+
     return (
         <button
-            onClick={onToggleExpand}
+            onClick={handleClick}
             aria-label={children}
             aria-expanded={isExpanded}
-            className="group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]"
-            title={children}
+            aria-current={isActive ? 'page' : undefined}
+            className={`group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
+                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
+            }`}
+            title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
         >
-            <Icon className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+            <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} aria-hidden="true" />
             <span className="flex-1 text-left font-medium text-sm">{children}</span>
             {badge > 0 && (
                 <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
@@ -266,6 +284,8 @@ const Sidebar = ({ activePage, setActivePage, connectionStatus, onToggleGuide, o
                                         hasSubmenu={hasSubmenu}
                                         isExpanded={isExpanded}
                                         onToggleExpand={() => handleToggleExpand(page)}
+                                        onNavigate={handleNavClick}
+                                        activePage={activePage}
                                         badge={badge}
                                     >
                                         {label}
