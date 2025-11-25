@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import { TrashIcon } from '../icons';
@@ -6,6 +6,7 @@ import { formatCurrency } from '../../utils/formatters';
 import LotSelectionDialog from '../costing/LotSelectionDialog';
 import { getLotsByProduct } from '../../services/lotService';
 import { calculateFIFOConsumption, calculateLIFOConsumption } from '../../services/fifoLifoService';
+import { useAuth } from '../../context/AuthContext';
 import type { Product, OrderItem, StockLot, LotConsumption } from '../../types';
 
 interface ItemEditorProps {
@@ -23,6 +24,8 @@ interface ItemEditorProps {
  * ItemEditor component - Editor for order items
  */
 const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, priceOnlyMode = false }) => {
+    const { user } = useAuth();
+
     // Lot selection dialog state
     const [lotDialogState, setLotDialogState] = useState<{
         isOpen: boolean;
@@ -62,7 +65,7 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
 
         try {
             // Fetch available lots for this product
-            const lots = await getLotsByProduct(item.productId);
+            const lots = await getLotsByProduct(item.productId, user?.uid);
 
             // Filter out lots with 0 quantity
             const availableLots = lots.filter(lot => lot.quantity > 0);
