@@ -1,15 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, momentLocalizer, View } from 'react-big-calendar';
-import moment from 'moment';
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatCurrency } from '../../utils/formatters';
 import type { Payment } from '../../types';
 
-// Türkçe yerelleştirme
-import 'moment/locale/tr';
-moment.locale('tr');
+const locales = {
+  tr: tr,
+};
 
-const localizer = momentLocalizer(moment);
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
 
 interface PaymentCalendarProps {
   payments: Payment[];
@@ -32,7 +39,7 @@ interface CalendarEvent {
 const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
   payments,
   onSelectPayment,
-  onSelectSlot
+  onSelectSlot,
 }) => {
   const [currentView, setCurrentView] = useState<View>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -43,8 +50,8 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
     today.setHours(0, 0, 0, 0);
 
     return payments
-      .filter(p => !p.isDeleted && p.status !== 'İptal')
-      .map(p => {
+      .filter((p) => !p.isDeleted && p.status !== 'İptal')
+      .map((p) => {
         const dueDate = new Date(p.dueDate);
 
         // Renk belirleme
@@ -58,7 +65,9 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
           backgroundColor = '#ef4444'; // Kırmızı
           borderColor = '#dc2626';
         } else {
-          const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const daysUntilDue = Math.ceil(
+            (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          );
           if (daysUntilDue <= 7) {
             backgroundColor = '#f59e0b'; // Sarı (yaklaşıyor)
             borderColor = '#d97706';
@@ -73,8 +82,8 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
           resource: p,
           style: {
             backgroundColor,
-            borderColor
-          }
+            borderColor,
+          },
         };
 
         return event;
@@ -104,8 +113,8 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
         borderRadius: '4px',
         color: 'white',
         fontSize: '0.85rem',
-        padding: '2px 4px'
-      }
+        padding: '2px 4px',
+      },
     };
   };
 
@@ -122,7 +131,7 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
     time: 'Saat',
     event: 'Ödeme',
     noEventsInRange: 'Bu tarih aralığında ödeme yok.',
-    showMore: (total: number) => `+${total} daha`
+    showMore: (total: number) => `+${total} daha`,
   };
 
   // Bugüne git
@@ -165,7 +174,10 @@ const PaymentCalendar: React.FC<PaymentCalendarProps> = ({
       </div>
 
       {/* Takvim */}
-      <div className="calendar-container overflow-auto" style={{ height: 'calc(100vh - 400px)', minHeight: '500px', maxHeight: '700px' }}>
+      <div
+        className="calendar-container overflow-auto"
+        style={{ height: 'calc(100vh - 400px)', minHeight: '500px', maxHeight: '700px' }}
+      >
         <Calendar
           localizer={localizer}
           events={calendarEvents}
