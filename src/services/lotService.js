@@ -102,6 +102,23 @@ export const getProductLots = async (userId, productId) => {
   return snapshot.docs.map(doc => doc.data());
 };
 
+/**
+ * Helper function to get lots by product (uses current user from context)
+ * Note: This is a simplified version that expects userId to be passed in
+ * For use in components, pass userId from useAuth
+ * @param {string} productId - Product ID
+ * @returns {Promise<Array>} Available lots with quantity > 0
+ */
+export const getLotsByProduct = async (productId, userId = null) => {
+  // If userId not provided, this will be handled by the component using useAuth
+  if (!userId) {
+    console.warn('getLotsByProduct called without userId');
+    return [];
+  }
+
+  return await getAvailableLots(userId, productId, 'fifo');
+};
+
 // ============================================================================
 // COST CALCULATION (FIFO, LIFO, Average)
 // ============================================================================
