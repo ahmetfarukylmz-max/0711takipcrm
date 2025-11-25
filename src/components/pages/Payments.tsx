@@ -9,6 +9,7 @@ import CollectPaymentDialog from '../common/CollectPaymentDialog';
 import SplitPaymentDialog from '../common/SplitPaymentDialog';
 import PaymentCalendar from './PaymentCalendar';
 import CheckPortfolio from './CheckPortfolio';
+import VirtualList from '../common/VirtualList';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Payment, Customer, Order } from '../../types';
@@ -33,7 +34,7 @@ const Payments: React.FC<PaymentsProps> = ({
   onDelete,
   loading = false,
   selectedPaymentId,
-  onPaymentSelected
+  onPaymentSelected,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
@@ -45,20 +46,24 @@ const Payments: React.FC<PaymentsProps> = ({
 
   // Yeni state'ler
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'checks'>('list');
-  const [collectDialog, setCollectDialog] = useState<{ isOpen: boolean; payment: Payment | null; isOverdue: boolean }>({
+  const [collectDialog, setCollectDialog] = useState<{
+    isOpen: boolean;
+    payment: Payment | null;
+    isOverdue: boolean;
+  }>({
     isOpen: false,
     payment: null,
-    isOverdue: false
+    isOverdue: false,
   });
   const [splitDialog, setSplitDialog] = useState<{ isOpen: boolean; payment: Payment | null }>({
     isOpen: false,
-    payment: null
+    payment: null,
   });
 
   // Handle selected payment from navigation
   useEffect(() => {
     if (selectedPaymentId) {
-      const payment = payments.find(p => p.id === selectedPaymentId);
+      const payment = payments.find((p) => p.id === selectedPaymentId);
       if (payment) {
         setCurrentPayment(payment);
         setIsModalOpen(true);
@@ -73,7 +78,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
   // Filtreleme ve arama
   const filteredPayments = useMemo(() => {
-    return payments.filter(payment => {
+    return payments.filter((payment) => {
       // Exclude deleted payments
       if (payment.isDeleted) return false;
 
@@ -95,7 +100,7 @@ const Payments: React.FC<PaymentsProps> = ({
     sevenDaysLater.setDate(todayDate.getDate() + 7);
 
     // Upcoming payments (due within 7 days)
-    const upcomingPayments = payments.filter(p => {
+    const upcomingPayments = payments.filter((p) => {
       if (p.isDeleted) return false;
       if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
       const dueDate = new Date(p.dueDate);
@@ -103,7 +108,7 @@ const Payments: React.FC<PaymentsProps> = ({
     });
 
     // Overdue payments
-    const overduePayments = payments.filter(p => {
+    const overduePayments = payments.filter((p) => {
       if (p.isDeleted) return false;
       if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
       const dueDate = new Date(p.dueDate);
@@ -114,18 +119,18 @@ const Payments: React.FC<PaymentsProps> = ({
     const thisMonthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     const thisMonthEnd = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0);
 
-    const thisMonthPayments = payments.filter(p => {
+    const thisMonthPayments = payments.filter((p) => {
       if (p.isDeleted) return false;
       const dueDate = new Date(p.dueDate);
       return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
     });
 
     const collectedThisMonth = thisMonthPayments
-      .filter(p => p.status === 'Tahsil Edildi')
+      .filter((p) => p.status === 'Tahsil Edildi')
       .reduce((sum, p) => sum + p.amount, 0);
 
     const pendingThisMonth = thisMonthPayments
-      .filter(p => p.status === 'Bekliyor' || p.status === 'Gecikti')
+      .filter((p) => p.status === 'Bekliyor' || p.status === 'Gecikti')
       .reduce((sum, p) => sum + p.amount, 0);
 
     const totalThisMonth = collectedThisMonth + pendingThisMonth;
@@ -139,13 +144,14 @@ const Payments: React.FC<PaymentsProps> = ({
       collectedThisMonth,
       pendingThisMonth,
       totalThisMonth,
-      collectionRate
+      collectionRate,
     };
   }, [payments]);
 
   // Durum renkleri
   const getStatusColor = (status: Payment['status'], dueDate: string) => {
-    if (status === 'Tahsil Edildi') return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    if (status === 'Tahsil Edildi')
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
     if (status === 'İptal') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     if (status === 'Gecikti') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
 
@@ -155,7 +161,8 @@ const Payments: React.FC<PaymentsProps> = ({
     const daysUntilDue = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysUntilDue < 0) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'; // Gecikmiş
-    if (daysUntilDue <= 7) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'; // Yaklaşan
+    if (daysUntilDue <= 7)
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'; // Yaklaşan
     return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'; // Normal
   };
 
@@ -209,13 +216,13 @@ const Payments: React.FC<PaymentsProps> = ({
     if (selectedItems.size === filteredPayments.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredPayments.map(p => p.id)));
+      setSelectedItems(new Set(filteredPayments.map((p) => p.id)));
     }
   };
 
   const handleBatchDelete = () => {
     // Delete all selected items
-    selectedItems.forEach(id => onDelete(id));
+    selectedItems.forEach((id) => onDelete(id));
     setSelectedItems(new Set());
   };
 
@@ -231,7 +238,7 @@ const Payments: React.FC<PaymentsProps> = ({
     await onSave({
       ...payment,
       status: 'Tahsil Edildi',
-      paidDate
+      paidDate,
     });
 
     setCollectDialog({ isOpen: false, payment: null, isOverdue: false });
@@ -242,7 +249,7 @@ const Payments: React.FC<PaymentsProps> = ({
     onSave({
       ...payment,
       status: 'Bekliyor',
-      paidDate: undefined
+      paidDate: undefined,
     });
 
     toast.success('↩️ Tahsilat iptal edildi!');
@@ -276,7 +283,7 @@ const Payments: React.FC<PaymentsProps> = ({
         paidDate: paidDate,
         originalAmount: payment.amount,
         splitReason: 'Kısmi tahsilat',
-        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kısmi tahsilat`
+        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kısmi tahsilat`,
       };
 
       // 2. Kalan kısım için ödeme oluştur
@@ -294,7 +301,7 @@ const Payments: React.FC<PaymentsProps> = ({
         status: 'Bekliyor',
         originalAmount: payment.amount,
         splitReason: 'Kısmi tahsilat - Kalan bakiye',
-        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kalan bakiye`
+        notes: `Orijinal ödeme: ${formatCurrency(payment.amount, payment.currency || 'TRY')} → Kalan bakiye`,
       };
 
       // 3. Her iki ödemeyi de kaydet
@@ -304,7 +311,9 @@ const Payments: React.FC<PaymentsProps> = ({
       // 4. Orijinal ödemeyi sil
       onDelete(payment.id);
 
-      toast.success(`💰 Ödeme bölündü: ${formatCurrency(paidAmount, payment.currency || 'TRY')} tahsil edildi, ${formatCurrency(remainingAmount, payment.currency || 'TRY')} beklemede`);
+      toast.success(
+        `💰 Ödeme bölündü: ${formatCurrency(paidAmount, payment.currency || 'TRY')} tahsil edildi, ${formatCurrency(remainingAmount, payment.currency || 'TRY')} beklemede`
+      );
 
       setSplitDialog({ isOpen: false, payment: null });
     } catch (error) {
@@ -331,12 +340,12 @@ const Payments: React.FC<PaymentsProps> = ({
     const actions = [
       {
         label: '👁️ Detay',
-        onClick: () => handleOpenModal(payment)
+        onClick: () => handleOpenModal(payment),
       },
       {
         label: '✏️ Düzenle',
-        onClick: () => handleOpenModal(payment)
-      }
+        onClick: () => handleOpenModal(payment),
+      },
     ];
 
     // Durum bazlı aksiyonlar
@@ -348,25 +357,25 @@ const Payments: React.FC<PaymentsProps> = ({
 
       actions.push({
         label: isOverdue ? '✅ Tahsil Et (Gecikmeli)' : '✅ Tahsil Et',
-        onClick: () => handleQuickCollect(payment, isOverdue)
+        onClick: () => handleQuickCollect(payment, isOverdue),
       });
 
       // Kısmi ödeme seçeneği
       actions.push({
         label: '💰 Kısmi Ödeme',
-        onClick: () => handleSplitPayment(payment)
+        onClick: () => handleSplitPayment(payment),
       });
     } else if (payment.status === 'Tahsil Edildi') {
       actions.push({
         label: '↩️ Tahsilat İptal Et',
-        onClick: () => handleUncollect(payment)
+        onClick: () => handleUncollect(payment),
       });
     }
 
     actions.push({
       label: '🗑️ Sil',
       onClick: () => handleDelete(payment),
-      destructive: true
+      destructive: true,
     });
 
     return actions;
@@ -453,58 +462,64 @@ const Payments: React.FC<PaymentsProps> = ({
       </div>
 
       {/* Payment Alerts - Compact banners like CriticalAlerts */}
-      {viewMode === 'list' && (paymentStats.overdue.length > 0 || paymentStats.upcoming.length > 0) && (
-        <div className="space-y-3 mb-6 animate-fadeIn">
-          {/* Overdue Payments Banner */}
-          {paymentStats.overdue.length > 0 && (
-            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 transition-all hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⚠️</span>
-                <p className="font-medium text-sm md:text-base">
-                  {paymentStats.overdue.length} gecikmiş ödeme - Toplam {formatCurrency(paymentStats.overdueTotal, 'TRY')}
-                </p>
+      {viewMode === 'list' &&
+        (paymentStats.overdue.length > 0 || paymentStats.upcoming.length > 0) && (
+          <div className="space-y-3 mb-6 animate-fadeIn">
+            {/* Overdue Payments Banner */}
+            {paymentStats.overdue.length > 0 && (
+              <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 transition-all hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <p className="font-medium text-sm md:text-base">
+                    {paymentStats.overdue.length} gecikmiş ödeme - Toplam{' '}
+                    {formatCurrency(paymentStats.overdueTotal, 'TRY')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowOverdueModal(true)}
+                  className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
+                >
+                  Görüntüle
+                </button>
               </div>
-              <button
-                onClick={() => setShowOverdueModal(true)}
-                className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
-              >
-                Görüntüle
-              </button>
-            </div>
-          )}
+            )}
 
-          {/* Upcoming Payments Banner */}
-          {paymentStats.upcoming.length > 0 && (
-            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 transition-all hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⏰</span>
-                <p className="font-medium text-sm md:text-base">
-                  {paymentStats.upcoming.length} ödeme 7 gün içinde vadesi dolacak - Toplam {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
-                </p>
+            {/* Upcoming Payments Banner */}
+            {paymentStats.upcoming.length > 0 && (
+              <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 transition-all hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⏰</span>
+                  <p className="font-medium text-sm md:text-base">
+                    {paymentStats.upcoming.length} ödeme 7 gün içinde vadesi dolacak - Toplam{' '}
+                    {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUpcomingModal(true)}
+                  className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
+                >
+                  Görüntüle
+                </button>
               </div>
-              <button
-                onClick={() => setShowUpcomingModal(true)}
-                className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap ml-4"
-              >
-                Görüntüle
-              </button>
-            </div>
-          )}
+            )}
 
-          {/* Monthly Collection Info Banner */}
-          {paymentStats.totalThisMonth > 0 && (
-            <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-200 transition-all hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">💰</span>
-                <p className="font-medium text-sm md:text-base">
-                  Bu ay tahsilat: {formatCurrency(paymentStats.collectedThisMonth, 'TRY')} / {formatCurrency(paymentStats.totalThisMonth, 'TRY')}
-                  <span className="ml-2 text-xs md:text-sm">(%{Math.round(paymentStats.collectionRate)} tamamlandı)</span>
-                </p>
+            {/* Monthly Collection Info Banner */}
+            {paymentStats.totalThisMonth > 0 && (
+              <div className="flex items-center justify-between p-4 border-l-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800 text-blue-800 dark:text-blue-200 transition-all hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💰</span>
+                  <p className="font-medium text-sm md:text-base">
+                    Bu ay tahsilat: {formatCurrency(paymentStats.collectedThisMonth, 'TRY')} /{' '}
+                    {formatCurrency(paymentStats.totalThisMonth, 'TRY')}
+                    <span className="ml-2 text-xs md:text-sm">
+                      (%{Math.round(paymentStats.collectionRate)} tamamlandı)
+                    </span>
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
 
       {/* Filters - Sadece liste görünümünde */}
       {viewMode === 'list' && (
@@ -533,7 +548,7 @@ const Payments: React.FC<PaymentsProps> = ({
       {/* Görünüm Render */}
       {viewMode === 'calendar' && (
         <PaymentCalendar
-          payments={payments.filter(p => !p.isDeleted)}
+          payments={payments.filter((p) => !p.isDeleted)}
           onSelectPayment={handleSelectPaymentFromCalendar}
           onSelectSlot={handleSelectSlotFromCalendar}
         />
@@ -551,186 +566,233 @@ const Payments: React.FC<PaymentsProps> = ({
 
       {/* Payments Table - Desktop */}
       {viewMode === 'list' && (
-      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={filteredPayments.length > 0 && selectedItems.size === filteredPayments.length}
-                  onChange={handleSelectAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Müşteri
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Sipariş
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Tutar
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Ödeme Yöntemi
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Vade Tarihi
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Durum
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                İşlemler
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredPayments.length === 0 ? (
+        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <td colSpan={8} className="px-0 py-0">
-                  <EmptyState
-                    icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
-                    title={searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'}
-                    description={searchQuery || statusFilter !== 'Tümü' ? 'Filtreye uygun ödeme bulunamadı.' : undefined}
-                    action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Ödeme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredPayments.length > 0 && selectedItems.size === filteredPayments.length
+                    }
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                </td>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Müşteri
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Sipariş
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tutar
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Ödeme Yöntemi
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Vade Tarihi
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Durum
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  İşlemler
+                </th>
               </tr>
-            ) : (
-              filteredPayments.map((payment) => (
-                <tr
+            </thead>
+          </table>
+          {filteredPayments.length === 0 ? (
+            <EmptyState
+              icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
+              title={
+                searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'
+              }
+              description={
+                searchQuery || statusFilter !== 'Tümü'
+                  ? 'Filtreye uygun ödeme bulunamadı.'
+                  : undefined
+              }
+              action={
+                !(searchQuery || statusFilter !== 'Tümü')
+                  ? {
+                      label: 'Yeni Ödeme Ekle',
+                      onClick: () => handleOpenModal(),
+                      icon: <PlusIcon />,
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <VirtualList
+              items={filteredPayments}
+              itemHeight={65}
+              height={600}
+              renderItem={(payment, index, style) => (
+                <div
                   key={payment.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                  style={style}
+                  className="grid grid-cols-[auto_1fr_120px_120px_150px_120px_120px_100px] gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedItems.has(payment.id)}
                       onChange={() => handleSelectItem(payment.id)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  </div>
+                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {payment.customerName || '-'}
                     </div>
                     {payment.originalAmount && (
-                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
                         💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
                       </div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  </div>
+                  <div
+                    className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     {payment.orderNumber || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  </div>
+                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {formatCurrency(payment.amount, payment.currency)}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
-                    <div className="text-sm text-gray-900 dark:text-gray-100">
+                  </div>
+                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                    <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
                       {payment.paymentMethod}
                     </div>
                     {payment.checkNumber && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {payment.checkNumber}
                       </div>
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  </div>
+                  <div
+                    className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     {formatDate(payment.dueDate)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleOpenModal(payment)}>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}>
+                  </div>
+                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                    <span
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
+                    >
                       {getStatusText(payment)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <ActionsDropdown actions={getPaymentActions(payment)} />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                  <div className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <ActionsDropdown actions={getPaymentActions(payment)} />
+                  </div>
+                </div>
+              )}
+            />
+          )}
+        </div>
       )}
 
       {/* Payments List - Mobile */}
       {viewMode === 'list' && (
-      <div className="md:hidden space-y-4">
-        {filteredPayments.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <EmptyState
-              icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
-              title={searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'}
-              description={searchQuery || statusFilter !== 'Tümü' ? 'Filtreye uygun ödeme bulunamadı.' : undefined}
-              action={!(searchQuery || statusFilter !== 'Tümü') ? { label: 'Yeni Ödeme Ekle', onClick: () => handleOpenModal(), icon: <PlusIcon /> } : undefined}
-            />
-          </div>
-        ) : (
-          filteredPayments.map((payment) => (
-            <div
-              key={payment.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4"
-              onClick={() => handleOpenModal(payment)}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">
-                    {payment.customerName}
-                  </p>
-                  {payment.orderNumber && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Sipariş: {payment.orderNumber}
+        <div className="md:hidden space-y-4">
+          {filteredPayments.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <EmptyState
+                icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
+                title={
+                  searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'
+                }
+                description={
+                  searchQuery || statusFilter !== 'Tümü'
+                    ? 'Filtreye uygun ödeme bulunamadı.'
+                    : undefined
+                }
+                action={
+                  !(searchQuery || statusFilter !== 'Tümü')
+                    ? {
+                        label: 'Yeni Ödeme Ekle',
+                        onClick: () => handleOpenModal(),
+                        icon: <PlusIcon />,
+                      }
+                    : undefined
+                }
+              />
+            </div>
+          ) : (
+            filteredPayments.map((payment) => (
+              <div
+                key={payment.id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4"
+                onClick={() => handleOpenModal(payment)}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {payment.customerName}
                     </p>
-                  )}
-                  {payment.originalAmount && (
-                    <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                      💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
-                    </p>
-                  )}
-                </div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}>
-                  {getStatusText(payment)}
-                </span>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Tutar:</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(payment.amount, payment.currency)}
+                    {payment.orderNumber && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Sipariş: {payment.orderNumber}
+                      </p>
+                    )}
+                    {payment.originalAmount && (
+                      <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                        💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
+                  >
+                    {getStatusText(payment)}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Ödeme:</span>
-                  <span className="text-gray-900 dark:text-gray-100">{payment.paymentMethod}</span>
-                </div>
-                {payment.checkNumber && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Çek No:</span>
-                    <span className="text-gray-900 dark:text-gray-100">{payment.checkNumber}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Vade:</span>
-                  <span className="text-gray-900 dark:text-gray-100">{formatDate(payment.dueDate)}</span>
-                </div>
-              </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-                <ActionsDropdown actions={getPaymentActions(payment)} />
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Tutar:</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {formatCurrency(payment.amount, payment.currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Ödeme:</span>
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {payment.paymentMethod}
+                    </span>
+                  </div>
+                  {payment.checkNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Çek No:</span>
+                      <span className="text-gray-900 dark:text-gray-100">
+                        {payment.checkNumber}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">Vade:</span>
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {formatDate(payment.dueDate)}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ActionsDropdown actions={getPaymentActions(payment)} />
+                </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
       )}
 
       {/* Payment Form Modal */}
@@ -759,14 +821,17 @@ const Payments: React.FC<PaymentsProps> = ({
         <div className="space-y-4">
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
             <p className="text-sm text-red-800 dark:text-red-200">
-              <span className="font-semibold">{paymentStats.overdue.length} gecikmiş ödeme</span> - Toplam {formatCurrency(paymentStats.overdueTotal, 'TRY')}
+              <span className="font-semibold">{paymentStats.overdue.length} gecikmiş ödeme</span> -
+              Toplam {formatCurrency(paymentStats.overdueTotal, 'TRY')}
             </p>
           </div>
           <div className="space-y-2">
             {paymentStats.overdue.map((payment) => {
               const today = new Date();
               const dueDate = new Date(payment.dueDate);
-              const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+              const daysOverdue = Math.floor(
+                (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
 
               return (
                 <div
@@ -778,17 +843,28 @@ const Payments: React.FC<PaymentsProps> = ({
                   }}
                 >
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{payment.customerName}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {payment.customerName}
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Vade: {formatDate(payment.dueDate)} • <span className="text-red-600 dark:text-red-400 font-medium">{daysOverdue} gün gecikmiş</span>
+                      Vade: {formatDate(payment.dueDate)} •{' '}
+                      <span className="text-red-600 dark:text-red-400 font-medium">
+                        {daysOverdue} gün gecikmiş
+                      </span>
                     </p>
                     {payment.orderNumber && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Sipariş: {payment.orderNumber}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Sipariş: {payment.orderNumber}
+                      </p>
                     )}
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payment.amount, payment.currency)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{payment.paymentMethod}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100">
+                      {formatCurrency(payment.amount, payment.currency)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {payment.paymentMethod}
+                    </p>
                   </div>
                 </div>
               );
@@ -807,14 +883,17 @@ const Payments: React.FC<PaymentsProps> = ({
         <div className="space-y-4">
           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <span className="font-semibold">{paymentStats.upcoming.length} ödeme</span> 7 gün içinde vadesi dolacak - Toplam {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
+              <span className="font-semibold">{paymentStats.upcoming.length} ödeme</span> 7 gün
+              içinde vadesi dolacak - Toplam {formatCurrency(paymentStats.upcomingTotal, 'TRY')}
             </p>
           </div>
           <div className="space-y-2">
             {paymentStats.upcoming.map((payment) => {
               const today = new Date();
               const dueDate = new Date(payment.dueDate);
-              const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              const daysUntilDue = Math.ceil(
+                (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+              );
 
               return (
                 <div
@@ -826,20 +905,32 @@ const Payments: React.FC<PaymentsProps> = ({
                   }}
                 >
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{payment.customerName}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {payment.customerName}
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Vade: {formatDate(payment.dueDate)} •
                       <span className="text-yellow-600 dark:text-yellow-400 font-medium ml-1">
-                        {daysUntilDue === 0 ? 'Bugün' : daysUntilDue === 1 ? 'Yarın' : `${daysUntilDue} gün kaldı`}
+                        {daysUntilDue === 0
+                          ? 'Bugün'
+                          : daysUntilDue === 1
+                            ? 'Yarın'
+                            : `${daysUntilDue} gün kaldı`}
                       </span>
                     </p>
                     {payment.orderNumber && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Sipariş: {payment.orderNumber}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Sipariş: {payment.orderNumber}
+                      </p>
                     )}
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(payment.amount, payment.currency)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{payment.paymentMethod}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100">
+                      {formatCurrency(payment.amount, payment.currency)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {payment.paymentMethod}
+                    </p>
                   </div>
                 </div>
               );
