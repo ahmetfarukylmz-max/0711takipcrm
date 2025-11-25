@@ -10,12 +10,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve('./src'), // Add @ alias for cleaner imports
-      'react': path.resolve('./node_modules/react'),
+      react: path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
       'use-sync-external-store/shim': path.resolve('./node_modules/use-sync-external-store/shim'),
-      'use-sync-external-store/shim/with-selector': path.resolve('./node_modules/use-sync-external-store/shim/with-selector')
+      'use-sync-external-store/shim/with-selector': path.resolve(
+        './node_modules/use-sync-external-store/shim/with-selector'
+      ),
     },
-    dedupe: ['react', 'react-dom', 'use-sync-external-store']
+    dedupe: ['react', 'react-dom', 'use-sync-external-store'],
   },
   plugins: [
     react({ jsxRuntime: 'automatic' }),
@@ -24,7 +26,7 @@ export default defineConfig({
       includeAssets: ['vite.svg'],
       injectRegister: 'auto',
       devOptions: {
-        enabled: false
+        enabled: false,
       },
       manifest: {
         name: 'Takip CRM',
@@ -41,17 +43,17 @@ export default defineConfig({
             src: '/0711takipcrm/vite.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
-            purpose: 'any'
+            purpose: 'any',
           },
           {
             src: '/0711takipcrm/vite.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
-            purpose: 'maskable'
-          }
+            purpose: 'maskable',
+          },
         ],
         categories: ['business', 'productivity'],
-        screenshots: []
+        screenshots: [],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
@@ -67,12 +69,12 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
               },
               cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
+                statuses: [0, 200],
+              },
+            },
           },
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
@@ -81,19 +83,19 @@ export default defineConfig({
               cacheName: 'firebase-storage-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-              }
-            }
-          }
-        ]
-      }
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+              },
+            },
+          },
+        ],
+      },
     }),
     visualizer({
       open: false,
       filename: 'dist/stats.html',
       gzipSize: true,
-      brotliSize: true
-    })
+      brotliSize: true,
+    }),
   ],
   base: '/0711takipcrm/',
   build: {
@@ -104,13 +106,13 @@ export default defineConfig({
       compress: {
         drop_console: true, // ✅ Remove console.log in production (using logger utility instead)
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug']
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
       },
       mangle: {
         // Keep function and class names for better error stack traces
         keep_classnames: true,
-        keep_fnames: true
-      }
+        keep_fnames: true,
+      },
     },
     rollupOptions: {
       output: {
@@ -143,7 +145,7 @@ export default defineConfig({
           }
 
           // Calendar library
-          if (id.includes('react-big-calendar') || id.includes('moment')) {
+          if (id.includes('react-big-calendar') || id.includes('date-fns')) {
             return 'calendar';
           }
 
@@ -170,36 +172,30 @@ export default defineConfig({
         // Optimize chunk file names
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
     },
     // Increase chunk size warning limit (we're optimizing chunks)
     chunkSizeWarningLimit: 500,
     // Enable CSS code splitting
     cssCodeSplit: true,
     // Source map for production debugging (ENABLED for better error tracking)
-    sourcemap: true
+    sourcemap: true,
   },
   // Optimize dependencies pre-bundling
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore'
-    ],
+    include: ['react', 'react-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
     exclude: [
       // Don't pre-bundle these heavy libraries
       'jspdf',
       'xlsx',
-      'html2canvas'
-    ]
+      'html2canvas',
+    ],
   },
   // Server optimization for development
   server: {
     hmr: {
-      overlay: true
-    }
-  }
+      overlay: true,
+    },
+  },
 });
