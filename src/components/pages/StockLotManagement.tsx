@@ -8,6 +8,7 @@ import EmptyState from '../common/EmptyState';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
+import { logger } from '../../utils/logger';
 
 /**
  * StockLotManagement - Page for managing stock lots
@@ -61,7 +62,7 @@ const StockLotManagement: React.FC = () => {
       const lotsData = lotsSnapshot.docs.map(doc => doc.data()) as StockLot[];
       setLots(lotsData.sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()));
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast.error('Veriler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
@@ -101,7 +102,7 @@ const StockLotManagement: React.FC = () => {
       resetForm();
       loadData();
     } catch (error) {
-      console.error('Error creating lot:', error);
+      logger.error('Error creating lot:', error);
       toast.error('Lot oluşturulurken hata oluştu');
     }
   };

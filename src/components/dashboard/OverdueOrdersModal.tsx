@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import type { Order, Customer } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface OverdueOrdersModalProps {
     /** List of overdue orders */
@@ -99,7 +100,7 @@ const OverdueOrdersModal: React.FC<OverdueOrdersModalProps> = ({
             setUpdatingDate(null);
             setNewDate('');
         } catch (error) {
-            console.error('Tarih güncellenemedi:', error);
+            logger.error('Tarih güncellenemedi:', error);
             toast.error('Tarih güncellenemedi!');
         }
     };

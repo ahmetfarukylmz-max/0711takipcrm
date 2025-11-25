@@ -1,6 +1,9 @@
 import { collection, doc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db } from './firebase';
+import { logger } from '../utils/logger';
 import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
+import { logger } from '../utils/logger';
 
 // Import store for optimistic updates (will be used by saveDocumentOptimistic)
 let storeInstance = null;
@@ -25,7 +28,7 @@ export const logActivity = async (userId, action, details) => {
         };
         await addDoc(collection(db, `users/${userId}/activity_log`), logData);
     } catch (error) {
-        console.error("Error logging activity:", error);
+        logger.error("Error logging activity:", error);
     }
 };
 
@@ -57,7 +60,7 @@ export const saveDocument = async (userId, collectionName, data) => {
         } catch (error) {
             // If document doesn't exist, create it instead
             if (error.code === 'not-found') {
-                console.warn(`Document ${id} not found, creating new document instead`);
+                logger.warn(`Document ${id} not found, creating new document instead`);
                 const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
                 return newDocRef.id;
             }
@@ -85,9 +88,9 @@ export const saveOrder = async (userId, data) => {
     if (!finalData.id && !finalData.orderNumber) {
         try {
             finalData.orderNumber = await getNextOrderNumber(userId);
-            console.log('Generated order number:', finalData.orderNumber);
+            logger.log('Generated order number:', finalData.orderNumber);
         } catch (error) {
-            console.error('Error generating order number:', error);
+            logger.error('Error generating order number:', error);
             // Continue without order number if generation fails
         }
     }
@@ -110,9 +113,9 @@ export const saveQuote = async (userId, data) => {
     if (!finalData.id && !finalData.quoteNumber) {
         try {
             finalData.quoteNumber = await getNextQuoteNumber(userId);
-            console.log('Generated quote number:', finalData.quoteNumber);
+            logger.log('Generated quote number:', finalData.quoteNumber);
         } catch (error) {
-            console.error('Error generating quote number:', error);
+            logger.error('Error generating quote number:', error);
             // Continue without quote number if generation fails
         }
     }
@@ -178,7 +181,7 @@ export const logStockMovement = async (userId, movementData) => {
         });
         return movementRef.id;
     } catch (error) {
-        console.error('Error logging stock movement:', error);
+        logger.error('Error logging stock movement:', error);
         return null;
     }
 };
@@ -199,7 +202,7 @@ export const updateProductStock = async (userId, productId, quantityChange, move
         const productDoc = await getDoc(productRef);
 
         if (!productDoc.exists()) {
-            console.error('Product not found:', productId);
+            logger.error('Product not found:', productId);
             return false;
         }
 
@@ -207,7 +210,7 @@ export const updateProductStock = async (userId, productId, quantityChange, move
 
         // Only update stock if tracking is enabled
         if (!product.track_stock) {
-            console.log('Stock tracking not enabled for product:', productId);
+            logger.log('Stock tracking not enabled for product:', productId);
             return false;
         }
 
@@ -233,7 +236,7 @@ export const updateProductStock = async (userId, productId, quantityChange, move
 
         return true;
     } catch (error) {
-        console.error('Error updating product stock:', error);
+        logger.error('Error updating product stock:', error);
         return false;
     }
 };
@@ -255,7 +258,7 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
         const shipmentDoc = await getDoc(shipmentRef);
 
         if (!shipmentDoc.exists()) {
-            console.error('Shipment not found:', shipmentId);
+            logger.error('Shipment not found:', shipmentId);
             return;
         }
 
@@ -301,7 +304,7 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
             }))
         });
     } catch (error) {
-        console.error('Error marking shipment as delivered:', error);
+        logger.error('Error marking shipment as delivered:', error);
         throw error;
     }
 };
@@ -324,7 +327,7 @@ export const deleteDocument = async (userId, collectionName, docId) => {
         });
         return true;
     } catch (error) {
-        console.error('Delete error:', error);
+        logger.error('Delete error:', error);
         return false;
     }
 };
@@ -347,7 +350,7 @@ export const undoDelete = async (userId, collectionName, docId) => {
         });
         return true;
     } catch (error) {
-        console.error('Undo delete error:', error);
+        logger.error('Undo delete error:', error);
         return false;
     }
 };
@@ -437,7 +440,7 @@ export const saveDocumentOptimistic = async (userId, collectionName, data, optio
 
         return realId;
     } catch (error) {
-        console.error('Optimistic save failed:', error);
+        logger.error('Optimistic save failed:', error);
 
         // 4. Error - rollback optimistic update
         if (onError && storeInstance) {
@@ -494,7 +497,7 @@ export const deleteDocumentOptimistic = async (userId, collectionName, docId, op
 
         return success;
     } catch (error) {
-        console.error('Optimistic delete failed:', error);
+        logger.error('Optimistic delete failed:', error);
 
         // 3. Rollback
         if (onError && storeInstance) {
@@ -566,7 +569,7 @@ export const cancelOrder = async (userId, orderId, cancellationData) => {
 
         return true;
     } catch (error) {
-        console.error('Order cancellation error:', error);
+        logger.error('Order cancellation error:', error);
         return false;
     }
 };
@@ -599,7 +602,7 @@ export const saveStockCountSession = async (userId, countSession) => {
             return newSessionRef.id;
         }
     } catch (error) {
-        console.error('Error saving stock count session:', error);
+        logger.error('Error saving stock count session:', error);
         return null;
     }
 };
@@ -644,7 +647,7 @@ export const applyStockCountAdjustments = async (userId, sessionId, countItems, 
 
         return true;
     } catch (error) {
-        console.error('Error applying stock count adjustments:', error);
+        logger.error('Error applying stock count adjustments:', error);
         return false;
     }
 };

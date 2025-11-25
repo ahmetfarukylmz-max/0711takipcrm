@@ -12,6 +12,7 @@ import CheckPortfolio from './CheckPortfolio';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import type { Payment, Customer, Order } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface PaymentsProps {
   payments: Payment[];
@@ -183,7 +184,7 @@ const Payments: React.FC<PaymentsProps> = ({
       await onSave(paymentData);
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Payment save error:', error);
+      logger.error('Payment save error:', error);
       toast.error('Ödeme kaydedilemedi. Lütfen tekrar deneyin.');
     }
   };
@@ -307,7 +308,7 @@ const Payments: React.FC<PaymentsProps> = ({
 
       setSplitDialog({ isOpen: false, payment: null });
     } catch (error) {
-      console.error('Split payment error:', error);
+      logger.error('Split payment error:', error);
       toast.error('Ödeme bölünürken hata oluştu');
     }
   };

@@ -8,6 +8,7 @@ import { getLotsByProduct } from '../../services/lotService';
 import { calculateFIFOConsumption, calculateLIFOConsumption } from '../../services/fifoLifoService';
 import { useAuth } from '../../context/AuthContext';
 import type { Product, OrderItem, StockLot, LotConsumption } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface ItemEditorProps {
     /** Array of order items */
@@ -99,7 +100,7 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                 suggestedLots
             });
         } catch (error) {
-            console.error('Lot bilgileri yüklenirken hata:', error);
+            logger.error('Lot bilgileri yüklenirken hata:', error);
             alert('Lot bilgileri yüklenirken bir hata oluştu.');
         }
     };

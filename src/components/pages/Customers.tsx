@@ -20,6 +20,7 @@ import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -189,7 +190,7 @@ const Customers = memo<CustomersProps>(({
             });
             toast.success('Müşteriler Excel dosyasına aktarıldı');
         } catch (error) {
-            console.error('Export error:', error);
+            logger.error('Export error:', error);
             toast.error('Export işlemi başarısız');
         }
     };
@@ -199,7 +200,7 @@ const Customers = memo<CustomersProps>(({
             downloadCustomerTemplate();
             toast.success('Şablon dosyası indirildi');
         } catch (error) {
-            console.error('Template download error:', error);
+            logger.error('Template download error:', error);
             toast.error('Şablon indirme başarısız');
         }
     };
@@ -251,7 +252,7 @@ const Customers = memo<CustomersProps>(({
                 toast.success(`${result.imported} müşteri eklendi, ${result.failed} hata oluştu`);
             }
         } catch (error) {
-            console.error('Import error:', error);
+            logger.error('Import error:', error);
             toast.error('Import işlemi başarısız: ' + (error as Error).message);
         } finally {
             setIsImporting(false);

@@ -18,6 +18,7 @@ import {
     cancelOrder
 } from './services/firestoreService';
 import { showUndoableDelete, showSmartConfirm } from './utils/toastUtils.jsx';
+import { logger } from './utils/logger';
 
 // Layout Components
 import Sidebar from './components/layout/Sidebar';
@@ -375,7 +376,7 @@ const CrmApp = () => {
             logUserActivity('CREATE_SHIPMENT', { message: `${customerName} müşterisinin siparişi için sevkiyat oluşturuldu` });
             toast.success('Sevkiyat başarıyla kaydedildi!');
         } catch (error) {
-            console.error('Sevkiyat kaydedilemedi:', error);
+            logger.error('Sevkiyat kaydedilemedi:', error);
             toast.error('Sevkiyat kaydedilemedi!');
         }
     };
@@ -388,7 +389,7 @@ const CrmApp = () => {
             logUserActivity('UPDATE_SHIPMENT', { message: `${customerName} müşterisinin sevkiyatı güncellendi` });
             toast.success('Sevkiyat başarıyla güncellendi!');
         } catch (error) {
-            console.error('Sevkiyat güncellenemedi:', error);
+            logger.error('Sevkiyat güncellenemedi:', error);
             toast.error('Sevkiyat güncellenemedi!');
         }
     };
@@ -553,7 +554,7 @@ const CrmApp = () => {
                 toast.error('Sipariş iptal edilemedi');
             }
         } catch (error) {
-            console.error('Cancel order error:', error);
+            logger.error('Cancel order error:', error);
             toast.error('Bir hata oluştu');
         }
     };

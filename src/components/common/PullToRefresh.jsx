@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { logger } from '../../utils/logger';
 
 const PullToRefresh = ({ onRefresh, children }) => {
     const [pullDistance, setPullDistance] = useState(0);
@@ -56,7 +57,7 @@ const PullToRefresh = ({ onRefresh, children }) => {
                 try {
                     await onRefresh();
                 } catch (error) {
-                    console.error('Refresh error:', error);
+                    logger.error('Refresh error:', error);
                 } finally {
                     // Smooth animation back
                     setTimeout(() => {

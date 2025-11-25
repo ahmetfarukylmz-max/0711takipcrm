@@ -6,6 +6,7 @@ import ItemEditor from './ItemEditor';
 import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import type { Quote, Customer, Product, Order, Shipment, OrderItem, VATRate, Currency } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface QuoteFormData {
     customerId: string;
@@ -110,7 +111,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
         const invalidItems = cleanItems.filter(item => !item.productId || !item.productName);
         if (invalidItems.length > 0) {
             alert('Bazı ürünlerde eksik bilgi var. Lütfen tüm ürünleri düzgün seçtiğinizden emin olun.');
-            console.error('❌ Hatalı ürünler:', invalidItems);
+            logger.error('❌ Hatalı ürünler:', invalidItems);
             return;
         }
 

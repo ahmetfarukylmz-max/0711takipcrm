@@ -1,5 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db } from './firebase';
+import { logger } from '../utils/logger';
 
 /**
  * Kullanıcıyı admin yapma
@@ -12,10 +14,10 @@ export const makeUserAdmin = async (userId) => {
             role: 'admin',
             updatedAt: new Date().toISOString()
         });
-        console.log(`User ${userId} is now an admin`);
+        logger.log(`User ${userId} is now an admin`);
         return { success: true };
     } catch (error) {
-        console.error('Error making user admin:', error);
+        logger.error('Error making user admin:', error);
         return { success: false, error };
     }
 };
@@ -31,10 +33,10 @@ export const removeAdminRole = async (userId) => {
             role: 'user',
             updatedAt: new Date().toISOString()
         });
-        console.log(`User ${userId} is now a regular user`);
+        logger.log(`User ${userId} is now a regular user`);
         return { success: true };
     } catch (error) {
-        console.error('Error removing admin role:', error);
+        logger.error('Error removing admin role:', error);
         return { success: false, error };
     }
 };
@@ -51,7 +53,7 @@ export const getUserRole = async (userId) => {
         }
         return 'user';
     } catch (error) {
-        console.error('Error getting user role:', error);
+        logger.error('Error getting user role:', error);
         return 'user';
     }
 };
@@ -70,10 +72,10 @@ export const createInitialAdmin = async (userId, email) => {
             createdAt: new Date().toISOString(),
             isInitialAdmin: true
         });
-        console.log(`Initial admin user created: ${email}`);
+        logger.log(`Initial admin user created: ${email}`);
         return { success: true };
     } catch (error) {
-        console.error('Error creating initial admin:', error);
+        logger.error('Error creating initial admin:', error);
         return { success: false, error };
     }
 };

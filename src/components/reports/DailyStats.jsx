@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { logger } from '../../utils/logger';
 
 const StatCard = ({ title, value, icon, color }) => (
     <div className={`p-6 rounded-lg shadow-lg text-white ${color}`}>
@@ -72,7 +73,7 @@ const DailyStats = () => {
             });
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching daily stats: ", error);
+            logger.error("Error fetching daily stats: ", error);
             setLoading(false);
         });
 

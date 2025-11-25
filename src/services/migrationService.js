@@ -1,6 +1,9 @@
 import { collection, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db } from './firebase';
+import { logger } from '../utils/logger';
 import { createStockLot } from './lotService';
+import { logger } from '../utils/logger';
 
 /**
  * MIGRATION SERVICE - Hybrid Costing System
@@ -22,7 +25,7 @@ import { createStockLot } from './lotService';
 export const migrateProductsToHybridCosting = async (userId) => {
   if (!userId) throw new Error('User ID is required');
 
-  console.log('🔄 Starting product migration to hybrid costing system...');
+  logger.log('🔄 Starting product migration to hybrid costing system...');
 
   const productsRef = collection(db, `users/${userId}/products`);
   const snapshot = await getDocs(productsRef);
@@ -36,7 +39,7 @@ export const migrateProductsToHybridCosting = async (userId) => {
     try {
       // Skip if already migrated
       if (product.costingMethod !== undefined) {
-        console.log(`⏭️ Skipping ${product.name} - already migrated`);
+        logger.log(`⏭️ Skipping ${product.name} - already migrated`);
         continue;
       }
 
@@ -69,11 +72,11 @@ export const migrateProductsToHybridCosting = async (userId) => {
 
       await updateDoc(productRef, updateData);
       successCount++;
-      console.log(`✅ Migrated: ${product.name}`);
+      logger.log(`✅ Migrated: ${product.name}`);
     } catch (error) {
       errorCount++;
       errors.push({ productId: product.id, productName: product.name, error: error.message });
-      console.error(`❌ Error migrating ${product.name}:`, error);
+      logger.error(`❌ Error migrating ${product.name}:`, error);
     }
   }
 
@@ -84,10 +87,10 @@ export const migrateProductsToHybridCosting = async (userId) => {
     errors
   };
 
-  console.log('\n📊 Migration Summary:');
-  console.log(`   Total Products: ${summary.totalProducts}`);
-  console.log(`   ✅ Migrated: ${summary.successCount}`);
-  console.log(`   ❌ Errors: ${summary.errorCount}`);
+  logger.log('\n📊 Migration Summary:');
+  logger.log(`   Total Products: ${summary.totalProducts}`);
+  logger.log(`   ✅ Migrated: ${summary.successCount}`);
+  logger.log(`   ❌ Errors: ${summary.errorCount}`);
 
   return summary;
 };
@@ -116,7 +119,7 @@ export const convertExistingStockToLot = async (userId, productId) => {
 
   // Check if stock exists
   if (!product.stock_quantity || product.stock_quantity <= 0) {
-    console.log(`⚠️ No stock for ${product.name}, skipping lot creation`);
+    logger.log(`⚠️ No stock for ${product.name}, skipping lot creation`);
     return null;
   }
 
@@ -144,7 +147,7 @@ export const convertExistingStockToLot = async (userId, productId) => {
     updatedAt: Timestamp.now()
   });
 
-  console.log(`✅ Created initial lot for ${product.name}: ${lot.lotNumber}`);
+  logger.log(`✅ Created initial lot for ${product.name}: ${lot.lotNumber}`);
   return lot;
 };
 
@@ -159,7 +162,7 @@ export const bulkConvertStockToLots = async (userId, productIds) => {
     throw new Error('User ID and product IDs are required');
   }
 
-  console.log(`🔄 Converting ${productIds.length} products to lot tracking...`);
+  logger.log(`🔄 Converting ${productIds.length} products to lot tracking...`);
 
   let successCount = 0;
   let skippedCount = 0;
@@ -179,7 +182,7 @@ export const bulkConvertStockToLots = async (userId, productIds) => {
     } catch (error) {
       errorCount++;
       errors.push({ productId, error: error.message });
-      console.error(`❌ Error converting product ${productId}:`, error);
+      logger.error(`❌ Error converting product ${productId}:`, error);
     }
   }
 
@@ -192,11 +195,11 @@ export const bulkConvertStockToLots = async (userId, productIds) => {
     createdLots
   };
 
-  console.log('\n📊 Conversion Summary:');
-  console.log(`   Total Products: ${summary.totalProducts}`);
-  console.log(`   ✅ Converted: ${summary.successCount}`);
-  console.log(`   ⏭️ Skipped (no stock): ${summary.skippedCount}`);
-  console.log(`   ❌ Errors: ${summary.errorCount}`);
+  logger.log('\n📊 Conversion Summary:');
+  logger.log(`   Total Products: ${summary.totalProducts}`);
+  logger.log(`   ✅ Converted: ${summary.successCount}`);
+  logger.log(`   ⏭️ Skipped (no stock): ${summary.skippedCount}`);
+  logger.log(`   ❌ Errors: ${summary.errorCount}`);
 
   return summary;
 };
@@ -214,7 +217,7 @@ export const bulkConvertStockToLots = async (userId, productIds) => {
 export const validateHybridCostingData = async (userId) => {
   if (!userId) throw new Error('User ID is required');
 
-  console.log('🔍 Validating hybrid costing data...');
+  logger.log('🔍 Validating hybrid costing data...');
 
   const issues = [];
 
@@ -289,20 +292,20 @@ export const validateHybridCostingData = async (userId) => {
     })
   };
 
-  console.log('\n📊 Validation Report:');
-  console.log(`   Total Products: ${report.totalProducts}`);
-  console.log(`   Products with Lot Tracking: ${report.productsWithLotTracking}`);
-  console.log(`   Total Lots: ${report.totalLots}`);
-  console.log(`   Active Lots: ${report.activeLots}`);
-  console.log(`   Issues Found: ${report.issuesFound}`);
+  logger.log('\n📊 Validation Report:');
+  logger.log(`   Total Products: ${report.totalProducts}`);
+  logger.log(`   Products with Lot Tracking: ${report.productsWithLotTracking}`);
+  logger.log(`   Total Lots: ${report.totalLots}`);
+  logger.log(`   Active Lots: ${report.activeLots}`);
+  logger.log(`   Issues Found: ${report.issuesFound}`);
 
   if (report.issuesFound > 0) {
-    console.log('\n⚠️ Issues:');
+    logger.log('\n⚠️ Issues:');
     issues.forEach((issue, index) => {
-      console.log(`   ${index + 1}. [${issue.severity}] ${issue.type}: ${issue.message}`);
+      logger.log(`   ${index + 1}. [${issue.severity}] ${issue.type}: ${issue.message}`);
     });
   } else {
-    console.log('\n✅ No issues found!');
+    logger.log('\n✅ No issues found!');
   }
 
   return report;
@@ -360,5 +363,5 @@ export const resetProductCostingConfig = async (userId, productId) => {
     updatedAt: Timestamp.now()
   });
 
-  console.log(`✅ Reset costing configuration for product ${productId}`);
+  logger.log(`✅ Reset costing configuration for product ${productId}`);
 };

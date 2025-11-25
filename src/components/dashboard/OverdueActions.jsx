@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import FormInput from '../common/FormInput';
+import { logger } from '../../utils/logger';
 
 const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
     const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -32,7 +33,7 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
             });
             toast.success('Görüşme tamamlandı olarak işaretlendi!');
         } catch (error) {
-            console.error('Görüşme güncellenemedi:', error);
+            logger.error('Görüşme güncellenemedi:', error);
             toast.error('Görüşme güncellenemedi!');
         }
     };
@@ -62,7 +63,7 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
             setSelectedItem(null);
             setNewDate('');
         } catch (error) {
-            console.error('Görüşme güncellenemedi:', error);
+            logger.error('Görüşme güncellenemedi:', error);
             toast.error('Görüşme güncellenemedi!');
         }
     };

@@ -15,6 +15,7 @@ import {
     CurrencyDollarIcon
 } from '../icons';
 import { MetricCard, DetailAccordion } from './shared';
+import { logger } from '../../utils/logger';
 
 // Detaylı Liste Öğesi
 // eslint-disable-next-line no-unused-vars
@@ -544,7 +545,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
 
             pdf.save(`gunluk_performans_raporu_${selectedDate}.pdf`);
         } catch (error) {
-            console.error('PDF oluşturma hatası:', error);
+            logger.error('PDF oluşturma hatası:', error);
             alert('PDF oluştururken bir hata oluştu! Lütfen tekrar deneyin.');
         } finally {
             setIsGeneratingPdf(false);
