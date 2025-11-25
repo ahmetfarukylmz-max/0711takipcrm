@@ -177,43 +177,6 @@ const Products = memo<ProductsProps>(({
             handleDelete(selectedProduct);
         }
     };
-
-    // Quick stock update handler
-    const handleQuickStockUpdate = async (product: Product, quantityChange: number) => {
-        if (!user?.uid || !user?.email) {
-            toast.error('Kullanıcı bilgisi bulunamadı');
-            return;
-        }
-
-        if (!product.track_stock) {
-            toast.error('Bu ürün için stok takibi aktif değil');
-            return;
-        }
-
-        try {
-            const success = await updateProductStock(
-                user.uid,
-                product.id,
-                quantityChange,
-                {
-                    type: 'Manuel Giriş',
-                    notes: `Hızlı stok güncellemesi: ${quantityChange > 0 ? '+' : ''}${quantityChange} ${product.unit || 'Adet'}`,
-                    createdBy: user.uid,
-                    createdByEmail: user.email
-                }
-            );
-
-            if (success) {
-                toast.success(`Stok güncellendi: ${quantityChange > 0 ? '+' : ''}${quantityChange} ${product.unit || 'Adet'}`);
-            } else {
-                toast.error('Stok güncellenemedi');
-            }
-        } catch (error) {
-            console.error('Quick stock update error:', error);
-            toast.error('Stok güncelleme hatası');
-        }
-    };
-
     // Excel Export/Import handlers
     const handleExport = () => {
         try {
@@ -1129,28 +1092,6 @@ const Products = memo<ProductsProps>(({
                                             <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                                                 Değer: {formatCurrency((product.stock_quantity || 0) * (product.cost_price || 0), product.currency || 'TRY')}
                                             </span>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleQuickStockUpdate(product, -10);
-                                                    }}
-                                                    className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded transition-colors"
-                                                    title="10 azalt"
-                                                >
-                                                    -10
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleQuickStockUpdate(product, 10);
-                                                    }}
-                                                    className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
-                                                    title="10 ekle"
-                                                >
-                                                    +10
-                                                </button>
-                                            </div>
                                         </div>
                                     ) : (
                                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
@@ -1285,31 +1226,6 @@ const Products = memo<ProductsProps>(({
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}>
                                             {getTurnoverRateInfo(product.turnoverRate).label}
                                         </span>
-                                    </div>
-                                )}
-                                {product.track_stock && (
-                                    <div className="flex items-center justify-between text-sm pt-1 border-t border-gray-200 dark:border-gray-700">
-                                        <span className="text-gray-600 dark:text-gray-400">Hızlı Stok:</span>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleQuickStockUpdate(product, -10);
-                                                }}
-                                                className="px-3 py-1 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded transition-colors"
-                                            >
-                                                -10
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleQuickStockUpdate(product, 10);
-                                                }}
-                                                className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded transition-colors"
-                                            >
-                                                +10
-                                            </button>
-                                        </div>
                                     </div>
                                 )}
                             </div>
