@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/formatters';
 import toast from 'react-hot-toast';
 import type { User, LoginLog } from '../../types';
+import { logger } from '../../utils/logger';
 
 type TabType = 'users' | 'logs';
 
@@ -29,7 +30,7 @@ const Admin: React.FC = () => {
             })) as User[];
             setUsers(usersData);
         } catch (error) {
-            console.error('Error fetching users:', error);
+            logger.error('Error fetching users:', error);
             toast.error('Kullanıcılar yüklenemedi');
         }
     };
@@ -49,7 +50,7 @@ const Admin: React.FC = () => {
             })) as LoginLog[];
             setLoginLogs(logsData);
         } catch (error) {
-            console.error('Error fetching logs:', error);
+            logger.error('Error fetching logs:', error);
             toast.error('Loglar yüklenemedi');
         }
     };
@@ -74,7 +75,7 @@ const Admin: React.FC = () => {
             toast.success(`Kullanıcı rolü ${newRole === 'admin' ? 'admin' : 'kullanıcı'} olarak güncellendi`);
             await fetchUsers();
         } catch (error) {
-            console.error('Error updating role:', error);
+            logger.error('Error updating role:', error);
             toast.error('Rol güncellenemedi');
         }
     };
@@ -90,7 +91,7 @@ const Admin: React.FC = () => {
             toast.success(`Kullanıcı ${newStatus ? 'aktif' : 'devre dışı'} hale getirildi`);
             await fetchUsers();
         } catch (error) {
-            console.error('Error updating status:', error);
+            logger.error('Error updating status:', error);
             toast.error('Durum güncellenemedi');
         }
     };

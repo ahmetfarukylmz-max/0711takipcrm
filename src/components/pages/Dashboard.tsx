@@ -15,6 +15,7 @@ import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
 import useStore from '../../store/useStore';
 import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface BestSellingProduct {
     id: string;
@@ -211,7 +212,7 @@ const Dashboard = memo<DashboardProps>(({
                 }
             }
         } catch (error) {
-            console.error('Task toggle error:', error);
+            logger.error('Task toggle error:', error);
             toast.error('Görev güncellenirken hata oluştu');
         }
     };

@@ -1,5 +1,7 @@
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db } from './firebase';
+import { logger } from '../utils/logger';
 
 /**
  * COUNTER SERVICE
@@ -70,7 +72,7 @@ export const getNextCounter = async (userId, counterType) => {
       formattedNumber
     };
   } catch (error) {
-    console.error('Error getting next counter:', error);
+    logger.error('Error getting next counter:', error);
     throw error;
   }
 };
@@ -128,9 +130,9 @@ export const initializeCounters = async (userId) => {
       });
     }
 
-    console.log('Counters initialized successfully');
+    logger.log('Counters initialized successfully');
   } catch (error) {
-    console.error('Error initializing counters:', error);
+    logger.error('Error initializing counters:', error);
     throw error;
   }
 };
@@ -169,5 +171,5 @@ export const resetCounter = async (userId, counterType) => {
     lastUpdated: new Date().toISOString()
   });
 
-  console.log(`Counter ${counterType} reset successfully`);
+  logger.log(`Counter ${counterType} reset successfully`);
 };

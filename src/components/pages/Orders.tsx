@@ -18,6 +18,7 @@ import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
 import { canCancelOrder } from '../../utils/orderHelpers';
 import { formatOrderNumber } from '../../utils/numberFormatters';
 import type { Order, Customer, Product, Shipment, Payment } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -126,7 +127,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
             });
             toast.success('Siparişler Excel dosyasına aktarıldı');
         } catch (error) {
-            console.error('Export error:', error);
+            logger.error('Export error:', error);
             toast.error('Export işlemi başarısız');
         }
     };
@@ -139,7 +140,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
             });
             toast.success('Detaylı sipariş raporu Excel\'e aktarıldı');
         } catch (error) {
-            console.error('Export error:', error);
+            logger.error('Export error:', error);
             toast.error('Export işlemi başarısız');
         }
     };

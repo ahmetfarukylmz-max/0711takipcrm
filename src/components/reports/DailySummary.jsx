@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { logger } from '../../utils/logger';
 
 const DailySummary = () => {
     const { user } = useAuth();
@@ -34,7 +35,7 @@ const DailySummary = () => {
             setActivities(acts);
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching daily activities: ", error);
+            logger.error("Error fetching daily activities: ", error);
             setLoading(false);
         });
 

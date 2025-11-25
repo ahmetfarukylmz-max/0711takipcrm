@@ -17,6 +17,7 @@ import { PRODUCT_CATEGORIES, getCategoryWithIcon } from '../../utils/categories'
 import { updateProductStock, saveStockCountSession, applyStockCountAdjustments } from '../../services/firestoreService';
 import useStore from '../../store/useStore';
 import type { Product, Order, Quote, Customer, StockMovement, StockCountItem } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface DeleteConfirmState {
     isOpen: boolean;
@@ -186,7 +187,7 @@ const Products = memo<ProductsProps>(({
             });
             toast.success('Ürünler Excel dosyasına aktarıldı');
         } catch (error) {
-            console.error('Export error:', error);
+            logger.error('Export error:', error);
             toast.error('Export işlemi başarısız');
         }
     };
@@ -196,7 +197,7 @@ const Products = memo<ProductsProps>(({
             downloadProductTemplate();
             toast.success('Şablon dosyası indirildi');
         } catch (error) {
-            console.error('Template download error:', error);
+            logger.error('Template download error:', error);
             toast.error('Şablon indirme başarısız');
         }
     };
@@ -242,7 +243,7 @@ const Products = memo<ProductsProps>(({
                 );
             }
         } catch (error) {
-            console.error('Import error:', error);
+            logger.error('Import error:', error);
             toast.error('Import işlemi başarısız: ' + (error as Error).message);
         } finally {
             setIsImporting(false);
@@ -350,7 +351,7 @@ const Products = memo<ProductsProps>(({
                 handleCloseBulkStockModal();
                 setSelectedItems(new Set());
             } catch (error) {
-                console.error('Bulk stock update error:', error);
+                logger.error('Bulk stock update error:', error);
                 toast.error('Toplu stok güncelleme hatası');
             }
         } else {
@@ -380,7 +381,7 @@ const Products = memo<ProductsProps>(({
                 handleCloseBulkStockModal();
                 setSelectedItems(new Set());
             } catch (error) {
-                console.error('Bulk stock update error:', error);
+                logger.error('Bulk stock update error:', error);
                 toast.error('Toplu stok güncelleme hatası');
             }
         }
@@ -511,7 +512,7 @@ const Products = memo<ProductsProps>(({
                 toast.error('Stok düzeltmeleri uygulanırken hata oluştu');
             }
         } catch (error) {
-            console.error('Stock count application error:', error);
+            logger.error('Stock count application error:', error);
             toast.error('Stok sayımı hatası');
         } finally {
             setIsApplyingCount(false);

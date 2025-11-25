@@ -3,6 +3,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'fire
 import { auth } from '../../services/firebase';
 import FormInput from '../common/FormInput';
 import { logUserActivity } from '../../utils/loginTracking';
+import { logger } from '../../utils/logger';
 
 /**
  * LoginScreen component - Handles user authentication (login and registration)
@@ -34,7 +35,7 @@ const LoginScreen = memo(() => {
             }
         } catch (err) {
             setError('Bir hata oluştu. Lütfen bilgilerinizi kontrol edin.');
-            console.error(err);
+            logger.error(err);
         }
     };
 

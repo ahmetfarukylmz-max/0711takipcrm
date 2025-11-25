@@ -15,6 +15,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import toast from 'react-hot-toast';
+import { logger } from '../../utils/logger';
 
 /**
  * LotReconciliation - Page for monthly reconciliation
@@ -53,7 +54,7 @@ const LotReconciliation: React.FC = () => {
       const recons = await getReconciliationsByPeriod(user.uid, period);
       setReconciliations(recons);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast.error('Veriler yüklenirken hata oluştu');
     } finally {
       setLoading(false);
@@ -77,7 +78,7 @@ const LotReconciliation: React.FC = () => {
         toast.success(`${results.length} fark tespit edildi ve raporlandı`);
       }
     } catch (error) {
-      console.error('Error running reconciliation:', error);
+      logger.error('Error running reconciliation:', error);
       toast.error('Uzlaştırma çalıştırılırken hata oluştu');
     } finally {
       setRunningReconciliation(false);
@@ -104,7 +105,7 @@ const LotReconciliation: React.FC = () => {
       setSelectedRecon(null);
       loadData();
     } catch (error) {
-      console.error('Error applying adjustment:', error);
+      logger.error('Error applying adjustment:', error);
       toast.error('Düzeltme uygulanırken hata oluştu');
     }
   };

@@ -9,6 +9,7 @@ export default defineConfig({
   // Force single instance of React and React-DOM
   resolve: {
     alias: {
+      '@': path.resolve('./src'), // Add @ alias for cleaner imports
       'react': path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
       'use-sync-external-store/shim': path.resolve('./node_modules/use-sync-external-store/shim'),
@@ -101,9 +102,9 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console.log temporarily for debugging
+        drop_console: true, // ✅ Remove console.log in production (using logger utility instead)
         drop_debugger: true,
-        pure_funcs: []
+        pure_funcs: ['console.log', 'console.info', 'console.debug']
       },
       mangle: {
         // Keep function and class names for better error stack traces

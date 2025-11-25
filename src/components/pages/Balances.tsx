@@ -8,6 +8,7 @@ import { generatePDFExtract } from '../../utils/pdfExtract';
 import { DownloadIcon, PrinterIcon } from '../icons';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { Customer, Order, Payment } from '../../types';
+import { logger } from '../../utils/logger';
 
 interface BalancesProps {
   customers: Customer[];
@@ -488,7 +489,7 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
 
       toast.success(`PDF indirildi: ${filename}`, { id: 'pdf-generate' });
     } catch (error) {
-      console.error('PDF generation error:', error);
+      logger.error('PDF generation error:', error);
       toast.error('PDF oluşturulurken hata oluştu', { id: 'pdf-generate' });
     }
   };

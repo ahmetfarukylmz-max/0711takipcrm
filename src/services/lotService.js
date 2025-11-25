@@ -1,5 +1,7 @@
 import { collection, doc, setDoc, updateDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db } from './firebase';
+import { logger } from '../utils/logger';
 
 /**
  * LOT SERVICE - Hybrid Costing System
@@ -112,7 +114,7 @@ export const getProductLots = async (userId, productId) => {
 export const getLotsByProduct = async (productId, userId = null) => {
   // If userId not provided, this will be handled by the component using useAuth
   if (!userId) {
-    console.warn('getLotsByProduct called without userId');
+    logger.warn('getLotsByProduct called without userId');
     return [];
   }
 
@@ -316,7 +318,7 @@ export const consumeLots = async (userId, orderId, consumptions) => {
     );
 
     if (!lot) {
-      console.warn(`Lot ${consumption.lotId} not found, skipping update`);
+      logger.warn(`Lot ${consumption.lotId} not found, skipping update`);
       continue;
     }
 
