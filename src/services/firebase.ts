@@ -27,20 +27,32 @@ const requiredEnvVars = [
 ];
 
 const missingVars = requiredEnvVars.filter((varName) => !import.meta.env[varName]);
+const setVars = requiredEnvVars.filter((varName) => import.meta.env[varName]);
 
-// In production, enforce environment variables
-if (import.meta.env.PROD && missingVars.length > 0) {
+// Check if we're in a CI environment (GitHub Actions sets CI=true)
+// Vite exposes this as VITE_CI if defined in workflow
+const isCI = import.meta.env.VITE_CI === 'true' || import.meta.env.MODE === 'test';
+
+// Smart validation logic:
+// 1. If NO vars are set → Use fallback (development/CI)
+// 2. If SOME vars are set but not all → Error (misconfiguration)
+// 3. If ALL vars are set → Use them (production)
+
+if (setVars.length > 0 && missingVars.length > 0 && !isCI) {
+  // Partial configuration detected - this is an error
   throw new Error(
-    `Missing required Firebase environment variables: ${missingVars.join(', ')}\n` +
-      'Please copy .env.example to .env and fill in your Firebase credentials.'
+    `Incomplete Firebase configuration. Missing: ${missingVars.join(', ')}\n` +
+      'Please ensure all Firebase environment variables are set, or remove them all to use fallback config.\n' +
+      'Copy .env.example to .env and fill in all Firebase credentials.'
   );
 }
 
-// In development, warn but allow fallback
-if (import.meta.env.DEV && missingVars.length > 0) {
+// If no vars are set at all, use fallback with warning
+if (setVars.length === 0) {
+  const mode = import.meta.env.DEV ? 'development' : isCI ? 'CI' : 'production';
   console.warn(
-    '⚠️ Firebase environment variables not found. Using development fallback config.\n' +
-      'For production, please copy .env.example to .env and fill in your credentials.'
+    `⚠️ Firebase environment variables not found. Using development fallback config in ${mode} mode.\n` +
+      'For production deployment, set Firebase secrets in GitHub repository settings or .env file.'
   );
 }
 

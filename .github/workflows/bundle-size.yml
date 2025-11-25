@@ -25,6 +25,8 @@ jobs:
 
       - name: Build and analyze bundle
         run: npm run build
+        env:
+          VITE_CI: 'true'
 
       - name: Analyze bundle size
         run: |
