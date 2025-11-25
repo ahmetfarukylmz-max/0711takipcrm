@@ -16,6 +16,7 @@ import { db } from './firebase';
  * Generate a unique lot number
  * Format: LOT-YYYY-MM-DD-XXX
  */
+// eslint-disable-next-line no-unused-vars
 export const generateLotNumber = (productId) => {
   const date = new Date();
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD

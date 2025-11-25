@@ -55,6 +55,8 @@ const SummaryRow = memo(({ label, value, subvalue, change, icon: Icon }) => {
     );
 });
 
+SummaryRow.displayName = 'SummaryRow';
+
 const EnhancedDailyReport = ({ orders, quotes, meetings, shipments, payments }) => {
     const reportRef = useRef();
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));

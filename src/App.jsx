@@ -94,6 +94,7 @@ const CrmApp = () => {
     const setDataLoading = useStore((state) => state.setDataLoading);
     const setConnectionStatus = useStore((state) => state.setConnectionStatus);
 
+    // eslint-disable-next-line no-unused-vars
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPaymentId, setSelectedPaymentId] = useState(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
@@ -791,7 +792,7 @@ const CrmApp = () => {
                         customers={customers}
                         orders={orders}
                         payments={payments}
-                        onCustomerClick={(customer) => {
+                        onCustomerClick={() => {
                             // Navigate to customer detail
                             setActivePage('Müşteriler');
                             // The click will be handled by Customers page

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { HomeIcon, UsersIcon, BoxIcon, ClipboardListIcon, MenuIcon, DocumentTextIcon, CalendarIcon, TruckIcon, CreditCardIcon, ScaleIcon, ChartBarIcon, QuestionIcon } from '../icons';
 import ActionSheet from './ActionSheet';
-import { useAuth } from '../../context/AuthContext';
 
 const BottomNav = ({ activePage, setActivePage, onToggleGuide }) => {
     const [showMoreMenu, setShowMoreMenu] = useState(false);
-    const { logout } = useAuth();
 
     const navItems = [
         { page: 'Anasayfa', label: 'Ana', Icon: HomeIcon },

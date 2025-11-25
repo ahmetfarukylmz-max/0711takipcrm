@@ -17,6 +17,7 @@ import {
 import { MetricCard, DetailAccordion } from './shared';
 
 // Detaylı Liste Öğesi
+// eslint-disable-next-line no-unused-vars
 const DetailListItem = ({ customer, items, total, date, notes, type, getProductName, paymentType, paymentTerm, checkBank, checkNumber, checkDate }) => {
     const [showItems, setShowItems] = useState(false);
 
@@ -326,7 +327,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     ${todayData.quotes && todayData.quotes.length > 0 ? `
                     <!-- Oluşturulan Teklifler -->
                     <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">📄 OLUŞTURULAN TEKLİFLER (${todayData.quotes.length})</h3>
-                    ${todayData.quotes.map((quote, quoteIdx) => `
+                    ${todayData.quotes.map((quote) => `
                         <div style="margin-bottom: 20px; border: 2px solid #a855f7; border-radius: 8px; overflow: hidden;">
                             <div style="background: #a855f7; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -367,7 +368,7 @@ const EnhancedDailyReportWithDetails = ({ orders, quotes, meetings, shipments, c
                     ${todayData.allOrders && todayData.allOrders.length > 0 ? `
                     <!-- Onaylanan Siparişler -->
                     <h3 style="color: #1e3a8a; font-size: 16px; margin: 32px 0 16px 0; font-weight: bold;">✅ ONAYLANAN SİPARİŞLER (${todayData.allOrders.length})</h3>
-                    ${todayData.allOrders.map((order, orderIdx) => `
+                    ${todayData.allOrders.map((order) => `
                         <div style="margin-bottom: 20px; border: 2px solid #22c55e; border-radius: 8px; overflow: hidden;">
                             <div style="background: #22c55e; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                                 <div>

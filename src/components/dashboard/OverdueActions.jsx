@@ -24,6 +24,7 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
 
         try {
             // Remove extra fields that don't belong in Firestore
+            // eslint-disable-next-line no-unused-vars
             const { type, customerName, ...meetingData } = item;
             await onMeetingUpdate({
                 ...meetingData,
@@ -50,6 +51,7 @@ const OverdueActions = ({ overdueItems, setActivePage, onMeetingUpdate }) => {
 
         try {
             // Remove extra fields that don't belong in Firestore
+            // eslint-disable-next-line no-unused-vars
             const { type, customerName, ...meetingData } = selectedItem;
             await onMeetingUpdate({
                 ...meetingData,
