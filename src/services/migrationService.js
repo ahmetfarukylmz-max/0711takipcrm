@@ -1,7 +1,5 @@
 import { collection, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { logger } from '../utils/logger';
 import { db } from './firebase';
-import { logger } from '../utils/logger';
 import { createStockLot } from './lotService';
 import { logger } from '../utils/logger';
 
@@ -29,7 +27,7 @@ export const migrateProductsToHybridCosting = async (userId) => {
 
   const productsRef = collection(db, `users/${userId}/products`);
   const snapshot = await getDocs(productsRef);
-  const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const products = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   let successCount = 0;
   let errorCount = 0;
@@ -58,16 +56,18 @@ export const migrateProductsToHybridCosting = async (userId) => {
         totalStockValue: (product.stock_quantity || 0) * (product.cost_price || 0),
 
         // Initialize cost history
-        costHistory: [{
-          date: new Date().toISOString().split('T')[0],
-          averageCost: product.cost_price || 0,
-          stockQuantity: product.stock_quantity || 0,
-          method: 'average',
-          reason: 'migration',
-          notes: 'Hibrit maliyet sistemine geçiş - başlangıç kaydı'
-        }],
+        costHistory: [
+          {
+            date: new Date().toISOString().split('T')[0],
+            averageCost: product.cost_price || 0,
+            stockQuantity: product.stock_quantity || 0,
+            method: 'average',
+            reason: 'migration',
+            notes: 'Hibrit maliyet sistemine geçiş - başlangıç kaydı',
+          },
+        ],
 
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       };
 
       await updateDoc(productRef, updateData);
@@ -84,7 +84,7 @@ export const migrateProductsToHybridCosting = async (userId) => {
     totalProducts: products.length,
     successCount,
     errorCount,
-    errors
+    errors,
   };
 
   logger.log('\n📊 Migration Summary:');
@@ -110,8 +110,8 @@ export const convertExistingStockToLot = async (userId, productId) => {
   // Get product
   const productRef = doc(db, `users/${userId}/products`, productId);
   const productDoc = await getDocs(collection(db, `users/${userId}/products`));
-  const products = productDoc.docs.map(d => ({ id: d.id, ...d.data() }));
-  const product = products.find(p => p.id === productId);
+  const products = productDoc.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const product = products.find((p) => p.id === productId);
 
   if (!product) {
     throw new Error('Product not found');
@@ -138,13 +138,13 @@ export const convertExistingStockToLot = async (userId, productId) => {
     currency: product.currency || 'TRY',
     notes: 'Hibrit maliyet sistemine geçiş sırasında mevcut stoktan oluşturuldu',
     createdBy: userId,
-    createdByEmail: 'system@migration'
+    createdByEmail: 'system@migration',
   });
 
   // Enable lot tracking for this product
   await updateDoc(productRef, {
     lotTrackingEnabled: true,
-    updatedAt: Timestamp.now()
+    updatedAt: Timestamp.now(),
   });
 
   logger.log(`✅ Created initial lot for ${product.name}: ${lot.lotNumber}`);
@@ -192,7 +192,7 @@ export const bulkConvertStockToLots = async (userId, productIds) => {
     skippedCount,
     errorCount,
     errors,
-    createdLots
+    createdLots,
   };
 
   logger.log('\n📊 Conversion Summary:');
@@ -224,15 +224,15 @@ export const validateHybridCostingData = async (userId) => {
   // Check 1: Products with lot tracking but no lots
   const productsRef = collection(db, `users/${userId}/products`);
   const productsSnapshot = await getDocs(productsRef);
-  const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const products = productsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
   const lotsRef = collection(db, `users/${userId}/stock_lots`);
   const lotsSnapshot = await getDocs(lotsRef);
-  const lots = lotsSnapshot.docs.map(doc => doc.data());
+  const lots = lotsSnapshot.docs.map((doc) => doc.data());
 
   for (const product of products) {
     if (product.lotTrackingEnabled && product.stock_quantity > 0) {
-      const productLots = lots.filter(l => l.productId === product.id && l.status === 'active');
+      const productLots = lots.filter((l) => l.productId === product.id && l.status === 'active');
       const totalLotQuantity = productLots.reduce((sum, l) => sum + l.remainingQuantity, 0);
 
       if (productLots.length === 0) {
@@ -241,7 +241,7 @@ export const validateHybridCostingData = async (userId) => {
           severity: 'HIGH',
           productId: product.id,
           productName: product.name,
-          message: `Lot takibi aktif ama lot bulunamadı (stok: ${product.stock_quantity})`
+          message: `Lot takibi aktif ama lot bulunamadı (stok: ${product.stock_quantity})`,
         });
       } else if (Math.abs(totalLotQuantity - product.stock_quantity) > 0.01) {
         issues.push({
@@ -250,7 +250,7 @@ export const validateHybridCostingData = async (userId) => {
           productId: product.id,
           productName: product.name,
           message: `Lot toplamı (${totalLotQuantity}) ile ürün stoğu (${product.stock_quantity}) uyuşmuyor`,
-          difference: Math.abs(totalLotQuantity - product.stock_quantity)
+          difference: Math.abs(totalLotQuantity - product.stock_quantity),
         });
       }
     }
@@ -264,7 +264,7 @@ export const validateHybridCostingData = async (userId) => {
         severity: 'HIGH',
         lotId: lot.id,
         lotNumber: lot.lotNumber,
-        message: `Lot'ta negatif kalan miktar: ${lot.remainingQuantity}`
+        message: `Lot'ta negatif kalan miktar: ${lot.remainingQuantity}`,
       });
     }
 
@@ -274,7 +274,7 @@ export const validateHybridCostingData = async (userId) => {
         severity: 'MEDIUM',
         lotId: lot.id,
         lotNumber: lot.lotNumber,
-        message: `Lot miktarları tutarsız: başlangıç=${lot.initialQuantity}, tüketilen=${lot.consumedQuantity}, kalan=${lot.remainingQuantity}`
+        message: `Lot miktarları tutarsız: başlangıç=${lot.initialQuantity}, tüketilen=${lot.consumedQuantity}, kalan=${lot.remainingQuantity}`,
       });
     }
   }
@@ -282,14 +282,14 @@ export const validateHybridCostingData = async (userId) => {
   const report = {
     timestamp: new Date().toISOString(),
     totalProducts: products.length,
-    productsWithLotTracking: products.filter(p => p.lotTrackingEnabled).length,
+    productsWithLotTracking: products.filter((p) => p.lotTrackingEnabled).length,
     totalLots: lots.length,
-    activeLots: lots.filter(l => l.status === 'active').length,
+    activeLots: lots.filter((l) => l.status === 'active').length,
     issuesFound: issues.length,
     issues: issues.sort((a, b) => {
       const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
-    })
+    }),
   };
 
   logger.log('\n📊 Validation Report:');
@@ -325,11 +325,11 @@ export const getMigrationStatus = async (userId) => {
 
   const productsRef = collection(db, `users/${userId}/products`);
   const snapshot = await getDocs(productsRef);
-  const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const products = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-  const migrated = products.filter(p => p.costingMethod !== undefined).length;
+  const migrated = products.filter((p) => p.costingMethod !== undefined).length;
   const notMigrated = products.length - migrated;
-  const withLotTracking = products.filter(p => p.lotTrackingEnabled).length;
+  const withLotTracking = products.filter((p) => p.lotTrackingEnabled).length;
 
   return {
     totalProducts: products.length,
@@ -337,7 +337,7 @@ export const getMigrationStatus = async (userId) => {
     notMigratedProducts: notMigrated,
     productsWithLotTracking: withLotTracking,
     migrationComplete: notMigrated === 0,
-    migrationPercentage: products.length > 0 ? (migrated / products.length) * 100 : 0
+    migrationPercentage: products.length > 0 ? (migrated / products.length) * 100 : 0,
   };
 };
 
@@ -360,7 +360,7 @@ export const resetProductCostingConfig = async (userId, productId) => {
     allowManualLotSelection: false,
     requireLotApproval: false,
     lotTrackingEnabled: false,
-    updatedAt: Timestamp.now()
+    updatedAt: Timestamp.now(),
   });
 
   logger.log(`✅ Reset costing configuration for product ${productId}`);

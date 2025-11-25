@@ -1,5 +1,4 @@
 import { doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import { logger } from '../utils/logger';
 import { db } from './firebase';
 import { logger } from '../utils/logger';
 
@@ -52,11 +51,15 @@ export const getNextCounter = async (userId, counterType) => {
       }
 
       // Update counter
-      transaction.set(counterRef, {
-        value: currentValue,
-        year: year,
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
+      transaction.set(
+        counterRef,
+        {
+          value: currentValue,
+          year: year,
+          lastUpdated: new Date().toISOString(),
+        },
+        { merge: true }
+      );
 
       return { value: currentValue, year };
     });
@@ -69,7 +72,7 @@ export const getNextCounter = async (userId, counterType) => {
     return {
       number: result.value,
       year: result.year,
-      formattedNumber
+      formattedNumber,
     };
   } catch (error) {
     logger.error('Error getting next counter:', error);
@@ -118,7 +121,7 @@ export const initializeCounters = async (userId) => {
       await setDoc(orderCounterRef, {
         value: 0,
         year: currentYear,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       });
     }
 
@@ -126,7 +129,7 @@ export const initializeCounters = async (userId) => {
       await setDoc(quoteCounterRef, {
         value: 0,
         year: currentYear,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       });
     }
 
@@ -168,7 +171,7 @@ export const resetCounter = async (userId, counterType) => {
   await setDoc(counterRef, {
     value: 0,
     year: getCurrentYear(),
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
   });
 
   logger.log(`Counter ${counterType} reset successfully`);

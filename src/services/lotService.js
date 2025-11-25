@@ -1,5 +1,14 @@
-import { collection, doc, setDoc, updateDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
-import { logger } from '../utils/logger';
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from './firebase';
 import { logger } from '../utils/logger';
 
@@ -22,7 +31,9 @@ import { logger } from '../utils/logger';
 export const generateLotNumber = (productId) => {
   const date = new Date();
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-  const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const randomSuffix = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
   return `LOT-${dateStr}-${randomSuffix}`;
 };
 
@@ -70,7 +81,7 @@ export const getAvailableLots = async (userId, productId, sortMethod = 'fifo') =
   );
 
   const snapshot = await getDocs(q);
-  const lots = snapshot.docs.map(doc => doc.data());
+  const lots = snapshot.docs.map((doc) => doc.data());
 
   // Sort by purchase date
   if (sortMethod === 'fifo') {
@@ -94,14 +105,10 @@ export const getProductLots = async (userId, productId) => {
   if (!userId || !productId) return [];
 
   const lotsRef = collection(db, `users/${userId}/stock_lots`);
-  const q = query(
-    lotsRef,
-    where('productId', '==', productId),
-    orderBy('purchaseDate', 'desc')
-  );
+  const q = query(lotsRef, where('productId', '==', productId), orderBy('purchaseDate', 'desc'));
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data());
+  return snapshot.docs.map((doc) => doc.data());
 };
 
 /**
@@ -152,7 +159,7 @@ export const calculateFIFOCost = async (userId, productId, quantityNeeded) => {
       unitCost: lot.unitCost,
       totalCost: costFromLot,
       purchaseDate: lot.purchaseDate,
-      consumptionType: 'fifo'
+      consumptionType: 'fifo',
     });
 
     totalCost += costFromLot;
@@ -166,7 +173,7 @@ export const calculateFIFOCost = async (userId, productId, quantityNeeded) => {
   return {
     totalCost,
     costPerUnit: totalCost / quantityNeeded,
-    lotConsumptions: consumptions
+    lotConsumptions: consumptions,
   };
 };
 
@@ -197,7 +204,7 @@ export const calculateLIFOCost = async (userId, productId, quantityNeeded) => {
       unitCost: lot.unitCost,
       totalCost: costFromLot,
       purchaseDate: lot.purchaseDate,
-      consumptionType: 'lifo'
+      consumptionType: 'lifo',
     });
 
     totalCost += costFromLot;
@@ -211,7 +218,7 @@ export const calculateLIFOCost = async (userId, productId, quantityNeeded) => {
   return {
     totalCost,
     costPerUnit: totalCost / quantityNeeded,
-    lotConsumptions: consumptions
+    lotConsumptions: consumptions,
   };
 };
 
@@ -227,13 +234,15 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
   const consumptions = [];
 
   for (const selection of selectedLots) {
-    const lot = availableLots.find(l => l.id === selection.lotId);
+    const lot = availableLots.find((l) => l.id === selection.lotId);
     if (!lot) {
       throw new Error(`Lot bulunamadı: ${selection.lotId}`);
     }
 
     if (selection.quantityUsed > lot.remainingQuantity) {
-      throw new Error(`${lot.lotNumber} için yetersiz stok: ${lot.remainingQuantity} mevcut, ${selection.quantityUsed} talep edildi`);
+      throw new Error(
+        `${lot.lotNumber} için yetersiz stok: ${lot.remainingQuantity} mevcut, ${selection.quantityUsed} talep edildi`
+      );
     }
 
     const costFromLot = selection.quantityUsed * lot.unitCost;
@@ -245,7 +254,7 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
       unitCost: lot.unitCost,
       totalCost: costFromLot,
       purchaseDate: lot.purchaseDate,
-      consumptionType: 'manual'
+      consumptionType: 'manual',
     });
 
     totalCost += costFromLot;
@@ -255,7 +264,7 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
   return {
     totalCost,
     costPerUnit: totalQuantity > 0 ? totalCost / totalQuantity : 0,
-    lotConsumptions: consumptions
+    lotConsumptions: consumptions,
   };
 };
 
@@ -276,7 +285,7 @@ export const calculateWeightedAverage = (currentQty, currentAvg, newQty, newCost
   return {
     averageCost: totalQty > 0 ? totalValue / totalQty : 0,
     totalValue: totalValue,
-    quantity: totalQty
+    quantity: totalQty,
   };
 };
 
@@ -306,15 +315,15 @@ export const consumeLots = async (userId, orderId, consumptions) => {
       ...consumption,
       orderId,
       consumptionDate: new Date().toISOString().split('T')[0],
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     };
     await setDoc(consumptionRef, consumptionData);
     createdConsumptions.push(consumptionData);
 
     // 2. Update the lot
     const lotRef = doc(db, `users/${userId}/stock_lots`, consumption.lotId);
-    const lot = await getAvailableLots(userId, null, 'fifo').then(lots =>
-      lots.find(l => l.id === consumption.lotId)
+    const lot = await getAvailableLots(userId, null, 'fifo').then((lots) =>
+      lots.find((l) => l.id === consumption.lotId)
     );
 
     if (!lot) {
@@ -331,7 +340,7 @@ export const consumeLots = async (userId, orderId, consumptions) => {
       isConsumed: newRemaining === 0,
       consumedAt: newRemaining === 0 ? new Date().toISOString() : null,
       status: newRemaining === 0 ? 'consumed' : 'active',
-      updatedAt: Timestamp.now()
+      updatedAt: Timestamp.now(),
     });
   }
 
@@ -351,7 +360,7 @@ export const getOrderLotConsumptions = async (userId, orderId) => {
   const q = query(consumptionsRef, where('orderId', '==', orderId));
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data());
+  return snapshot.docs.map((doc) => doc.data());
 };
 
 // ============================================================================
