@@ -32,7 +32,7 @@ export const calculateFIFOConsumption = (availableLots, quantityNeeded) => {
         quantityUsed: quantityFromThisLot,
         unitCost: lot.unitCost,
         totalCost: quantityFromThisLot * lot.unitCost,
-        purchaseDate: lot.purchaseDate || lot.createdAt
+        purchaseDate: lot.purchaseDate || lot.createdAt,
       });
 
       remainingQuantity -= quantityFromThisLot;
@@ -71,7 +71,7 @@ export const calculateLIFOConsumption = (availableLots, quantityNeeded) => {
         quantityUsed: quantityFromThisLot,
         unitCost: lot.unitCost,
         totalCost: quantityFromThisLot * lot.unitCost,
-        purchaseDate: lot.purchaseDate || lot.createdAt
+        purchaseDate: lot.purchaseDate || lot.createdAt,
       });
 
       remainingQuantity -= quantityFromThisLot;
@@ -90,7 +90,7 @@ export const calculateLIFOConsumption = (availableLots, quantityNeeded) => {
 export const calculateAverageCostConsumption = (availableLots, quantityNeeded) => {
   // Calculate weighted average cost
   const totalQuantity = availableLots.reduce((sum, lot) => sum + lot.quantity, 0);
-  const totalCost = availableLots.reduce((sum, lot) => sum + (lot.quantity * lot.unitCost), 0);
+  const totalCost = availableLots.reduce((sum, lot) => sum + lot.quantity * lot.unitCost, 0);
   const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
   const consumptions = [];
@@ -113,7 +113,7 @@ export const calculateAverageCostConsumption = (availableLots, quantityNeeded) =
         quantityUsed: quantityFromThisLot,
         unitCost: averageCost, // Use average cost
         totalCost: quantityFromThisLot * averageCost,
-        purchaseDate: lot.purchaseDate || lot.createdAt
+        purchaseDate: lot.purchaseDate || lot.createdAt,
       });
 
       remainingQuantity -= quantityFromThisLot;
@@ -131,8 +131,8 @@ export const calculateAverageCostConsumption = (availableLots, quantityNeeded) =
  */
 export const detectFIFOViolation = (selectedLots, fifoLots) => {
   // Simple comparison - check if lot order matches
-  const selectedOrder = selectedLots.map(l => l.lotId).join(',');
-  const fifoOrder = fifoLots.map(l => l.lotId).join(',');
+  const selectedOrder = selectedLots.map((l) => l.lotId).join(',');
+  const fifoOrder = fifoLots.map((l) => l.lotId).join(',');
 
   const hasViolation = selectedOrder !== fifoOrder;
 
@@ -141,6 +141,6 @@ export const detectFIFOViolation = (selectedLots, fifoLots) => {
     violationType: hasViolation ? 'order_mismatch' : null,
     message: hasViolation
       ? 'Manuel seçim FIFO kuralını ihlal ediyor. Farklı lotlar veya farklı sırada lotlar kullanıldı.'
-      : 'FIFO kuralına uygun'
+      : 'FIFO kuralına uygun',
   };
 };

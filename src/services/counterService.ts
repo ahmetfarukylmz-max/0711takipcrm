@@ -8,20 +8,37 @@ import { logger } from '../utils/logger';
  * Format: SIP-2025-1001, TEK-2025-0523
  */
 
+type CounterType = 'order' | 'quote';
+
+interface CounterResult {
+  number: number;
+  year: number;
+  formattedNumber: string;
+}
+
+interface CounterData {
+  value: number;
+  year: number;
+  lastUpdated?: string;
+}
+
 /**
  * Get current year for counter
  */
-const getCurrentYear = () => {
+const getCurrentYear = (): number => {
   return new Date().getFullYear();
 };
 
 /**
  * Get next counter value for a specific type
- * @param {string} userId - User ID
- * @param {string} counterType - Type of counter ('order' or 'quote')
- * @returns {Promise<Object>} Counter info { number, year, formattedNumber }
+ * @param userId - User ID
+ * @param counterType - Type of counter ('order' or 'quote')
+ * @returns Counter info { number, year, formattedNumber }
  */
-export const getNextCounter = async (userId, counterType) => {
+export const getNextCounter = async (
+  userId: string,
+  counterType: CounterType
+): Promise<CounterResult> => {
   if (!userId) throw new Error('User ID is required');
   if (!counterType) throw new Error('Counter type is required');
 
@@ -37,7 +54,7 @@ export const getNextCounter = async (userId, counterType) => {
       let year = currentYear;
 
       if (counterDoc.exists()) {
-        const data = counterDoc.data();
+        const data = counterDoc.data() as CounterData;
         const storedYear = data.year || currentYear;
 
         // Check if year changed - reset counter
@@ -82,29 +99,29 @@ export const getNextCounter = async (userId, counterType) => {
 
 /**
  * Get next order number
- * @param {string} userId - User ID
- * @returns {Promise<string>} Formatted order number (e.g., "SIP-2025-1001")
+ * @param userId - User ID
+ * @returns Formatted order number (e.g., "SIP-2025-1001")
  */
-export const getNextOrderNumber = async (userId) => {
+export const getNextOrderNumber = async (userId: string): Promise<string> => {
   const counter = await getNextCounter(userId, 'order');
   return counter.formattedNumber;
 };
 
 /**
  * Get next quote number
- * @param {string} userId - User ID
- * @returns {Promise<string>} Formatted quote number (e.g., "TEK-2025-0523")
+ * @param userId - User ID
+ * @returns Formatted quote number (e.g., "TEK-2025-0523")
  */
-export const getNextQuoteNumber = async (userId) => {
+export const getNextQuoteNumber = async (userId: string): Promise<string> => {
   const counter = await getNextCounter(userId, 'quote');
   return counter.formattedNumber;
 };
 
 /**
  * Initialize counters for a new user
- * @param {string} userId - User ID
+ * @param userId - User ID
  */
-export const initializeCounters = async (userId) => {
+export const initializeCounters = async (userId: string): Promise<void> => {
   if (!userId) throw new Error('User ID is required');
 
   const currentYear = getCurrentYear();
@@ -142,18 +159,21 @@ export const initializeCounters = async (userId) => {
 
 /**
  * Get current counter value (without incrementing)
- * @param {string} userId - User ID
- * @param {string} counterType - Type of counter
- * @returns {Promise<Object>} Current counter info
+ * @param userId - User ID
+ * @param counterType - Type of counter
+ * @returns Current counter info
  */
-export const getCurrentCounter = async (userId, counterType) => {
+export const getCurrentCounter = async (
+  userId: string,
+  counterType: CounterType
+): Promise<CounterData> => {
   if (!userId) throw new Error('User ID is required');
 
   const counterRef = doc(db, `users/${userId}/counters/${counterType}`);
   const counterDoc = await getDoc(counterRef);
 
   if (counterDoc.exists()) {
-    return counterDoc.data();
+    return counterDoc.data() as CounterData;
   }
 
   return { value: 0, year: getCurrentYear() };
@@ -161,10 +181,10 @@ export const getCurrentCounter = async (userId, counterType) => {
 
 /**
  * Reset counter (admin function)
- * @param {string} userId - User ID
- * @param {string} counterType - Type of counter
+ * @param userId - User ID
+ * @param counterType - Type of counter
  */
-export const resetCounter = async (userId, counterType) => {
+export const resetCounter = async (userId: string, counterType: CounterType): Promise<void> => {
   if (!userId) throw new Error('User ID is required');
 
   const counterRef = doc(db, `users/${userId}/counters/${counterType}`);
