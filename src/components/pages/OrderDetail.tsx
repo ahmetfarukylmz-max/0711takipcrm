@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { formatCancellationReason } from '../../utils/orderHelpers';
+import { formatOrderNumber } from '../../utils/numberFormatters';
 import type { Order, Customer, Product, Payment } from '../../types';
 
 interface OrderDetailProps {
@@ -86,7 +87,7 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Sipariş Bilgileri</h3>
                     <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                        <p><span className="font-semibold">Sipariş No:</span> #{order.id.substring(0, 8)}</p>
+                        <p><span className="font-semibold">Sipariş No:</span> {formatOrderNumber(order)}</p>
                         <p><span className="font-semibold">Sipariş Tarihi:</span> {formatDate(order.order_date)}</p>
                         <p><span className="font-semibold">Teslim Tarihi:</span> {formatDate(order.delivery_date)}</p>
                         <p>

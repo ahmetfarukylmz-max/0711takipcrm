@@ -10,6 +10,7 @@ import SkeletonTable from '../common/SkeletonTable';
 import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, getStatusClass } from '../../utils/formatters';
+import { getShortOrderNumber } from '../../utils/numberFormatters';
 import type { Shipment, Order, Product, Customer } from '../../types';
 
 interface ShipmentFormData {
@@ -606,7 +607,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         />
                                     </td>
                                     <td className="p-3 text-sm text-blue-600 dark:text-blue-400 font-mono">
-                                        #{order?.id?.slice(-6) || 'N/A'}
+                                        {getShortOrderNumber(order)}
                                     </td>
                                     <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
                                     <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
@@ -703,7 +704,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         <MobileListItem
                             key={shipment.id}
                             title={customer?.name || 'Bilinmeyen Müşteri'}
-                            subtitle={`Sipariş #${order?.id?.slice(-6) || 'N/A'} • ${formatDate(shipment.shipment_date)}`}
+                            subtitle={`Sipariş ${getShortOrderNumber(order)} • ${formatDate(shipment.shipment_date)}`}
                             onClick={() => handleOpenModal(shipment)}
                             rightContent={
                                 <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>

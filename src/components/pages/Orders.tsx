@@ -16,6 +16,7 @@ import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
 import { canCancelOrder } from '../../utils/orderHelpers';
+import { formatOrderNumber } from '../../utils/numberFormatters';
 import type { Order, Customer, Product, Shipment, Payment } from '../../types';
 
 interface DeleteConfirmState {
@@ -194,6 +195,9 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
             return;
         }
 
+        // Format order number
+        const orderNumber = formatOrderNumber(order);
+
         // Şirket bilgileri
         const companyInfo = {
             name: "AKÇELİK METAL SANAYİ",
@@ -220,7 +224,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
         const printContent = `
             <html>
             <head>
-                <title>Sipariş #${order.id?.substring(0, 8) || 'XXXX'}</title>
+                <title>Sipariş ${orderNumber}</title>
                 <script src="https://cdn.tailwindcss.com"></script>
                 <style>
                     @media print {
@@ -246,7 +250,7 @@ const Orders = memo<OrdersProps>(({ orders, onSave, onDelete, onCancel, onShipme
                         <div class="text-right">
                             <h2 class="text-3xl font-bold text-gray-900 mb-3">SİPARİŞ</h2>
                             <div class="text-xs text-gray-600 space-y-1">
-                                <p><span class="font-semibold">No:</span> #${order.id?.substring(0, 8).toUpperCase() || 'XXXX'}</p>
+                                <p><span class="font-semibold">No:</span> ${orderNumber}</p>
                                 <p><span class="font-semibold">Sipariş Tarihi:</span> ${formatDate(order.order_date)}</p>
                                 <p><span class="font-semibold">Teslim Tarihi:</span> ${formatDate(order.delivery_date)}</p>
                             </div>

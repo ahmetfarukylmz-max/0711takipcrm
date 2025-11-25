@@ -1,5 +1,6 @@
 import { collection, doc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
 
 // Import store for optimistic updates (will be used by saveDocumentOptimistic)
 let storeInstance = null;
@@ -79,6 +80,18 @@ export const saveOrder = async (userId, data) => {
     const finalData = { ...data };
     if (!finalData.status) finalData.status = 'Bekliyor';
     if (!finalData.order_date) finalData.order_date = new Date().toISOString().slice(0, 10);
+
+    // Generate order number for new orders (if not already set)
+    if (!finalData.id && !finalData.orderNumber) {
+        try {
+            finalData.orderNumber = await getNextOrderNumber(userId);
+            console.log('Generated order number:', finalData.orderNumber);
+        } catch (error) {
+            console.error('Error generating order number:', error);
+            // Continue without order number if generation fails
+        }
+    }
+
     return saveDocument(userId, 'orders', finalData);
 };
 
@@ -92,6 +105,18 @@ export const saveQuote = async (userId, data) => {
     const finalData = { ...data };
     if (!finalData.status) finalData.status = 'Hazırlandı';
     if (!finalData.teklif_tarihi) finalData.teklif_tarihi = new Date().toISOString().slice(0, 10);
+
+    // Generate quote number for new quotes (if not already set)
+    if (!finalData.id && !finalData.quoteNumber) {
+        try {
+            finalData.quoteNumber = await getNextQuoteNumber(userId);
+            console.log('Generated quote number:', finalData.quoteNumber);
+        } catch (error) {
+            console.error('Error generating quote number:', error);
+            // Continue without quote number if generation fails
+        }
+    }
+
     return saveDocument(userId, 'teklifler', finalData);
 };
 

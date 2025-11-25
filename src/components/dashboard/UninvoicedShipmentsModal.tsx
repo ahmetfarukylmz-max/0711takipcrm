@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatDate } from '../../utils/formatters';
+import { getShortOrderNumber } from '../../utils/numberFormatters';
 import type { Shipment, Order, Customer } from '../../types';
 
 interface UninvoicedShipmentsModalProps {
@@ -132,7 +133,7 @@ const UninvoicedShipmentsModal: React.FC<UninvoicedShipmentsModalProps> = ({
                                         </h3>
                                     </div>
                                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        Sipariş: #{order?.id?.slice(-6) || 'N/A'} •
+                                        Sipariş: {getShortOrderNumber(order)} •
                                         Sevk Tarihi: {formatDate(shipment.shipment_date)}
                                     </p>
                                     <p className={`text-xs font-bold mt-1 ${getUrgencyTextColor(daysSince)}`}>
