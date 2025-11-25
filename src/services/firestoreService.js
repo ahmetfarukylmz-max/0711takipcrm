@@ -1,7 +1,5 @@
 import { collection, doc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { logger } from '../utils/logger';
 import { db } from './firebase';
-import { logger } from '../utils/logger';
 import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
 import { logger } from '../utils/logger';
 
@@ -18,18 +16,18 @@ export const setStoreInstance = (store) => {
  * @param {Object} details - An object containing details about the activity.
  */
 export const logActivity = async (userId, action, details) => {
-    if (!userId) return;
-    try {
-        const logData = {
-            userId,
-            action,
-            details,
-            timestamp: serverTimestamp(),
-        };
-        await addDoc(collection(db, `users/${userId}/activity_log`), logData);
-    } catch (error) {
-        logger.error("Error logging activity:", error);
-    }
+  if (!userId) return;
+  try {
+    const logData = {
+      userId,
+      action,
+      details,
+      timestamp: serverTimestamp(),
+    };
+    await addDoc(collection(db, `users/${userId}/activity_log`), logData);
+  } catch (error) {
+    logger.error('Error logging activity:', error);
+  }
 };
 
 /**
@@ -40,37 +38,37 @@ export const logActivity = async (userId, action, details) => {
  * @returns {Promise<string>} Document ID
  */
 export const saveDocument = async (userId, collectionName, data) => {
-    if (!userId) return null;
+  if (!userId) return null;
 
-    const { id, ...dataToSave } = data;
+  const { id, ...dataToSave } = data;
 
-    // Special handling for products
-    if (collectionName === 'products') {
-        dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
-        dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
-    }
+  // Special handling for products
+  if (collectionName === 'products') {
+    dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
+    dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
+  }
 
-    const collectionPath = `users/${userId}/${collectionName}`;
+  const collectionPath = `users/${userId}/${collectionName}`;
 
-    if (id) {
-        // Update existing document
-        try {
-            await updateDoc(doc(db, collectionPath, id), dataToSave);
-            return id;
-        } catch (error) {
-            // If document doesn't exist, create it instead
-            if (error.code === 'not-found') {
-                logger.warn(`Document ${id} not found, creating new document instead`);
-                const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
-                return newDocRef.id;
-            }
-            throw error; // Re-throw other errors
-        }
-    } else {
-        // Create new document
+  if (id) {
+    // Update existing document
+    try {
+      await updateDoc(doc(db, collectionPath, id), dataToSave);
+      return id;
+    } catch (error) {
+      // If document doesn't exist, create it instead
+      if (error.code === 'not-found') {
+        logger.warn(`Document ${id} not found, creating new document instead`);
         const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
         return newDocRef.id;
+      }
+      throw error; // Re-throw other errors
     }
+  } else {
+    // Create new document
+    const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+    return newDocRef.id;
+  }
 };
 
 /**
@@ -80,22 +78,22 @@ export const saveDocument = async (userId, collectionName, data) => {
  * @returns {Promise<string>} Document ID
  */
 export const saveOrder = async (userId, data) => {
-    const finalData = { ...data };
-    if (!finalData.status) finalData.status = 'Bekliyor';
-    if (!finalData.order_date) finalData.order_date = new Date().toISOString().slice(0, 10);
+  const finalData = { ...data };
+  if (!finalData.status) finalData.status = 'Bekliyor';
+  if (!finalData.order_date) finalData.order_date = new Date().toISOString().slice(0, 10);
 
-    // Generate order number for new orders (if not already set)
-    if (!finalData.id && !finalData.orderNumber) {
-        try {
-            finalData.orderNumber = await getNextOrderNumber(userId);
-            logger.log('Generated order number:', finalData.orderNumber);
-        } catch (error) {
-            logger.error('Error generating order number:', error);
-            // Continue without order number if generation fails
-        }
+  // Generate order number for new orders (if not already set)
+  if (!finalData.id && !finalData.orderNumber) {
+    try {
+      finalData.orderNumber = await getNextOrderNumber(userId);
+      logger.log('Generated order number:', finalData.orderNumber);
+    } catch (error) {
+      logger.error('Error generating order number:', error);
+      // Continue without order number if generation fails
     }
+  }
 
-    return saveDocument(userId, 'orders', finalData);
+  return saveDocument(userId, 'orders', finalData);
 };
 
 /**
@@ -105,22 +103,22 @@ export const saveOrder = async (userId, data) => {
  * @returns {Promise<string>} Document ID
  */
 export const saveQuote = async (userId, data) => {
-    const finalData = { ...data };
-    if (!finalData.status) finalData.status = 'Hazırlandı';
-    if (!finalData.teklif_tarihi) finalData.teklif_tarihi = new Date().toISOString().slice(0, 10);
+  const finalData = { ...data };
+  if (!finalData.status) finalData.status = 'Hazırlandı';
+  if (!finalData.teklif_tarihi) finalData.teklif_tarihi = new Date().toISOString().slice(0, 10);
 
-    // Generate quote number for new quotes (if not already set)
-    if (!finalData.id && !finalData.quoteNumber) {
-        try {
-            finalData.quoteNumber = await getNextQuoteNumber(userId);
-            logger.log('Generated quote number:', finalData.quoteNumber);
-        } catch (error) {
-            logger.error('Error generating quote number:', error);
-            // Continue without quote number if generation fails
-        }
+  // Generate quote number for new quotes (if not already set)
+  if (!finalData.id && !finalData.quoteNumber) {
+    try {
+      finalData.quoteNumber = await getNextQuoteNumber(userId);
+      logger.log('Generated quote number:', finalData.quoteNumber);
+    } catch (error) {
+      logger.error('Error generating quote number:', error);
+      // Continue without quote number if generation fails
     }
+  }
 
-    return saveDocument(userId, 'teklifler', finalData);
+  return saveDocument(userId, 'teklifler', finalData);
 };
 
 /**
@@ -130,39 +128,39 @@ export const saveQuote = async (userId, data) => {
  * @returns {Promise<void>}
  */
 export const convertQuoteToOrder = async (userId, quote) => {
-    if (!userId) return;
+  if (!userId) return;
 
-    const newOrder = {
-        customerId: quote.customerId,
-        items: quote.items,
-        subtotal: quote.subtotal,
-        vatRate: quote.vatRate,
-        vatAmount: quote.vatAmount,
-        total_amount: quote.total_amount,
-        order_date: new Date().toISOString().slice(0, 10),
-        status: 'Bekliyor',
-        paymentType: quote.paymentType || 'Peşin',
-        paymentTerm: quote.paymentTerm || null,
-        currency: quote.currency || 'TRY',
-        shipmentId: null,
-        quoteId: quote.id,
-        // Preserve ownership from quote
-        createdBy: quote.createdBy || userId,
-        createdByEmail: quote.createdByEmail
-    };
+  const newOrder = {
+    customerId: quote.customerId,
+    items: quote.items,
+    subtotal: quote.subtotal,
+    vatRate: quote.vatRate,
+    vatAmount: quote.vatAmount,
+    total_amount: quote.total_amount,
+    order_date: new Date().toISOString().slice(0, 10),
+    status: 'Bekliyor',
+    paymentType: quote.paymentType || 'Peşin',
+    paymentTerm: quote.paymentTerm || null,
+    currency: quote.currency || 'TRY',
+    shipmentId: null,
+    quoteId: quote.id,
+    // Preserve ownership from quote
+    createdBy: quote.createdBy || userId,
+    createdByEmail: quote.createdByEmail,
+  };
 
-    // Remove null/undefined values
-    Object.keys(newOrder).forEach(key => {
-        if (newOrder[key] === null || newOrder[key] === undefined) {
-            delete newOrder[key];
-        }
-    });
+  // Remove null/undefined values
+  Object.keys(newOrder).forEach((key) => {
+    if (newOrder[key] === null || newOrder[key] === undefined) {
+      delete newOrder[key];
+    }
+  });
 
-    const orderRef = await addDoc(collection(db, `users/${userId}/orders`), newOrder);
-    await updateDoc(doc(db, `users/${userId}/teklifler`, quote.id), {
-        status: 'Onaylandı',
-        orderId: orderRef.id
-    });
+  const orderRef = await addDoc(collection(db, `users/${userId}/orders`), newOrder);
+  await updateDoc(doc(db, `users/${userId}/teklifler`, quote.id), {
+    status: 'Onaylandı',
+    orderId: orderRef.id,
+  });
 };
 
 /**
@@ -172,18 +170,18 @@ export const convertQuoteToOrder = async (userId, quote) => {
  * @returns {Promise<string>} Movement ID
  */
 export const logStockMovement = async (userId, movementData) => {
-    if (!userId) return null;
+  if (!userId) return null;
 
-    try {
-        const movementRef = await addDoc(collection(db, `users/${userId}/stock_movements`), {
-            ...movementData,
-            createdAt: new Date().toISOString()
-        });
-        return movementRef.id;
-    } catch (error) {
-        logger.error('Error logging stock movement:', error);
-        return null;
-    }
+  try {
+    const movementRef = await addDoc(collection(db, `users/${userId}/stock_movements`), {
+      ...movementData,
+      createdAt: new Date().toISOString(),
+    });
+    return movementRef.id;
+  } catch (error) {
+    logger.error('Error logging stock movement:', error);
+    return null;
+  }
 };
 
 /**
@@ -195,50 +193,50 @@ export const logStockMovement = async (userId, movementData) => {
  * @returns {Promise<boolean>} Success status
  */
 export const updateProductStock = async (userId, productId, quantityChange, movementData = {}) => {
-    if (!userId || !productId) return false;
+  if (!userId || !productId) return false;
 
-    try {
-        const productRef = doc(db, `users/${userId}/products`, productId);
-        const productDoc = await getDoc(productRef);
+  try {
+    const productRef = doc(db, `users/${userId}/products`, productId);
+    const productDoc = await getDoc(productRef);
 
-        if (!productDoc.exists()) {
-            logger.error('Product not found:', productId);
-            return false;
-        }
-
-        const product = productDoc.data();
-
-        // Only update stock if tracking is enabled
-        if (!product.track_stock) {
-            logger.log('Stock tracking not enabled for product:', productId);
-            return false;
-        }
-
-        const previousStock = product.stock_quantity || 0;
-        const newStock = previousStock + quantityChange;
-
-        // Update product stock
-        await updateDoc(productRef, {
-            stock_quantity: newStock,
-            updatedAt: new Date().toISOString()
-        });
-
-        // Log the stock movement
-        await logStockMovement(userId, {
-            productId,
-            productName: product.name,
-            productUnit: product.unit || 'Adet',
-            quantity: quantityChange,
-            previousStock,
-            newStock,
-            ...movementData
-        });
-
-        return true;
-    } catch (error) {
-        logger.error('Error updating product stock:', error);
-        return false;
+    if (!productDoc.exists()) {
+      logger.error('Product not found:', productId);
+      return false;
     }
+
+    const product = productDoc.data();
+
+    // Only update stock if tracking is enabled
+    if (!product.track_stock) {
+      logger.log('Stock tracking not enabled for product:', productId);
+      return false;
+    }
+
+    const previousStock = product.stock_quantity || 0;
+    const newStock = previousStock + quantityChange;
+
+    // Update product stock
+    await updateDoc(productRef, {
+      stock_quantity: newStock,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Log the stock movement
+    await logStockMovement(userId, {
+      productId,
+      productName: product.name,
+      productUnit: product.unit || 'Adet',
+      quantity: quantityChange,
+      previousStock,
+      newStock,
+      ...movementData,
+    });
+
+    return true;
+  } catch (error) {
+    logger.error('Error updating product stock:', error);
+    return false;
+  }
 };
 
 /**
@@ -250,63 +248,63 @@ export const updateProductStock = async (userId, productId, quantityChange, move
  * @returns {Promise<void>}
  */
 export const markShipmentDelivered = async (userId, shipmentId, orderId, userEmail = 'system') => {
-    if (!userId) return;
+  if (!userId) return;
 
-    try {
-        // Get shipment details
-        const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
-        const shipmentDoc = await getDoc(shipmentRef);
+  try {
+    // Get shipment details
+    const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
+    const shipmentDoc = await getDoc(shipmentRef);
 
-        if (!shipmentDoc.exists()) {
-            logger.error('Shipment not found:', shipmentId);
-            return;
-        }
-
-        const shipment = shipmentDoc.data();
-
-        // Update shipment status
-        await updateDoc(shipmentRef, {
-            status: 'Teslim Edildi',
-            delivery_date: new Date().toISOString().slice(0, 10),
-            updatedAt: new Date().toISOString()
-        });
-
-        // Update order status
-        const orderRef = doc(db, `users/${userId}/orders`, orderId);
-        await updateDoc(orderRef, {
-            status: 'Tamamlandı',
-            updatedAt: new Date().toISOString()
-        });
-
-        // Update stock for each shipped item
-        if (shipment.items && Array.isArray(shipment.items)) {
-            for (const item of shipment.items) {
-                await updateProductStock(userId, item.productId, -item.quantity, {
-                    type: 'Sevkiyat',
-                    relatedId: shipmentId,
-                    relatedType: 'shipment',
-                    relatedReference: shipment.orderNumber || orderId,
-                    notes: `Sevkiyat teslim edildi: ${shipment.customerName || 'Müşteri'}`,
-                    createdBy: userId,
-                    createdByEmail: userEmail
-                });
-            }
-        }
-
-        // Log activity
-        await logActivity(userId, 'SHIPMENT_DELIVERED', {
-            shipmentId,
-            orderId,
-            items: shipment.items?.map(i => ({
-                productId: i.productId,
-                productName: i.productName,
-                quantity: i.quantity
-            }))
-        });
-    } catch (error) {
-        logger.error('Error marking shipment as delivered:', error);
-        throw error;
+    if (!shipmentDoc.exists()) {
+      logger.error('Shipment not found:', shipmentId);
+      return;
     }
+
+    const shipment = shipmentDoc.data();
+
+    // Update shipment status
+    await updateDoc(shipmentRef, {
+      status: 'Teslim Edildi',
+      delivery_date: new Date().toISOString().slice(0, 10),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update order status
+    const orderRef = doc(db, `users/${userId}/orders`, orderId);
+    await updateDoc(orderRef, {
+      status: 'Tamamlandı',
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update stock for each shipped item
+    if (shipment.items && Array.isArray(shipment.items)) {
+      for (const item of shipment.items) {
+        await updateProductStock(userId, item.productId, -item.quantity, {
+          type: 'Sevkiyat',
+          relatedId: shipmentId,
+          relatedType: 'shipment',
+          relatedReference: shipment.orderNumber || orderId,
+          notes: `Sevkiyat teslim edildi: ${shipment.customerName || 'Müşteri'}`,
+          createdBy: userId,
+          createdByEmail: userEmail,
+        });
+      }
+    }
+
+    // Log activity
+    await logActivity(userId, 'SHIPMENT_DELIVERED', {
+      shipmentId,
+      orderId,
+      items: shipment.items?.map((i) => ({
+        productId: i.productId,
+        productName: i.productName,
+        quantity: i.quantity,
+      })),
+    });
+  } catch (error) {
+    logger.error('Error marking shipment as delivered:', error);
+    throw error;
+  }
 };
 
 /**
@@ -317,19 +315,19 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
  * @returns {Promise<boolean>} Success status
  */
 export const deleteDocument = async (userId, collectionName, docId) => {
-    if (!userId || !docId) return false;
+  if (!userId || !docId) return false;
 
-    try {
-        const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
-        await updateDoc(docRef, {
-            isDeleted: true,
-            deletedAt: new Date().toISOString()
-        });
-        return true;
-    } catch (error) {
-        logger.error('Delete error:', error);
-        return false;
-    }
+  try {
+    const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
+    await updateDoc(docRef, {
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (error) {
+    logger.error('Delete error:', error);
+    return false;
+  }
 };
 
 /**
@@ -340,19 +338,19 @@ export const deleteDocument = async (userId, collectionName, docId) => {
  * @returns {Promise<boolean>} Success status
  */
 export const undoDelete = async (userId, collectionName, docId) => {
-    if (!userId || !docId) return false;
+  if (!userId || !docId) return false;
 
-    try {
-        const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
-        await updateDoc(docRef, {
-            isDeleted: false,
-            deletedAt: null
-        });
-        return true;
-    } catch (error) {
-        logger.error('Undo delete error:', error);
-        return false;
-    }
+  try {
+    const docRef = doc(db, `users/${userId}/${collectionName}`, docId);
+    await updateDoc(docRef, {
+      isDeleted: false,
+      deletedAt: null,
+    });
+    return true;
+  } catch (error) {
+    logger.error('Undo delete error:', error);
+    return false;
+  }
 };
 
 /**
@@ -385,82 +383,82 @@ export const undoDelete = async (userId, collectionName, docId) => {
  * });
  */
 export const saveDocumentOptimistic = async (userId, collectionName, data, options = {}) => {
-    if (!userId) return null;
+  if (!userId) return null;
 
-    const { onOptimisticUpdate, onSuccess, onError } = options;
-    const isUpdate = !!data.id;
-    const tempId = data.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const { onOptimisticUpdate, onSuccess, onError } = options;
+  const isUpdate = !!data.id;
+  const tempId = data.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // 1. Optimistic UI Update (immediate)
-    if (onOptimisticUpdate && storeInstance) {
-        const tempDoc = {
-            ...data,
-            id: tempId,
-            _pending: true,
-            _optimistic: true,
-        };
+  // 1. Optimistic UI Update (immediate)
+  if (onOptimisticUpdate && storeInstance) {
+    const tempDoc = {
+      ...data,
+      id: tempId,
+      _pending: true,
+      _optimistic: true,
+    };
 
-        if (isUpdate) {
-            // For updates, use existing update function
-            storeInstance.getState().updateInCollection(collectionName, tempId, tempDoc);
-        } else {
-            // For creates, add to collection
-            storeInstance.getState().addPendingItem(collectionName, tempDoc);
-        }
-
-        onOptimisticUpdate(tempDoc);
+    if (isUpdate) {
+      // For updates, use existing update function
+      storeInstance.getState().updateInCollection(collectionName, tempId, tempDoc);
+    } else {
+      // For creates, add to collection
+      storeInstance.getState().addPendingItem(collectionName, tempDoc);
     }
 
-    // 2. Firestore Save (async)
-    try {
-        const realId = await saveDocument(userId, collectionName, data);
+    onOptimisticUpdate(tempDoc);
+  }
 
-        // 3. Success - update with real data
-        if (onSuccess && storeInstance) {
-            const realDoc = {
-                ...data,
-                id: realId,
-                _pending: false,
-                _optimistic: false,
-            };
+  // 2. Firestore Save (async)
+  try {
+    const realId = await saveDocument(userId, collectionName, data);
 
-            if (!isUpdate && tempId !== realId) {
-                // New document: remove temp and let real-time listener handle the rest
-                storeInstance.getState().removePendingItem(collectionName, tempId);
-            } else {
-                // Update: mark as no longer pending
-                storeInstance.getState().updateInCollection(collectionName, realId, {
-                    _pending: false,
-                    _optimistic: false,
-                });
-            }
+    // 3. Success - update with real data
+    if (onSuccess && storeInstance) {
+      const realDoc = {
+        ...data,
+        id: realId,
+        _pending: false,
+        _optimistic: false,
+      };
 
-            onSuccess(realDoc);
-        }
+      if (!isUpdate && tempId !== realId) {
+        // New document: remove temp and let real-time listener handle the rest
+        storeInstance.getState().removePendingItem(collectionName, tempId);
+      } else {
+        // Update: mark as no longer pending
+        storeInstance.getState().updateInCollection(collectionName, realId, {
+          _pending: false,
+          _optimistic: false,
+        });
+      }
 
-        return realId;
-    } catch (error) {
-        logger.error('Optimistic save failed:', error);
-
-        // 4. Error - rollback optimistic update
-        if (onError && storeInstance) {
-            if (isUpdate) {
-                // Revert update - real-time listener will restore original
-                storeInstance.getState().updateInCollection(collectionName, tempId, {
-                    _pending: false,
-                    _optimistic: false,
-                    _error: true,
-                });
-            } else {
-                // Remove temp item
-                storeInstance.getState().removePendingItem(collectionName, tempId);
-            }
-
-            onError(tempId, error);
-        }
-
-        throw error;
+      onSuccess(realDoc);
     }
+
+    return realId;
+  } catch (error) {
+    logger.error('Optimistic save failed:', error);
+
+    // 4. Error - rollback optimistic update
+    if (onError && storeInstance) {
+      if (isUpdate) {
+        // Revert update - real-time listener will restore original
+        storeInstance.getState().updateInCollection(collectionName, tempId, {
+          _pending: false,
+          _optimistic: false,
+          _error: true,
+        });
+      } else {
+        // Remove temp item
+        storeInstance.getState().removePendingItem(collectionName, tempId);
+      }
+
+      onError(tempId, error);
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -473,44 +471,44 @@ export const saveDocumentOptimistic = async (userId, collectionName, data, optio
  * @returns {Promise<boolean>} Success status
  */
 export const deleteDocumentOptimistic = async (userId, collectionName, docId, options = {}) => {
-    const { onOptimisticUpdate, onSuccess, onError } = options;
+  const { onOptimisticUpdate, onSuccess, onError } = options;
 
-    // 1. Optimistic UI Update
-    if (onOptimisticUpdate && storeInstance) {
-        storeInstance.getState().updateInCollection(collectionName, docId, {
-            isDeleted: true,
-            _pending: true,
-        });
-        onOptimisticUpdate(docId);
+  // 1. Optimistic UI Update
+  if (onOptimisticUpdate && storeInstance) {
+    storeInstance.getState().updateInCollection(collectionName, docId, {
+      isDeleted: true,
+      _pending: true,
+    });
+    onOptimisticUpdate(docId);
+  }
+
+  // 2. Firestore Delete
+  try {
+    const success = await deleteDocument(userId, collectionName, docId);
+
+    if (success && onSuccess && storeInstance) {
+      storeInstance.getState().updateInCollection(collectionName, docId, {
+        _pending: false,
+      });
+      onSuccess(docId);
     }
 
-    // 2. Firestore Delete
-    try {
-        const success = await deleteDocument(userId, collectionName, docId);
+    return success;
+  } catch (error) {
+    logger.error('Optimistic delete failed:', error);
 
-        if (success && onSuccess && storeInstance) {
-            storeInstance.getState().updateInCollection(collectionName, docId, {
-                _pending: false,
-            });
-            onSuccess(docId);
-        }
-
-        return success;
-    } catch (error) {
-        logger.error('Optimistic delete failed:', error);
-
-        // 3. Rollback
-        if (onError && storeInstance) {
-            storeInstance.getState().updateInCollection(collectionName, docId, {
-                isDeleted: false,
-                _pending: false,
-                _error: true,
-            });
-            onError(docId, error);
-        }
-
-        return false;
+    // 3. Rollback
+    if (onError && storeInstance) {
+      storeInstance.getState().updateInCollection(collectionName, docId, {
+        isDeleted: false,
+        _pending: false,
+        _error: true,
+      });
+      onError(docId, error);
     }
+
+    return false;
+  }
 };
 
 /**
@@ -526,52 +524,46 @@ export const deleteDocumentOptimistic = async (userId, collectionName, docId, op
  * @returns {Promise<boolean>} Success status
  */
 export const cancelOrder = async (userId, orderId, cancellationData) => {
-    if (!userId || !orderId) return false;
+  if (!userId || !orderId) return false;
 
-    try {
-        const {
-            reason,
-            notes,
-            cancelledByEmail,
-            shipmentIds = [],
-            paymentIds = []
-        } = cancellationData;
+  try {
+    const { reason, notes, cancelledByEmail, shipmentIds = [], paymentIds = [] } = cancellationData;
 
-        // 1. Siparişi iptal et
-        const orderRef = doc(db, `users/${userId}/orders`, orderId);
-        await updateDoc(orderRef, {
-            status: 'İptal Edildi',
-            cancelledAt: new Date().toISOString(),
-            cancelledBy: userId,
-            cancelledByEmail: cancelledByEmail || '',
-            cancellationReason: reason,
-            cancellationNotes: notes || ''
-        });
+    // 1. Siparişi iptal et
+    const orderRef = doc(db, `users/${userId}/orders`, orderId);
+    await updateDoc(orderRef, {
+      status: 'İptal Edildi',
+      cancelledAt: new Date().toISOString(),
+      cancelledBy: userId,
+      cancelledByEmail: cancelledByEmail || '',
+      cancellationReason: reason,
+      cancellationNotes: notes || '',
+    });
 
-        // 2. İlgili sevkiyatları iptal et (eğer varsa)
-        for (const shipmentId of shipmentIds) {
-            const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
-            await updateDoc(shipmentRef, {
-                status: 'İptal Edildi',
-                cancelledAt: new Date().toISOString(),
-                notes: `Sipariş iptali nedeniyle iptal edildi`
-            });
-        }
-
-        // 3. İlgili ödemeleri iptal et (eğer varsa)
-        for (const paymentId of paymentIds) {
-            const paymentRef = doc(db, `users/${userId}/payments`, paymentId);
-            await updateDoc(paymentRef, {
-                status: 'İptal',
-                notes: `Sipariş iptali nedeniyle iptal edildi`
-            });
-        }
-
-        return true;
-    } catch (error) {
-        logger.error('Order cancellation error:', error);
-        return false;
+    // 2. İlgili sevkiyatları iptal et (eğer varsa)
+    for (const shipmentId of shipmentIds) {
+      const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
+      await updateDoc(shipmentRef, {
+        status: 'İptal Edildi',
+        cancelledAt: new Date().toISOString(),
+        notes: `Sipariş iptali nedeniyle iptal edildi`,
+      });
     }
+
+    // 3. İlgili ödemeleri iptal et (eğer varsa)
+    for (const paymentId of paymentIds) {
+      const paymentRef = doc(db, `users/${userId}/payments`, paymentId);
+      await updateDoc(paymentRef, {
+        status: 'İptal',
+        notes: `Sipariş iptali nedeniyle iptal edildi`,
+      });
+    }
+
+    return true;
+  } catch (error) {
+    logger.error('Order cancellation error:', error);
+    return false;
+  }
 };
 
 /**
@@ -581,30 +573,30 @@ export const cancelOrder = async (userId, orderId, cancellationData) => {
  * @returns {Promise<string>} Session ID
  */
 export const saveStockCountSession = async (userId, countSession) => {
-    if (!userId) return null;
+  if (!userId) return null;
 
-    try {
-        const { id, ...dataToSave } = countSession;
+  try {
+    const { id, ...dataToSave } = countSession;
 
-        if (id) {
-            // Update existing session
-            await updateDoc(doc(db, `users/${userId}/stock_counts`, id), {
-                ...dataToSave,
-                updatedAt: new Date().toISOString()
-            });
-            return id;
-        } else {
-            // Create new session
-            const newSessionRef = await addDoc(collection(db, `users/${userId}/stock_counts`), {
-                ...dataToSave,
-                createdAt: new Date().toISOString()
-            });
-            return newSessionRef.id;
-        }
-    } catch (error) {
-        logger.error('Error saving stock count session:', error);
-        return null;
+    if (id) {
+      // Update existing session
+      await updateDoc(doc(db, `users/${userId}/stock_counts`, id), {
+        ...dataToSave,
+        updatedAt: new Date().toISOString(),
+      });
+      return id;
+    } else {
+      // Create new session
+      const newSessionRef = await addDoc(collection(db, `users/${userId}/stock_counts`), {
+        ...dataToSave,
+        createdAt: new Date().toISOString(),
+      });
+      return newSessionRef.id;
     }
+  } catch (error) {
+    logger.error('Error saving stock count session:', error);
+    return null;
+  }
 };
 
 /**
@@ -616,38 +608,39 @@ export const saveStockCountSession = async (userId, countSession) => {
  * @returns {Promise<boolean>} Success status
  */
 export const applyStockCountAdjustments = async (userId, sessionId, countItems, userEmail) => {
-    if (!userId || !sessionId) return false;
+  if (!userId || !sessionId) return false;
 
-    try {
-        // Apply adjustments for each product with variance
-        const adjustmentPromises = countItems
-            .filter(item => item.variance !== 0 && item.physicalCount !== null)
-            .map(item => {
-                return updateProductStock(userId, item.productId, item.variance, {
-                    type: 'Sayım Düzeltmesi',
-                    relatedId: sessionId,
-                    relatedType: 'stock_count',
-                    relatedReference: `Stok Sayımı - ${new Date().toISOString().slice(0, 10)}`,
-                    notes: item.notes || `Stok sayımı düzeltmesi: ${item.systemStock} → ${item.physicalCount}`,
-                    createdBy: userId,
-                    createdByEmail: userEmail
-                });
-            });
-
-        await Promise.all(adjustmentPromises);
-
-        // Update count session as applied
-        await updateDoc(doc(db, `users/${userId}/stock_counts`, sessionId), {
-            appliedAt: new Date().toISOString(),
-            appliedBy: userId,
-            appliedByEmail: userEmail,
-            status: 'completed',
-            updatedAt: new Date().toISOString()
+  try {
+    // Apply adjustments for each product with variance
+    const adjustmentPromises = countItems
+      .filter((item) => item.variance !== 0 && item.physicalCount !== null)
+      .map((item) => {
+        return updateProductStock(userId, item.productId, item.variance, {
+          type: 'Sayım Düzeltmesi',
+          relatedId: sessionId,
+          relatedType: 'stock_count',
+          relatedReference: `Stok Sayımı - ${new Date().toISOString().slice(0, 10)}`,
+          notes:
+            item.notes || `Stok sayımı düzeltmesi: ${item.systemStock} → ${item.physicalCount}`,
+          createdBy: userId,
+          createdByEmail: userEmail,
         });
+      });
 
-        return true;
-    } catch (error) {
-        logger.error('Error applying stock count adjustments:', error);
-        return false;
-    }
+    await Promise.all(adjustmentPromises);
+
+    // Update count session as applied
+    await updateDoc(doc(db, `users/${userId}/stock_counts`, sessionId), {
+      appliedAt: new Date().toISOString(),
+      appliedBy: userId,
+      appliedByEmail: userEmail,
+      status: 'completed',
+      updatedAt: new Date().toISOString(),
+    });
+
+    return true;
+  } catch (error) {
+    logger.error('Error applying stock count adjustments:', error);
+    return false;
+  }
 };
