@@ -1165,127 +1165,144 @@ const Products = memo<ProductsProps>(
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="p-3 text-sm text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.has(product.id)}
-                        onChange={() => handleSelectItem(product.id)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                    </td>
-                    <td
-                      className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      onClick={() => handleViewProduct(product)}
-                      title="Detayları görmek için tıklayın"
+                <VirtualList
+                  items={filteredProducts}
+                  itemHeight={80}
+                  renderItem={(product) => (
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}
                     >
-                      {product.name}
-                    </td>
-                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{product.code}</td>
-                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
-                      {formatCurrency(product.cost_price, product.currency || 'TRY')}
-                    </td>
-                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
-                      {formatCurrency(product.selling_price, product.currency || 'TRY')}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {product.track_stock ? (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                product.stock_quantity !== undefined &&
+                      <td className="p-3 text-sm text-center" style={{ width: '50px' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(product.id)}
+                          onChange={() => handleSelectItem(product.id)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                      <td
+                        className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        onClick={() => handleViewProduct(product)}
+                        title="Detayları görmek için tıklayın"
+                        style={{ width: '15%' }}
+                      >
+                        {product.name}
+                      </td>
+                      <td
+                        className="p-3 text-sm text-gray-700 dark:text-gray-300"
+                        style={{ width: '10%' }}
+                      >
+                        {product.code}
+                      </td>
+                      <td
+                        className="p-3 text-sm text-gray-700 dark:text-gray-300"
+                        style={{ width: '12%' }}
+                      >
+                        {formatCurrency(product.cost_price, product.currency || 'TRY')}
+                      </td>
+                      <td
+                        className="p-3 text-sm text-gray-700 dark:text-gray-300"
+                        style={{ width: '12%' }}
+                      >
+                        {formatCurrency(product.selling_price, product.currency || 'TRY')}
+                      </td>
+                      <td className="p-3 text-sm" style={{ width: '15%' }}>
+                        {product.track_stock ? (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  product.stock_quantity !== undefined &&
+                                  product.minimum_stock !== undefined &&
+                                  product.stock_quantity <= product.minimum_stock
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                }`}
+                              >
+                                {product.stock_quantity || 0} {product.unit}
+                              </span>
+                              {product.stock_quantity !== undefined &&
                                 product.minimum_stock !== undefined &&
-                                product.stock_quantity <= product.minimum_stock
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              }`}
-                            >
-                              {product.stock_quantity || 0} {product.unit}
+                                product.stock_quantity <= product.minimum_stock && (
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    ⚠️
+                                  </span>
+                                )}
+                            </div>
+                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                              Değer:{' '}
+                              {formatCurrency(
+                                (product.stock_quantity || 0) * (product.cost_price || 0),
+                                product.currency || 'TRY'
+                              )}
                             </span>
-                            {product.stock_quantity !== undefined &&
-                              product.minimum_stock !== undefined &&
-                              product.stock_quantity <= product.minimum_stock && (
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                  ⚠️
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                            Takip yok
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-sm" style={{ width: '10%' }}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                            product.profitMargin > 25
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              : product.profitMargin >= 10
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                          }`}
+                        >
+                          %{product.profitMargin.toFixed(1)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm" style={{ width: '12%' }}>
+                        {product.track_stock ? (
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}
+                              title={
+                                product.turnoverRate !== null
+                                  ? `Son 90 günde ortalama ${getTurnoverRateInfo(product.turnoverRate).days} günde bir satılıyor`
+                                  : 'Son 90 günde hiç satış yok'
+                              }
+                            >
+                              {getTurnoverRateInfo(product.turnoverRate).label}
+                            </span>
+                            {product.turnoverRate !== null &&
+                              getTurnoverRateInfo(product.turnoverRate).speed && (
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {getTurnoverRateInfo(product.turnoverRate).speed}
                                 </span>
                               )}
                           </div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                            Değer:{' '}
-                            {formatCurrency(
-                              (product.stock_quantity || 0) * (product.cost_price || 0),
-                              product.currency || 'TRY'
-                            )}
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                            Takip yok
                           </span>
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                          Takip yok
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                          product.profitMargin > 25
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                            : product.profitMargin >= 10
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                        }`}
-                      >
-                        %{product.profitMargin.toFixed(1)}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm">
-                      {product.track_stock ? (
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}
-                            title={
-                              product.turnoverRate !== null
-                                ? `Son 90 günde ortalama ${getTurnoverRateInfo(product.turnoverRate).days} günde bir satılıyor`
-                                : 'Son 90 günde hiç satış yok'
-                            }
+                        )}
+                      </td>
+                      <td className="p-3 text-sm text-right" style={{ width: '14%' }}>
+                        <div className="flex gap-3 justify-end">
+                          <button
+                            onClick={() => handleOpenModal(product)}
+                            className="text-blue-500 hover:underline dark:text-blue-400"
                           >
-                            {getTurnoverRateInfo(product.turnoverRate).label}
-                          </span>
-                          {product.turnoverRate !== null &&
-                            getTurnoverRateInfo(product.turnoverRate).speed && (
-                              <span className="text-xs text-gray-600 dark:text-gray-400">
-                                {getTurnoverRateInfo(product.turnoverRate).speed}
-                              </span>
-                            )}
+                            Düzenle
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="text-red-500 hover:underline dark:text-red-400"
+                          >
+                            Sil
+                          </button>
                         </div>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                          Takip yok
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-sm text-right">
-                      <div className="flex gap-3 justify-end">
-                        <button
-                          onClick={() => handleOpenModal(product)}
-                          className="text-blue-500 hover:underline dark:text-blue-400"
-                        >
-                          Düzenle
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product)}
-                          className="text-red-500 hover:underline dark:text-red-400"
-                        >
-                          Sil
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  )}
+                />
               ) : (
                 <tr>
                   <td colSpan={9} className="p-0">
