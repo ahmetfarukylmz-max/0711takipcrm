@@ -35,6 +35,7 @@ export function usePaginatedFirestore(
     orderByField = 'createdAt',
     orderDirection = 'desc',
     filters = [],
+    // eslint-disable-next-line no-unused-vars
     enableRealtime = true,
   } = options;
 

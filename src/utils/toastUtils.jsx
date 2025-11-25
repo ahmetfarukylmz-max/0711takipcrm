@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import toast from 'react-hot-toast';
 
 /**

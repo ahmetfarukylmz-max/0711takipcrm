@@ -96,7 +96,6 @@ export const calculateAccountingBalance = async (userId, lotId, asOfDate) => {
   const consumptions = snapshot.docs.map(doc => doc.data());
 
   // Get the lot to find initial quantity
-  const lotRef = doc(db, `users/${userId}/stock_lots`, lotId);
   const lotSnapshot = await getDocs(query(collection(db, `users/${userId}/stock_lots`), where('id', '==', lotId)));
   const lot = lotSnapshot.docs[0]?.data();
 

@@ -70,6 +70,7 @@ class ErrorBoundary extends React.Component {
               </p>
 
               {/* Error Details (Development only) */}
+              {/* eslint-disable-next-line no-undef */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 w-full text-left">
                   <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-2">
