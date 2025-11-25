@@ -1,4 +1,14 @@
-import { collection, doc, setDoc, updateDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from './firebase';
 import { getProductLots } from './lotService';
 
@@ -65,7 +75,7 @@ export const runMonthlyReconciliation = async (userId, period, products) => {
           variance,
           varianceValue: variance * lot.unitCost,
           status: 'pending',
-          adjustmentNeeded: true
+          adjustmentNeeded: true,
         });
 
         reconciliations.push(reconciliation);
@@ -93,10 +103,12 @@ export const calculateAccountingBalance = async (userId, lotId, asOfDate) => {
   );
 
   const snapshot = await getDocs(q);
-  const consumptions = snapshot.docs.map(doc => doc.data());
+  const consumptions = snapshot.docs.map((doc) => doc.data());
 
   // Get the lot to find initial quantity
-  const lotSnapshot = await getDocs(query(collection(db, `users/${userId}/stock_lots`), where('id', '==', lotId)));
+  const lotSnapshot = await getDocs(
+    query(collection(db, `users/${userId}/stock_lots`), where('id', '==', lotId))
+  );
   const lot = lotSnapshot.docs[0]?.data();
 
   if (!lot) return 0;
@@ -120,7 +132,7 @@ export const createReconciliation = async (userId, reconciliationData) => {
   const reconciliation = {
     id: reconciliationRef.id,
     ...reconciliationData,
-    createdAt: Timestamp.now()
+    createdAt: Timestamp.now(),
   };
 
   await setDoc(reconciliationRef, reconciliation);
@@ -137,14 +149,10 @@ export const getReconciliationsByPeriod = async (userId, period) => {
   if (!userId || !period) return [];
 
   const reconciliationsRef = collection(db, `users/${userId}/lot_reconciliations`);
-  const q = query(
-    reconciliationsRef,
-    where('period', '==', period),
-    orderBy('createdAt', 'desc')
-  );
+  const q = query(reconciliationsRef, where('period', '==', period), orderBy('createdAt', 'desc'));
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data());
+  return snapshot.docs.map((doc) => doc.data());
 };
 
 /**
@@ -155,7 +163,12 @@ export const getReconciliationsByPeriod = async (userId, period) => {
  * @param {string} approvedByEmail - User email
  * @returns {Promise<Object>} Updated reconciliation
  */
-export const applyReconciliationAdjustment = async (userId, reconciliationId, approvedBy, approvedByEmail) => {
+export const applyReconciliationAdjustment = async (
+  userId,
+  reconciliationId,
+  approvedBy,
+  approvedByEmail
+) => {
   if (!userId || !reconciliationId || !approvedBy) {
     throw new Error('User ID, reconciliation ID, and approver are required');
   }
@@ -181,7 +194,7 @@ export const applyReconciliationAdjustment = async (userId, reconciliationId, ap
     reason: 'Monthly reconciliation adjustment',
     reconciliationId: recon.id,
     approvedBy,
-    notes: `Accounting balance adjusted from ${recon.accountingBalance} to ${recon.physicalBalance}`
+    notes: `Accounting balance adjusted from ${recon.accountingBalance} to ${recon.physicalBalance}`,
   });
 
   // Update reconciliation status
@@ -195,7 +208,7 @@ export const applyReconciliationAdjustment = async (userId, reconciliationId, ap
     approvedBy: approvedBy,
     approvedByEmail: approvedByEmail,
     approvedAt: new Date().toISOString(),
-    updatedAt: Timestamp.now()
+    updatedAt: Timestamp.now(),
   };
 
   await updateDoc(reconciliationRef, updateData);
@@ -226,7 +239,7 @@ export const createPhantomConsumption = async (userId, adjustmentData) => {
     createdBy: adjustmentData.approvedBy,
     createdByEmail: adjustmentData.approvedBy,
     createdAt: Timestamp.now(),
-    notes: adjustmentData.notes
+    notes: adjustmentData.notes,
   };
 
   await setDoc(consumptionRef, phantomConsumption);
@@ -246,11 +259,11 @@ export const generateReconciliationReport = async (userId, period) => {
     period,
     totalReconciliations: reconciliations.length,
     totalVarianceValue: reconciliations.reduce((sum, r) => sum + Math.abs(r.varianceValue), 0),
-    pendingCount: reconciliations.filter(r => r.status === 'pending').length,
-    approvedCount: reconciliations.filter(r => r.status === 'approved').length,
-    adjustedCount: reconciliations.filter(r => r.status === 'adjusted').length,
-    rejectedCount: reconciliations.filter(r => r.status === 'rejected').length,
-    byProduct: {}
+    pendingCount: reconciliations.filter((r) => r.status === 'pending').length,
+    approvedCount: reconciliations.filter((r) => r.status === 'approved').length,
+    adjustedCount: reconciliations.filter((r) => r.status === 'adjusted').length,
+    rejectedCount: reconciliations.filter((r) => r.status === 'rejected').length,
+    byProduct: {},
   };
 
   // Group by product
@@ -260,7 +273,7 @@ export const generateReconciliationReport = async (userId, period) => {
         productName: recon.productName,
         variances: [],
         totalVariance: 0,
-        totalVarianceValue: 0
+        totalVarianceValue: 0,
       };
     }
 

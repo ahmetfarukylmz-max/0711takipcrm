@@ -3,7 +3,7 @@ import {
   calculateLIFOCost,
   calculateWeightedAverage,
   getAvailableLots,
-  hasSufficientStock
+  hasSufficientStock,
 } from './lotService';
 
 /**
@@ -31,7 +31,7 @@ export const calculateOrderItemCost = async (userId, product, quantity) => {
       totalCost: (product.averageCost || product.cost_price) * quantity,
       costPerUnit: product.averageCost || product.cost_price,
       lotConsumptions: [],
-      method: 'average'
+      method: 'average',
     };
   }
 
@@ -56,7 +56,7 @@ export const calculateOrderItemCost = async (userId, product, quantity) => {
         totalCost: (product.averageCost || product.cost_price) * quantity,
         costPerUnit: product.averageCost || product.cost_price,
         lotConsumptions: [],
-        method: 'average'
+        method: 'average',
       };
 
     default:
@@ -101,9 +101,8 @@ export const calculateDualCost = async (userId, product, quantity, manualLotSele
 
   // Calculate variance
   const costVariance = physicalCost.totalCost - accountingCost.totalCost;
-  const costVariancePercentage = accountingCost.totalCost > 0
-    ? (costVariance / accountingCost.totalCost) * 100
-    : 0;
+  const costVariancePercentage =
+    accountingCost.totalCost > 0 ? (costVariance / accountingCost.totalCost) * 100 : 0;
 
   return {
     // Accounting (FIFO)
@@ -122,7 +121,7 @@ export const calculateDualCost = async (userId, product, quantity, manualLotSele
     hasCostVariance,
 
     // Method
-    lotSelectionMethod
+    lotSelectionMethod,
   };
 };
 
@@ -138,7 +137,7 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
   const consumptions = [];
 
   for (const selection of selectedLots) {
-    const lot = availableLots.find(l => l.id === selection.lotId);
+    const lot = availableLots.find((l) => l.id === selection.lotId);
     if (!lot) {
       throw new Error(`Lot bulunamadı: ${selection.lotId}`);
     }
@@ -156,7 +155,7 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
       unitCost: lot.unitCost,
       totalCost: costFromLot,
       purchaseDate: lot.purchaseDate,
-      consumptionType: 'manual'
+      consumptionType: 'manual',
     });
 
     totalCost += costFromLot;
@@ -166,7 +165,7 @@ export const calculateCostFromSelectedLots = (selectedLots, availableLots) => {
   return {
     totalCost,
     costPerUnit: totalQuantity > 0 ? totalCost / totalQuantity : 0,
-    lotConsumptions: consumptions
+    lotConsumptions: consumptions,
   };
 };
 
@@ -190,7 +189,7 @@ export const updateProductAverageCost = (product, newQuantity, newUnitCost) => {
   return {
     averageCost: result.averageCost,
     totalStockValue: result.totalValue,
-    stock_quantity: result.quantity
+    stock_quantity: result.quantity,
   };
 };
 
@@ -206,13 +205,13 @@ export const addCostHistoryEntry = (product, entry) => {
   // Add new entry
   history.push({
     date: new Date().toISOString().split('T')[0],
-    ...entry
+    ...entry,
   });
 
   // Keep only last 12 months (365 days)
   const oneYearAgo = new Date();
   oneYearAgo.setDate(oneYearAgo.getDate() - 365);
-  const filteredHistory = history.filter(h => new Date(h.date) >= oneYearAgo);
+  const filteredHistory = history.filter((h) => new Date(h.date) >= oneYearAgo);
 
   // Sort by date (newest first)
   filteredHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -235,7 +234,7 @@ export const formatCurrency = (amount, currency = 'TRY') => {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
   return formatter.format(amount);
 };
@@ -254,7 +253,7 @@ export const calculateProfitMargin = (sellingPrice, costPrice) => {
   return {
     profit,
     profitMargin, // Kar marjı (profit / selling price)
-    profitPercentage // Kar oranı (profit / cost price)
+    profitPercentage, // Kar oranı (profit / cost price)
   };
 };
 
@@ -270,7 +269,7 @@ export const validateLotSelection = (selectedLots, quantityNeeded) => {
   if (Math.abs(totalSelected - quantityNeeded) > 0.001) {
     return {
       isValid: false,
-      error: `Seçilen miktar (${totalSelected}) ihtiyaç duyulan miktara (${quantityNeeded}) eşit değil`
+      error: `Seçilen miktar (${totalSelected}) ihtiyaç duyulan miktara (${quantityNeeded}) eşit değil`,
     };
   }
 
@@ -292,7 +291,8 @@ export const requiresFIFOApproval = (product, accountingLots, physicalLots) => {
 
   for (let i = 0; i < accountingLots.length; i++) {
     if (accountingLots[i].lotId !== physicalLots[i].lotId) return true;
-    if (Math.abs(accountingLots[i].quantityUsed - physicalLots[i].quantityUsed) > 0.001) return true;
+    if (Math.abs(accountingLots[i].quantityUsed - physicalLots[i].quantityUsed) > 0.001)
+      return true;
   }
 
   return false;
