@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
 import { TrashIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
-import type { Product, OrderItem } from '../../types';
+import LotSelectionDialog from '../costing/LotSelectionDialog';
+import { getLotsByProduct } from '../../services/lotService';
+import { calculateFIFOConsumption, calculateLIFOConsumption } from '../../services/fifoLifoService';
+import type { Product, OrderItem, StockLot, LotConsumption } from '../../types';
 
 interface ItemEditorProps {
     /** Array of order items */
@@ -20,6 +23,18 @@ interface ItemEditorProps {
  * ItemEditor component - Editor for order items
  */
 const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, priceOnlyMode = false }) => {
+    // Lot selection dialog state
+    const [lotDialogState, setLotDialogState] = useState<{
+        isOpen: boolean;
+        itemIndex: number;
+        productId: string;
+        productName: string;
+        quantityNeeded: number;
+        unit: string;
+        availableLots: StockLot[];
+        suggestedLots: LotConsumption[];
+    } | null>(null);
+
     const handleAddItem = () => {
         if (products.length > 0) {
             const firstProduct = products[0];
@@ -34,6 +49,122 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                 }
             ]);
         }
+    };
+
+    // Open lot selection dialog
+    const handleOpenLotDialog = async (index: number) => {
+        const item = items[index];
+        const product = products.find(p => p.id === item.productId);
+
+        if (!product || !product.lotTrackingEnabled) {
+            return;
+        }
+
+        try {
+            // Fetch available lots for this product
+            const lots = await getLotsByProduct(item.productId);
+
+            // Filter out lots with 0 quantity
+            const availableLots = lots.filter(lot => lot.quantity > 0);
+
+            if (availableLots.length === 0) {
+                alert('Bu ürün için kullanılabilir lot bulunamadı!');
+                return;
+            }
+
+            // Calculate FIFO suggestion based on product's costing method
+            const costingMethod = product.costingMethod || 'fifo';
+            let suggestedLots: LotConsumption[] = [];
+
+            if (costingMethod === 'fifo') {
+                suggestedLots = calculateFIFOConsumption(availableLots, item.quantity || 0);
+            } else if (costingMethod === 'lifo') {
+                suggestedLots = calculateLIFOConsumption(availableLots, item.quantity || 0);
+            } else {
+                // Average costing - suggest proportionally from all lots
+                suggestedLots = calculateFIFOConsumption(availableLots, item.quantity || 0);
+            }
+
+            setLotDialogState({
+                isOpen: true,
+                itemIndex: index,
+                productId: item.productId,
+                productName: item.productName || product.name,
+                quantityNeeded: item.quantity || 0,
+                unit: item.unit || product.unit,
+                availableLots,
+                suggestedLots
+            });
+        } catch (error) {
+            console.error('Lot bilgileri yüklenirken hata:', error);
+            alert('Lot bilgileri yüklenirken bir hata oluştu.');
+        }
+    };
+
+    // Handle lot selection confirmation
+    const handleLotConfirm = (selectedLots: LotConsumption[], notes?: string) => {
+        if (!lotDialogState) return;
+
+        const { itemIndex, productId } = lotDialogState;
+        const product = products.find(p => p.id === productId);
+        const newItems = [...items];
+        const item = newItems[itemIndex];
+
+        // Calculate costs
+        const physicalCost = selectedLots.reduce((sum, lot) => sum + lot.totalCost, 0);
+        const physicalCostPerUnit = item.quantity ? physicalCost / item.quantity : 0;
+
+        // Calculate accounting cost (FIFO)
+        const accountingLots = calculateFIFOConsumption(
+            lotDialogState.availableLots,
+            item.quantity || 0
+        );
+        const accountingCost = accountingLots.reduce((sum, lot) => sum + lot.totalCost, 0);
+        const accountingCostPerUnit = item.quantity ? accountingCost / item.quantity : 0;
+
+        // Calculate variance
+        const costVariance = physicalCost - accountingCost;
+        const costVariancePercentage = accountingCost !== 0 ? (costVariance / accountingCost) * 100 : 0;
+        const hasCostVariance = Math.abs(costVariance) > 0.01;
+
+        // Determine lot selection method
+        let lotSelectionMethod: 'auto-fifo' | 'auto-lifo' | 'manual' = 'manual';
+        const costingMethod = product?.costingMethod || 'fifo';
+
+        // Check if manual selection matches FIFO
+        const isFIFOMatch = JSON.stringify(selectedLots.map(l => ({ lotId: l.lotId, quantityUsed: l.quantityUsed }))) ===
+                            JSON.stringify(accountingLots.map(l => ({ lotId: l.lotId, quantityUsed: l.quantityUsed })));
+
+        if (isFIFOMatch) {
+            lotSelectionMethod = 'auto-fifo';
+        } else if (costingMethod === 'lifo') {
+            lotSelectionMethod = 'auto-lifo';
+        }
+
+        // Update item with lot information
+        newItems[itemIndex] = {
+            ...item,
+            physicalLotConsumptions: selectedLots,
+            physicalCost,
+            physicalCostPerUnit,
+            accountingLotConsumptions: accountingLots,
+            accountingCost,
+            accountingCostPerUnit,
+            costVariance,
+            costVariancePercentage,
+            hasCostVariance,
+            lotSelectionMethod,
+            costingNotes: notes,
+            varianceReason: hasCostVariance ? `Manuel lot seçimi - ${costingMethod.toUpperCase()} kuralından sapma` : undefined
+        };
+
+        setItems(newItems);
+        setLotDialogState(null);
+    };
+
+    // Handle lot dialog cancel
+    const handleLotCancel = () => {
+        setLotDialogState(null);
     };
 
     const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
@@ -52,6 +183,16 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                 newItems[index].productName = product.name;
                 newItems[index].unit = product.unit;
                 newItems[index].unit_price = product.selling_price;
+
+                // Clear lot information when product changes
+                delete newItems[index].physicalLotConsumptions;
+                delete newItems[index].accountingLotConsumptions;
+                delete newItems[index].physicalCost;
+                delete newItems[index].accountingCost;
+                delete newItems[index].costVariance;
+                delete newItems[index].hasCostVariance;
+                delete newItems[index].lotSelectionMethod;
+                delete newItems[index].costingNotes;
             }
         }
 
@@ -130,6 +271,29 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                                     {formatCurrency((item.quantity || 0) * (item.unit_price || 0))}
                                 </div>
                             </div>
+
+                            {/* Lot Selection Button */}
+                            {(() => {
+                                const product = products.find(p => p.id === item.productId);
+                                const isLotEnabled = product?.lotTrackingEnabled;
+                                const hasLotSelected = item.physicalLotConsumptions && item.physicalLotConsumptions.length > 0;
+
+                                return isLotEnabled && !priceOnlyMode ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenLotDialog(index)}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[36px] ${
+                                            hasLotSelected
+                                                ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800'
+                                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800'
+                                        }`}
+                                        title={hasLotSelected ? 'Lot seçildi - değiştirmek için tıkla' : 'Lot seçmek için tıkla'}
+                                    >
+                                        {hasLotSelected ? '✓ Lot Seçildi' : '📦 Lot Seç'}
+                                    </button>
+                                ) : null;
+                            })()}
+
                             {!priceOnlyMode && (
                                 <button
                                     type="button"
@@ -157,6 +321,21 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                 <div className="text-sm text-blue-600 dark:text-blue-400 font-medium p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
                     ℹ️ Sevk edilmiş sipariş: Sadece fiyatlar düzenlenebilir
                 </div>
+            )}
+
+            {/* Lot Selection Dialog */}
+            {lotDialogState && (
+                <LotSelectionDialog
+                    isOpen={lotDialogState.isOpen}
+                    productId={lotDialogState.productId}
+                    productName={lotDialogState.productName}
+                    quantityNeeded={lotDialogState.quantityNeeded}
+                    unit={lotDialogState.unit}
+                    suggestedLots={lotDialogState.suggestedLots}
+                    availableLots={lotDialogState.availableLots}
+                    onConfirm={handleLotConfirm}
+                    onCancel={handleLotCancel}
+                />
             )}
         </div>
     );
