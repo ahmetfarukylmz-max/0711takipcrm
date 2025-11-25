@@ -2,11 +2,18 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { logger } from '../utils/logger';
 
+type UserRole = 'admin' | 'user';
+
+interface ServiceResponse {
+  success: boolean;
+  error?: unknown;
+}
+
 /**
  * Kullanıcıyı admin yapma
- * @param {string} userId - Kullanıcının UID'si
+ * @param userId - Kullanıcının UID'si
  */
-export const makeUserAdmin = async (userId) => {
+export const makeUserAdmin = async (userId: string): Promise<ServiceResponse> => {
   try {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
@@ -23,9 +30,9 @@ export const makeUserAdmin = async (userId) => {
 
 /**
  * Kullanıcının admin yetkisini kaldırma
- * @param {string} userId - Kullanıcının UID'si
+ * @param userId - Kullanıcının UID'si
  */
-export const removeAdminRole = async (userId) => {
+export const removeAdminRole = async (userId: string): Promise<ServiceResponse> => {
   try {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
@@ -42,13 +49,14 @@ export const removeAdminRole = async (userId) => {
 
 /**
  * Kullanıcının role bilgisini al
- * @param {string} userId - Kullanıcının UID'si
+ * @param userId - Kullanıcının UID'si
  */
-export const getUserRole = async (userId) => {
+export const getUserRole = async (userId: string): Promise<UserRole> => {
   try {
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (userDoc.exists()) {
-      return userDoc.data().role || 'user';
+      const role = userDoc.data().role;
+      return role === 'admin' ? 'admin' : 'user';
     }
     return 'user';
   } catch (error) {
@@ -59,10 +67,13 @@ export const getUserRole = async (userId) => {
 
 /**
  * İlk admin kullanıcıyı oluşturma (manuel)
- * @param {string} userId - Kullanıcının UID'si
- * @param {string} email - Kullanıcının email'i
+ * @param userId - Kullanıcının UID'si
+ * @param email - Kullanıcının email'i
  */
-export const createInitialAdmin = async (userId, email) => {
+export const createInitialAdmin = async (
+  userId: string,
+  email: string
+): Promise<ServiceResponse> => {
   try {
     const userRef = doc(db, 'users', userId);
     await setDoc(userRef, {
