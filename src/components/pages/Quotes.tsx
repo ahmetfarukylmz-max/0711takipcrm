@@ -11,6 +11,7 @@ import SkeletonTable from '../common/SkeletonTable';
 import EmptyState from '../common/EmptyState';
 import { PlusIcon } from '../icons';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
+import { formatQuoteNumber } from '../../utils/numberFormatters';
 import type { Quote, Order, Shipment, Customer, Product } from '../../types';
 
 interface DeleteConfirmState {
@@ -136,6 +137,9 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
             return;
         }
 
+        // Format quote number
+        const quoteNumber = formatQuoteNumber(quote);
+
         // Şirket bilgileri
         const companyInfo = {
             name: "AKÇELİK METAL SANAYİ",
@@ -162,7 +166,7 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
         const printContent = `
             <html>
             <head>
-                <title>Teklif #${quote.id?.substring(0, 8) || 'XXXX'}</title>
+                <title>Teklif ${quoteNumber}</title>
                 <script src="https://cdn.tailwindcss.com"></script>
                 <style>
                     @media print {
@@ -188,7 +192,7 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                         <div class="text-right">
                             <h2 class="text-3xl font-bold text-gray-900 mb-3">TEKLİF</h2>
                             <div class="text-xs text-gray-600 space-y-1">
-                                <p><span class="font-semibold">No:</span> #${quote.id?.substring(0, 8).toUpperCase() || 'XXXX'}</p>
+                                <p><span class="font-semibold">No:</span> ${quoteNumber}</p>
                                 <p><span class="font-semibold">Tarih:</span> ${formatDate(quote.teklif_tarihi)}</p>
                                 <p><span class="font-semibold">Geçerlilik:</span> ${formatDate(quote.gecerlilik_tarihi)}</p>
                             </div>

@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatOrderNumber, formatQuoteNumber } from '../../utils/numberFormatters';
 import type { Quote, Order, Customer, Product } from '../../types';
 
 interface DocumentPreviewProps {
@@ -36,7 +37,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
 
         const isQuote = 'teklif_tarihi' in doc;
         const documentType = isQuote ? 'TEKLİF' : 'SİPARİŞ';
-        const documentId = doc.id?.substring(0, 8).toUpperCase() || 'XXXX';
+        const documentId = isQuote ? formatQuoteNumber(doc as Quote) : formatOrderNumber(doc as Order);
 
         const companyInfo = {
             name: "AKÇELİK METAL SANAYİ",
