@@ -566,17 +566,17 @@ const Payments: React.FC<PaymentsProps> = ({
 
       {/* Payments Table - Desktop */}
       {viewMode === 'list' && (
-        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-          <table className="w-full table-fixed">
+        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-x-auto">
+          <table className="w-full">
             <colgroup>
-              <col style={{ width: '50px' }} />
-              <col style={{ width: 'auto' }} />
+              <col style={{ width: '40px' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '90px' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '12%' }} />
               <col style={{ width: '100px' }} />
-              <col style={{ width: '130px' }} />
-              <col style={{ width: '140px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '90px' }} />
             </colgroup>
             <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
               <tr>
@@ -616,7 +616,7 @@ const Payments: React.FC<PaymentsProps> = ({
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={8} className="p-8">
                     <EmptyState
                       icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
                       title={
@@ -640,86 +640,80 @@ const Payments: React.FC<PaymentsProps> = ({
                   </td>
                 </tr>
               ) : (
-                <VirtualList
-                  items={filteredPayments}
-                  itemHeight={65}
-                  height={600}
-                  renderItem={(payment, index, style) => (
-                    <tr
-                      key={payment.id}
-                      style={style}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                filteredPayments.map((payment) => (
+                  <tr
+                    key={payment.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(payment.id)}
+                        onChange={() => handleSelectItem(payment.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td
+                      className="p-3 text-left cursor-pointer"
+                      onClick={() => handleOpenModal(payment)}
                     >
-                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(payment.id)}
-                          onChange={() => handleSelectItem(payment.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td
-                        className="p-3 text-left cursor-pointer"
-                        onClick={() => handleOpenModal(payment)}
-                      >
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {payment.customerName || '-'}
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {payment.customerName || '-'}
+                      </div>
+                      {payment.originalAmount && (
+                        <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
+                          💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
                         </div>
-                        {payment.originalAmount && (
-                          <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
-                            💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
-                          </div>
-                        )}
-                      </td>
-                      <td
-                        className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
-                        onClick={() => handleOpenModal(payment)}
-                      >
-                        {payment.orderNumber || '-'}
-                      </td>
-                      <td
-                        className="p-3 text-center cursor-pointer"
-                        onClick={() => handleOpenModal(payment)}
-                      >
-                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {formatCurrency(payment.amount, payment.currency)}
+                      )}
+                    </td>
+                    <td
+                      className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                      onClick={() => handleOpenModal(payment)}
+                    >
+                      {payment.orderNumber || '-'}
+                    </td>
+                    <td
+                      className="p-3 text-center cursor-pointer"
+                      onClick={() => handleOpenModal(payment)}
+                    >
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </div>
+                    </td>
+                    <td
+                      className="p-3 text-center cursor-pointer"
+                      onClick={() => handleOpenModal(payment)}
+                    >
+                      <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                        {payment.paymentMethod}
+                      </div>
+                      {payment.checkNumber && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {payment.checkNumber}
                         </div>
-                      </td>
-                      <td
-                        className="p-3 text-center cursor-pointer"
-                        onClick={() => handleOpenModal(payment)}
+                      )}
+                    </td>
+                    <td
+                      className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                      onClick={() => handleOpenModal(payment)}
+                    >
+                      {formatDate(payment.dueDate)}
+                    </td>
+                    <td
+                      className="p-3 text-center cursor-pointer"
+                      onClick={() => handleOpenModal(payment)}
+                    >
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${getStatusColor(payment.status, payment.dueDate)}`}
                       >
-                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {payment.paymentMethod}
-                        </div>
-                        {payment.checkNumber && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {payment.checkNumber}
-                          </div>
-                        )}
-                      </td>
-                      <td
-                        className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
-                        onClick={() => handleOpenModal(payment)}
-                      >
-                        {formatDate(payment.dueDate)}
-                      </td>
-                      <td
-                        className="p-3 text-center cursor-pointer"
-                        onClick={() => handleOpenModal(payment)}
-                      >
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
-                        >
-                          {getStatusText(payment)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <ActionsDropdown actions={getPaymentActions(payment)} />
-                      </td>
-                    </tr>
-                  )}
-                />
+                        {getStatusText(payment)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <ActionsDropdown actions={getPaymentActions(payment)} />
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

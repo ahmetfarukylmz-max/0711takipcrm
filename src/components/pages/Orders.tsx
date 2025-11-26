@@ -560,15 +560,15 @@ const Orders = memo<OrdersProps>(
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800">
-          <table className="w-full table-fixed">
+        <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800 overflow-x-auto">
+          <table className="w-full">
             <colgroup>
-              <col style={{ width: '50px' }} />
-              <col style={{ width: 'auto' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '130px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '40px' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '90px' }} />
             </colgroup>
             <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
               <tr>
@@ -599,82 +599,76 @@ const Orders = memo<OrdersProps>(
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
               {filteredOrders.length > 0 ? (
-                <VirtualList
-                  items={filteredOrders}
-                  itemHeight={57}
-                  height={600}
-                  renderItem={(order, index, style) => {
-                    const orderActions = [
-                      { label: 'Detay', onClick: () => handleOpenDetailModal(order) },
-                      { label: 'Düzenle', onClick: () => handleOpenModal(order) },
-                      { label: 'PDF', onClick: () => handlePrint(order) },
-                      { label: 'Özelleştir', onClick: () => onGeneratePdf(order) },
-                    ];
+                filteredOrders.map((order) => {
+                  const orderActions = [
+                    { label: 'Detay', onClick: () => handleOpenDetailModal(order) },
+                    { label: 'Düzenle', onClick: () => handleOpenModal(order) },
+                    { label: 'PDF', onClick: () => handlePrint(order) },
+                    { label: 'Özelleştir', onClick: () => onGeneratePdf(order) },
+                  ];
 
-                    if (order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') {
-                      orderActions.unshift({
-                        label: 'Sevk Et',
-                        onClick: () => handleOpenShipmentModal(order),
-                      });
-                    }
-
-                    const cancelCheck = orderCancelChecks[order.id];
-                    if (onCancel) {
-                      orderActions.push({
-                        label: '🚫 İptal Et',
-                        onClick: () => setCancellingOrder(order),
-                        destructive: true,
-                        disabled: !cancelCheck?.canCancel,
-                        tooltip: !cancelCheck?.canCancel ? cancelCheck?.reason : 'Siparişi iptal et',
-                      });
-                    }
-
-                    orderActions.push({
-                      label: 'Sil',
-                      onClick: () => handleDelete(order),
-                      destructive: true,
+                  if (order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') {
+                    orderActions.unshift({
+                      label: 'Sevk Et',
+                      onClick: () => handleOpenShipmentModal(order),
                     });
+                  }
 
-                    return (
-                      <tr
-                        key={order.id}
-                        style={style}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <td className="p-3 text-sm text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.has(order.id)}
-                            onChange={() => handleSelectItem(order.id)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold truncate">
-                          {customers.find((c) => c.id === order.customerId)?.name || 'Bilinmiyor'}
-                        </td>
-                        <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
-                          {formatDate(order.order_date)}
-                        </td>
-                        <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
-                          {formatCurrency(order.total_amount, order.currency || 'TRY')}
-                        </td>
-                        <td className="p-3 text-sm text-center">
-                          <span
-                            className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-sm text-right">
-                          <ActionsDropdown actions={orderActions} />
-                        </td>
-                      </tr>
-                    );
-                  }}
-                />
+                  const cancelCheck = orderCancelChecks[order.id];
+                  if (onCancel) {
+                    orderActions.push({
+                      label: '🚫 İptal Et',
+                      onClick: () => setCancellingOrder(order),
+                      destructive: true,
+                      disabled: !cancelCheck?.canCancel,
+                      tooltip: !cancelCheck?.canCancel ? cancelCheck?.reason : 'Siparişi iptal et',
+                    });
+                  }
+
+                  orderActions.push({
+                    label: 'Sil',
+                    onClick: () => handleDelete(order),
+                    destructive: true,
+                  });
+
+                  return (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <td className="p-3 text-sm text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(order.id)}
+                          onChange={() => handleSelectItem(order.id)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold truncate">
+                        {customers.find((c) => c.id === order.customerId)?.name || 'Bilinmiyor'}
+                      </td>
+                      <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
+                        {formatDate(order.order_date)}
+                      </td>
+                      <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
+                        {formatCurrency(order.total_amount, order.currency || 'TRY')}
+                      </td>
+                      <td className="p-3 text-sm text-center">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(order.status)}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm text-right">
+                        <ActionsDropdown actions={orderActions} />
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={6} className="p-8">
                     <EmptyState
                       icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'orders'}
                       title={
