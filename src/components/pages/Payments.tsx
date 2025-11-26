@@ -568,8 +568,8 @@ const Payments: React.FC<PaymentsProps> = ({
       {viewMode === 'list' && (
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-            <div className="text-left">
+          <div className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <div className="text-center">
               <input
                 type="checkbox"
                 checked={
@@ -579,25 +579,25 @@ const Payments: React.FC<PaymentsProps> = ({
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Müşteri
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Sipariş
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Tutar
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Ödeme Yöntemi
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Vade Tarihi
             </div>
-            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Durum
             </div>
-            <div className="text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            <div className="text-right text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               İşlemler
             </div>
           </div>
@@ -633,9 +633,9 @@ const Payments: React.FC<PaymentsProps> = ({
                 <div
                   key={payment.id}
                   style={style}
-                  className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
+                  className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-4 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
                 >
-                  <div className="text-left" onClick={(e) => e.stopPropagation()}>
+                  <div className="text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedItems.has(payment.id)}
