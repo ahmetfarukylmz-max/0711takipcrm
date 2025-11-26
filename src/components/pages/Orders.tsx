@@ -622,7 +622,7 @@ const Orders = memo<OrdersProps>(
                     style={style}
                     className="grid grid-cols-[auto_1fr_120px_130px_110px_100px] gap-3 px-3 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors items-center"
                   >
-                    <div className="text-sm text-center">
+                    <div className="text-sm text-left">
                       <input
                         type="checkbox"
                         checked={selectedItems.has(order.id)}
@@ -630,16 +630,16 @@ const Orders = memo<OrdersProps>(
                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                       />
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 font-semibold truncate">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 font-semibold truncate">
                       {customers.find((c) => c.id === order.customerId)?.name || 'Bilinmiyor'}
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300">
                       {formatDate(order.order_date)}
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300">
                       {formatCurrency(order.total_amount, order.currency || 'TRY')}
                     </div>
-                    <div className="text-sm">
+                    <div className="text-sm text-left">
                       <span
                         className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
                       >

@@ -1175,7 +1175,7 @@ const Products = memo<ProductsProps>(
                     style={style}
                     className="grid grid-cols-[auto_2fr_90px_110px_110px_180px_90px_110px_120px] gap-3 px-3 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors items-center"
                   >
-                    <div className="text-sm text-center">
+                    <div className="text-sm text-left">
                       <input
                         type="checkbox"
                         checked={selectedItems.has(product.id)}
@@ -1184,22 +1184,22 @@ const Products = memo<ProductsProps>(
                       />
                     </div>
                     <div
-                      className="text-sm text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
+                      className="text-sm text-left text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
                       onClick={() => handleViewProduct(product)}
                       title="Detayları görmek için tıklayın"
                     >
                       {product.name}
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
                       {product.code}
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
                       {formatCurrency(product.cost_price, product.currency || 'TRY')}
                     </div>
-                    <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
                       {formatCurrency(product.selling_price, product.currency || 'TRY')}
                     </div>
-                    <div className="text-sm">
+                    <div className="text-sm text-left">
                       {product.track_stock ? (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
@@ -1236,7 +1236,7 @@ const Products = memo<ProductsProps>(
                         </span>
                       )}
                     </div>
-                    <div className="text-sm">
+                    <div className="text-sm text-left">
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
                           product.profitMargin > 25
@@ -1249,7 +1249,7 @@ const Products = memo<ProductsProps>(
                         %{product.profitMargin.toFixed(1)}
                       </span>
                     </div>
-                    <div className="text-sm">
+                    <div className="text-sm text-left">
                       {product.track_stock ? (
                         <div className="flex flex-col gap-1">
                           <span
