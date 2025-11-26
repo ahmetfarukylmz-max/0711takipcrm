@@ -635,7 +635,7 @@ const Payments: React.FC<PaymentsProps> = ({
                   style={style}
                   className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
                 >
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div className="text-left" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedItems.has(payment.id)}
@@ -643,7 +643,10 @@ const Payments: React.FC<PaymentsProps> = ({
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  <div
+                    className="text-left cursor-pointer"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {payment.customerName || '-'}
                     </div>
@@ -654,17 +657,23 @@ const Payments: React.FC<PaymentsProps> = ({
                     )}
                   </div>
                   <div
-                    className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    className="text-left text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
                     onClick={() => handleOpenModal(payment)}
                   >
                     {payment.orderNumber || '-'}
                   </div>
-                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  <div
+                    className="text-left cursor-pointer"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {formatCurrency(payment.amount, payment.currency)}
                     </div>
                   </div>
-                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  <div
+                    className="text-left cursor-pointer"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
                       {payment.paymentMethod}
                     </div>
@@ -675,12 +684,15 @@ const Payments: React.FC<PaymentsProps> = ({
                     )}
                   </div>
                   <div
-                    className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    className="text-left text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
                     onClick={() => handleOpenModal(payment)}
                   >
                     {formatDate(payment.dueDate)}
                   </div>
-                  <div className="cursor-pointer" onClick={() => handleOpenModal(payment)}>
+                  <div
+                    className="text-left cursor-pointer"
+                    onClick={() => handleOpenModal(payment)}
+                  >
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
                     >
