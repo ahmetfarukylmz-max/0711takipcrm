@@ -582,19 +582,19 @@ const Payments: React.FC<PaymentsProps> = ({
             <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Müşteri
             </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Sipariş
             </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Tutar
             </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Ödeme Yöntemi
             </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Vade Tarihi
             </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
               Durum
             </div>
             <div className="text-right text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
@@ -657,13 +657,13 @@ const Payments: React.FC<PaymentsProps> = ({
                     )}
                   </div>
                   <div
-                    className="text-left text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    className="text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
                     onClick={() => handleOpenModal(payment)}
                   >
                     {payment.orderNumber || '-'}
                   </div>
                   <div
-                    className="text-left cursor-pointer"
+                    className="text-center cursor-pointer"
                     onClick={() => handleOpenModal(payment)}
                   >
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -671,7 +671,7 @@ const Payments: React.FC<PaymentsProps> = ({
                     </div>
                   </div>
                   <div
-                    className="text-left cursor-pointer"
+                    className="text-center cursor-pointer"
                     onClick={() => handleOpenModal(payment)}
                   >
                     <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
@@ -684,13 +684,13 @@ const Payments: React.FC<PaymentsProps> = ({
                     )}
                   </div>
                   <div
-                    className="text-left text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                    className="text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
                     onClick={() => handleOpenModal(payment)}
                   >
                     {formatDate(payment.dueDate)}
                   </div>
                   <div
-                    className="text-left cursor-pointer"
+                    className="text-center cursor-pointer"
                     onClick={() => handleOpenModal(payment)}
                   >
                     <span

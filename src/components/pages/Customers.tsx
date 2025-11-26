@@ -548,7 +548,7 @@ const Customers = memo<CustomersProps>(({
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                                 <input
                                     type="checkbox"
                                     checked={filteredCustomers.length > 0 && selectedItems.size === filteredCustomers.length}
@@ -557,7 +557,7 @@ const Customers = memo<CustomersProps>(({
                                 />
                             </th>
                             {['Müşteri Adı', 'Yetkili Kişi', 'Telefon', 'Şehir', 'Durum', 'İşlemler'].map(head => (
-                                <th key={head} className={`p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 ${head === 'İşlemler' ? 'text-right' : ''}`}>
+                                <th key={head} className={`p-3 text-sm font-semibold tracking-wide ${head === 'Müşteri Adı' ? 'text-left' : head === 'İşlemler' ? 'text-right' : 'text-center'} text-gray-700 dark:text-gray-300`}>
                                     {head}
                                 </th>
                             ))}
@@ -582,7 +582,7 @@ const Customers = memo<CustomersProps>(({
                                                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                             />
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                                        <td className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold">
                                             <button
                                                 onClick={() => handleViewCustomer(customer)}
                                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold"
@@ -590,11 +590,11 @@ const Customers = memo<CustomersProps>(({
                                                 {customer.name}
                                             </button>
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                        <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                             {customer.contact_person}
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
-                                            <div className="flex items-center gap-2">
+                                        <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
+                                            <div className="flex items-center justify-center gap-2">
                                                 <span>{customer.phone}</span>
                                                 {customer.phone && (
                                                     <a
@@ -609,10 +609,10 @@ const Customers = memo<CustomersProps>(({
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                        <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                             {customer.city}
                                         </td>
-                                        <td className="p-3 text-sm">
+                                        <td className="p-3 text-sm text-center">
                                             <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
                                                 {status}
                                             </span>

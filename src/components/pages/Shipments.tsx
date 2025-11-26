@@ -574,7 +574,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                                 <input
                                     type="checkbox"
                                     checked={filteredAndSortedShipments.length > 0 && selectedItems.size === filteredAndSortedShipments.length}
@@ -583,10 +583,10 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                 />
                             </th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sipariş No</th>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Müşteri</th>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Nakliye Firması</th>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Sevk Tarihi</th>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">Durum</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Müşteri</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Nakliye Firması</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Sevk Tarihi</th>
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Durum</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">Fatura</th>
                             <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">İşlemler</th>
                         </tr>
@@ -598,7 +598,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
                             return (
                                 <tr key={shipment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="p-3 text-sm">
+                                    <td className="p-3 text-sm text-center">
                                         <input
                                             type="checkbox"
                                             checked={selectedItems.has(shipment.id)}
@@ -606,13 +606,13 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                         />
                                     </td>
-                                    <td className="p-3 text-sm text-blue-600 dark:text-blue-400 font-mono">
+                                    <td className="p-3 text-sm text-left text-blue-600 dark:text-blue-400 font-mono">
                                         {getShortOrderNumber(order)}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
-                                    <td className="p-3 text-sm">
+                                    <td className="p-3 text-sm text-center text-gray-900 dark:text-gray-100 font-bold">{customer?.name || 'Bilinmeyen Müşteri'}</td>
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
+                                    <td className="p-3 text-sm text-center">
                                         <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
                                             {shipment.status}
                                         </span>
