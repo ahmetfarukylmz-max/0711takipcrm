@@ -1163,7 +1163,6 @@ const Products = memo<ProductsProps>(
           </div>
 
           {/* Body */}
-          {/* Body */}
           <div className="overflow-auto">
             {filteredProducts.length > 0 ? (
               <VirtualList
