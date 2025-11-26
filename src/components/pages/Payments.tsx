@@ -568,7 +568,7 @@ const Payments: React.FC<PaymentsProps> = ({
       {viewMode === 'list' && (
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_120px_120px_150px_120px_120px_100px] gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
             <div className="text-left">
               <input
                 type="checkbox"
@@ -633,7 +633,7 @@ const Payments: React.FC<PaymentsProps> = ({
                 <div
                   key={payment.id}
                   style={style}
-                  className="grid grid-cols-[auto_1fr_120px_120px_150px_120px_120px_100px] gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
+                  className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 px-6 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
                 >
                   <div onClick={(e) => e.stopPropagation()}>
                     <input

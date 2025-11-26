@@ -552,7 +552,7 @@ const Orders = memo<OrdersProps>(
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800">
           {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_150px_150px_120px_100px] gap-3 px-3 py-3 bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-[auto_1fr_120px_130px_110px_100px] gap-3 px-3 py-3 bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
             <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
@@ -620,7 +620,7 @@ const Orders = memo<OrdersProps>(
                   <div
                     key={order.id}
                     style={style}
-                    className="grid grid-cols-[auto_1fr_150px_150px_120px_100px] gap-3 px-3 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors items-center"
+                    className="grid grid-cols-[auto_1fr_120px_130px_110px_100px] gap-3 px-3 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors items-center"
                   >
                     <div className="text-sm text-center">
                       <input
