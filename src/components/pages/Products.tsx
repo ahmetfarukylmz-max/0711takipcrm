@@ -1073,18 +1073,18 @@ const Products = memo<ProductsProps>(
         </div>
 
         {/* Desktop Table View */}
-        <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800">
-          <table className="w-full table-fixed">
+        <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800 overflow-x-auto">
+          <table className="w-full">
             <colgroup>
-              <col style={{ width: '50px' }} />
-              <col style={{ width: 'auto' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '180px' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '110px' }} />
-              <col style={{ width: '120px' }} />
+              <col style={{ width: '40px' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '100px' }} />
             </colgroup>
             <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
               <tr>
@@ -1186,138 +1186,132 @@ const Products = memo<ProductsProps>(
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
               {filteredProducts.length > 0 ? (
-                <VirtualList
-                  items={filteredProducts}
-                  itemHeight={80}
-                  height={600}
-                  renderItem={(product, index, style) => (
-                    <tr
-                      key={product.id}
-                      style={style}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                filteredProducts.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <td className="p-3 text-sm text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(product.id)}
+                        onChange={() => handleSelectItem(product.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                    </td>
+                    <td
+                      className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
+                      onClick={() => handleViewProduct(product)}
+                      title="Detayları görmek için tıklayın"
                     >
-                      <td className="p-3 text-sm text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(product.id)}
-                          onChange={() => handleSelectItem(product.id)}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                      </td>
-                      <td
-                        className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
-                        onClick={() => handleViewProduct(product)}
-                        title="Detayları görmek için tıklayın"
-                      >
-                        {product.name}
-                      </td>
-                      <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
-                        {product.code}
-                      </td>
-                      <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
-                        {formatCurrency(product.cost_price, product.currency || 'TRY')}
-                      </td>
-                      <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
-                        {formatCurrency(product.selling_price, product.currency || 'TRY')}
-                      </td>
-                      <td className="p-3 text-sm text-center">
-                        {product.track_stock ? (
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center justify-center gap-2">
-                              <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  product.stock_quantity !== undefined &&
-                                  product.minimum_stock !== undefined &&
-                                  product.stock_quantity <= product.minimum_stock
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                }`}
-                              >
-                                {product.stock_quantity || 0} {product.unit}
-                              </span>
-                              {product.stock_quantity !== undefined &&
-                                product.minimum_stock !== undefined &&
-                                product.stock_quantity <= product.minimum_stock && (
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                    ⚠️
-                                  </span>
-                                )}
-                            </div>
-                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                              Değer:{' '}
-                              {formatCurrency(
-                                (product.stock_quantity || 0) * (product.cost_price || 0),
-                                product.currency || 'TRY'
-                              )}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                            Takip yok
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-sm text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                            product.profitMargin > 25
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              : product.profitMargin >= 10
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                          }`}
-                        >
-                          %{product.profitMargin.toFixed(1)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-sm text-center">
-                        {product.track_stock ? (
-                          <div className="flex flex-col gap-1 items-center">
+                      {product.name}
+                    </td>
+                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
+                      {product.code}
+                    </td>
+                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
+                      {formatCurrency(product.cost_price, product.currency || 'TRY')}
+                    </td>
+                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 truncate">
+                      {formatCurrency(product.selling_price, product.currency || 'TRY')}
+                    </td>
+                    <td className="p-3 text-sm text-center">
+                      {product.track_stock ? (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-center gap-2">
                             <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getTurnoverRateInfo(product.turnoverRate).color}`}
-                              title={
-                                product.turnoverRate !== null
-                                  ? `Son 90 günde ortalama ${getTurnoverRateInfo(product.turnoverRate).days} günde bir satılıyor`
-                                  : 'Son 90 günde hiç satış yok'
-                              }
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                product.stock_quantity !== undefined &&
+                                product.minimum_stock !== undefined &&
+                                product.stock_quantity <= product.minimum_stock
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              }`}
                             >
-                              {getTurnoverRateInfo(product.turnoverRate).label}
+                              {product.stock_quantity || 0} {product.unit}
                             </span>
-                            {product.turnoverRate !== null &&
-                              getTurnoverRateInfo(product.turnoverRate).speed && (
-                                <span className="text-xs text-gray-600 dark:text-gray-400">
-                                  {getTurnoverRateInfo(product.turnoverRate).speed}
+                            {product.stock_quantity !== undefined &&
+                              product.minimum_stock !== undefined &&
+                              product.stock_quantity <= product.minimum_stock && (
+                                <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                  ⚠️
                                 </span>
                               )}
                           </div>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                            Takip yok
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                            Değer:{' '}
+                            {formatCurrency(
+                              (product.stock_quantity || 0) * (product.cost_price || 0),
+                              product.currency || 'TRY'
+                            )}
                           </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-sm text-right">
-                        <div className="flex gap-3 justify-end">
-                          <button
-                            onClick={() => handleOpenModal(product)}
-                            className="text-blue-500 hover:underline dark:text-blue-400"
-                          >
-                            Düzenle
-                          </button>
-                          <button
-                            onClick={() => handleDelete(product)}
-                            className="text-red-500 hover:underline dark:text-red-400"
-                          >
-                            Sil
-                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                />
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 whitespace-nowrap">
+                          Takip yok
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-sm text-center">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                          product.profitMargin > 25
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            : product.profitMargin >= 10
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                        }`}
+                      >
+                        %{product.profitMargin.toFixed(1)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm text-center">
+                      {product.track_stock ? (
+                        <div className="flex flex-col gap-1 items-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getTurnoverRateInfo(product.turnoverRate).color}`}
+                            title={
+                              product.turnoverRate !== null
+                                ? `Son 90 günde ortalama ${getTurnoverRateInfo(product.turnoverRate).days} günde bir satılıyor`
+                                : 'Son 90 günde hiç satış yok'
+                            }
+                          >
+                            {getTurnoverRateInfo(product.turnoverRate).label}
+                          </span>
+                          {product.turnoverRate !== null &&
+                            getTurnoverRateInfo(product.turnoverRate).speed && (
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
+                                {getTurnoverRateInfo(product.turnoverRate).speed}
+                              </span>
+                            )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 whitespace-nowrap">
+                          Takip yok
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-sm text-right">
+                      <div className="flex gap-3 justify-end whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenModal(product)}
+                          className="text-blue-500 hover:underline dark:text-blue-400"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product)}
+                          className="text-red-500 hover:underline dark:text-red-400"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={9} className="p-8">
                     <EmptyState
                       icon={searchQuery ? 'search' : 'products'}
                       title={searchQuery ? 'Ürün Bulunamadı' : 'Henüz Ürün Yok'}
