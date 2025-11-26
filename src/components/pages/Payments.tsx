@@ -567,145 +567,162 @@ const Payments: React.FC<PaymentsProps> = ({
       {/* Payments Table - Desktop */}
       {viewMode === 'list' && (
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-            <div className="text-center">
-              <input
-                type="checkbox"
-                checked={
-                  filteredPayments.length > 0 && selectedItems.size === filteredPayments.length
-                }
-                onChange={handleSelectAll}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-            </div>
-            <div className="text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Müşteri
-            </div>
-            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Sipariş
-            </div>
-            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Tutar
-            </div>
-            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Ödeme Yöntemi
-            </div>
-            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Vade Tarihi
-            </div>
-            <div className="text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              Durum
-            </div>
-            <div className="text-right text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
-              İşlemler
-            </div>
-          </div>
-
-          {/* Body */}
-          {filteredPayments.length === 0 ? (
-            <EmptyState
-              icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
-              title={
-                searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'
-              }
-              description={
-                searchQuery || statusFilter !== 'Tümü'
-                  ? 'Filtreye uygun ödeme bulunamadı.'
-                  : undefined
-              }
-              action={
-                !(searchQuery || statusFilter !== 'Tümü')
-                  ? {
-                      label: 'Yeni Ödeme Ekle',
-                      onClick: () => handleOpenModal(),
-                      icon: <PlusIcon />,
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: '50px' }} />
+              <col style={{ width: 'auto' }} />
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '100px' }} />
+            </colgroup>
+            <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+              <tr>
+                <th className="p-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={
+                      filteredPayments.length > 0 && selectedItems.size === filteredPayments.length
                     }
-                  : undefined
-              }
-            />
-          ) : (
-            <VirtualList
-              items={filteredPayments}
-              itemHeight={65}
-              height={600}
-              renderItem={(payment, index, style) => (
-                <div
-                  key={payment.id}
-                  style={style}
-                  className="grid grid-cols-[auto_1fr_100px_130px_140px_110px_110px_100px] gap-4 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 items-center"
-                >
-                  <div className="text-center" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.has(payment.id)}
-                      onChange={() => handleSelectItem(payment.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Müşteri
+                </th>
+                <th className="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Sipariş
+                </th>
+                <th className="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Tutar
+                </th>
+                <th className="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Ödeme Yöntemi
+                </th>
+                <th className="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Vade Tarihi
+                </th>
+                <th className="p-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  Durum
+                </th>
+                <th className="p-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300 tracking-wide">
+                  İşlemler
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <EmptyState
+                      icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
+                      title={
+                        searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'
+                      }
+                      description={
+                        searchQuery || statusFilter !== 'Tümü'
+                          ? 'Filtreye uygun ödeme bulunamadı.'
+                          : undefined
+                      }
+                      action={
+                        !(searchQuery || statusFilter !== 'Tümü')
+                          ? {
+                              label: 'Yeni Ödeme Ekle',
+                              onClick: () => handleOpenModal(),
+                              icon: <PlusIcon />,
+                            }
+                          : undefined
+                      }
                     />
-                  </div>
-                  <div
-                    className="text-left cursor-pointer"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {payment.customerName || '-'}
-                    </div>
-                    {payment.originalAmount && (
-                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
-                        💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    className="text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    {payment.orderNumber || '-'}
-                  </div>
-                  <div
-                    className="text-center cursor-pointer"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                      {formatCurrency(payment.amount, payment.currency)}
-                    </div>
-                  </div>
-                  <div
-                    className="text-center cursor-pointer"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                      {payment.paymentMethod}
-                    </div>
-                    {payment.checkNumber && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {payment.checkNumber}
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    className="text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    {formatDate(payment.dueDate)}
-                  </div>
-                  <div
-                    className="text-center cursor-pointer"
-                    onClick={() => handleOpenModal(payment)}
-                  >
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
+                  </td>
+                </tr>
+              ) : (
+                <VirtualList
+                  items={filteredPayments}
+                  itemHeight={65}
+                  height={600}
+                  renderItem={(payment, index, style) => (
+                    <tr
+                      key={payment.id}
+                      style={style}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      {getStatusText(payment)}
-                    </span>
-                  </div>
-                  <div className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <ActionsDropdown actions={getPaymentActions(payment)} />
-                  </div>
-                </div>
+                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(payment.id)}
+                          onChange={() => handleSelectItem(payment.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td
+                        className="p-3 text-left cursor-pointer"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {payment.customerName || '-'}
+                        </div>
+                        {payment.originalAmount && (
+                          <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
+                            💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
+                          </div>
+                        )}
+                      </td>
+                      <td
+                        className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        {payment.orderNumber || '-'}
+                      </td>
+                      <td
+                        className="p-3 text-center cursor-pointer"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {formatCurrency(payment.amount, payment.currency)}
+                        </div>
+                      </td>
+                      <td
+                        className="p-3 text-center cursor-pointer"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                          {payment.paymentMethod}
+                        </div>
+                        {payment.checkNumber && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {payment.checkNumber}
+                          </div>
+                        )}
+                      </td>
+                      <td
+                        className="p-3 text-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer truncate"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        {formatDate(payment.dueDate)}
+                      </td>
+                      <td
+                        className="p-3 text-center cursor-pointer"
+                        onClick={() => handleOpenModal(payment)}
+                      >
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status, payment.dueDate)}`}
+                        >
+                          {getStatusText(payment)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <ActionsDropdown actions={getPaymentActions(payment)} />
+                      </td>
+                    </tr>
+                  )}
+                />
               )}
-            />
-          )}
+            </tbody>
+          </table>
         </div>
       )}
 
