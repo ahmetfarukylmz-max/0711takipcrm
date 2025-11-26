@@ -482,7 +482,7 @@ const Meetings = memo<MeetingsProps>(
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                   <tr>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={
@@ -496,22 +496,22 @@ const Meetings = memo<MeetingsProps>(
                     <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
                       Müşteri
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       Tarih
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                       Durum
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                       Tür
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                       Sonuç
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       Sonraki Eylem
                     </th>
-                    <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       Eylem Tarihi
                     </th>
                     <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">
@@ -531,7 +531,7 @@ const Meetings = memo<MeetingsProps>(
 
                       return (
                         <tr key={meeting.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="p-3 text-sm">
+                          <td className="p-3 text-sm text-center">
                             <input
                               type="checkbox"
                               checked={selectedItems.has(meeting.id)}
@@ -539,37 +539,37 @@ const Meetings = memo<MeetingsProps>(
                               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                             />
                           </td>
-                          <td className="p-3 text-sm text-gray-900 dark:text-gray-100 font-bold">
+                          <td className="p-3 text-sm text-left text-gray-900 dark:text-gray-100 font-bold">
                             {customer?.name || 'Bilinmiyor'}
                           </td>
-                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">
                             {formatDate(meeting.meeting_date)}
                           </td>
-                          <td className="p-3 text-sm">
+                          <td className="p-3 text-sm text-center">
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-lg whitespace-nowrap ${getStatusClass(meeting.status || 'Planlandı')}`}
                             >
                               {meeting.status || 'Planlandı'}
                             </span>
                           </td>
-                          <td className="p-3 text-sm">
+                          <td className="p-3 text-sm text-center">
                             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded whitespace-nowrap">
                               {meeting.meetingType || 'İlk Temas'}
                             </span>
                           </td>
-                          <td className="p-3 text-sm">
+                          <td className="p-3 text-sm text-center">
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-lg whitespace-nowrap ${getStatusClass(meeting.outcome)}`}
                             >
                               {meeting.outcome || '-'}
                             </span>
                           </td>
-                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                             <div className="max-w-xs truncate" title={meeting.next_action_notes}>
                               {meeting.next_action_notes || '-'}
                             </div>
                           </td>
-                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">
                             {formatDate(meeting.next_action_date) || '-'}
                           </td>
                           <td className="p-3 text-sm text-right">

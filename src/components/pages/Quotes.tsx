@@ -414,7 +414,7 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
-                            <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-200">
+                            <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-200">
                                 <input
                                     type="checkbox"
                                     checked={filteredQuotes.length > 0 && selectedItems.size === filteredQuotes.length}
@@ -423,7 +423,7 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                 />
                             </th>
                             {['Müşteri', 'Teklif Tarihi', 'Geçerlilik', 'Tutar', 'Ödeme', 'Durum', 'İşlemler'].map(h => (
-                                <th key={h} className={`p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-200 ${h === 'İşlemler' ? 'text-right' : ''}`}>
+                                <th key={h} className={`p-3 text-sm font-semibold tracking-wide ${h === 'Müşteri' ? 'text-left' : h === 'İşlemler' ? 'text-right' : 'text-center'} text-gray-700 dark:text-gray-200`}>
                                     {h}
                                 </th>
                             ))}
@@ -459,24 +459,24 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
                                             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                         />
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                                    <td className="p-3 text-sm text-left text-gray-700 dark:text-gray-300 font-semibold">
                                         {customers.find(c => c.id === quote.customerId)?.name || 'Bilinmiyor'}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                         {formatDate(quote.teklif_tarihi)}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                         {formatDate(quote.gecerlilik_tarihi)}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                         {formatCurrency(quote.total_amount, quote.currency || 'TRY')}
                                     </td>
-                                    <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">
                                         <span className={`px-2 py-1 text-xs font-medium rounded-lg ${quote.paymentType === 'Peşin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'}`}>
                                             {quote.paymentType || 'Peşin'}
                                         </span>
                                     </td>
-                                    <td className="p-3 text-sm">
+                                    <td className="p-3 text-sm text-center">
                                         <button
                                             onClick={() => {
                                                 if (quote.status === 'Reddedildi') {

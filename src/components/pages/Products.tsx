@@ -1099,14 +1099,14 @@ const Products = memo<ProductsProps>(
                 )}
               </div>
             </div>
-            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
               Ürün Kodu
             </div>
             <div
-              className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
+              className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
               onClick={() => handleSort('cost_price')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Maliyet Fiyatı
                 {sortField === 'cost_price' && (
                   <span className="text-blue-600 dark:text-blue-400">
@@ -1116,10 +1116,10 @@ const Products = memo<ProductsProps>(
               </div>
             </div>
             <div
-              className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
+              className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
               onClick={() => handleSort('selling_price')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Satış Fiyatı
                 {sortField === 'selling_price' && (
                   <span className="text-blue-600 dark:text-blue-400">
@@ -1129,10 +1129,10 @@ const Products = memo<ProductsProps>(
               </div>
             </div>
             <div
-              className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
+              className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
               onClick={() => handleSort('stock')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Stok Durumu
                 {sortField === 'stock' && (
                   <span className="text-blue-600 dark:text-blue-400">
@@ -1142,10 +1142,10 @@ const Products = memo<ProductsProps>(
               </div>
             </div>
             <div
-              className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
+              className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
               onClick={() => handleSort('profit_margin')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Kar Marjı
                 {sortField === 'profit_margin' && (
                   <span className="text-blue-600 dark:text-blue-400">
@@ -1155,10 +1155,10 @@ const Products = memo<ProductsProps>(
               </div>
             </div>
             <div
-              className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
+              className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 select-none transition-colors rounded"
               onClick={() => handleSort('turnover_rate')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Devir Hızı
                 {sortField === 'turnover_rate' && (
                   <span className="text-blue-600 dark:text-blue-400">
@@ -1200,16 +1200,16 @@ const Products = memo<ProductsProps>(
                     >
                       {product.name}
                     </div>
-                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-center text-gray-700 dark:text-gray-300 truncate">
                       {product.code}
                     </div>
-                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-center text-gray-700 dark:text-gray-300 truncate">
                       {formatCurrency(product.cost_price, product.currency || 'TRY')}
                     </div>
-                    <div className="text-sm text-left text-gray-700 dark:text-gray-300 truncate">
+                    <div className="text-sm text-center text-gray-700 dark:text-gray-300 truncate">
                       {formatCurrency(product.selling_price, product.currency || 'TRY')}
                     </div>
-                    <div className="text-sm text-left">
+                    <div className="text-sm text-center">
                       {product.track_stock ? (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
@@ -1246,7 +1246,7 @@ const Products = memo<ProductsProps>(
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-left">
+                    <div className="text-sm text-center">
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
                           product.profitMargin > 25
@@ -1259,7 +1259,7 @@ const Products = memo<ProductsProps>(
                         %{product.profitMargin.toFixed(1)}
                       </span>
                     </div>
-                    <div className="text-sm text-left">
+                    <div className="text-sm text-center">
                       {product.track_stock ? (
                         <div className="flex flex-col gap-1">
                           <span

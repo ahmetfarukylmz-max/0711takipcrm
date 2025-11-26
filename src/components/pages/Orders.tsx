@@ -574,13 +574,13 @@ const Orders = memo<OrdersProps>(
             <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
               Müşteri
             </div>
-            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
               Sipariş Tarihi
             </div>
-            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
               Toplam Tutar
             </div>
-            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+            <div className="text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
               Durum
             </div>
             <div className="text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">
@@ -643,13 +643,13 @@ const Orders = memo<OrdersProps>(
                     <div className="text-sm text-left text-gray-700 dark:text-gray-300 font-semibold truncate">
                       {customers.find((c) => c.id === order.customerId)?.name || 'Bilinmiyor'}
                     </div>
-                    <div className="text-sm text-left text-gray-700 dark:text-gray-300">
+                    <div className="text-sm text-center text-gray-700 dark:text-gray-300">
                       {formatDate(order.order_date)}
                     </div>
-                    <div className="text-sm text-left text-gray-700 dark:text-gray-300">
+                    <div className="text-sm text-center text-gray-700 dark:text-gray-300">
                       {formatCurrency(order.total_amount, order.currency || 'TRY')}
                     </div>
-                    <div className="text-sm text-left">
+                    <div className="text-sm text-center">
                       <span
                         className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
                       >
