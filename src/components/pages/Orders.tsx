@@ -551,30 +551,34 @@ const Orders = memo<OrdersProps>(
 
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-hidden rounded-xl shadow-sm bg-white dark:bg-gray-800">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
-              <tr>
-                <th className="p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={
-                      filteredOrders.length > 0 && selectedItems.size === filteredOrders.length
-                    }
-                    onChange={handleSelectAll}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                </th>
-                {['Müşteri', 'Sipariş Tarihi', 'Toplam Tutar', 'Durum', 'İşlemler'].map((h) => (
-                  <th
-                    key={h}
-                    className={`p-3 text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300 ${h === 'İşlemler' ? 'text-right' : ''}`}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-          </table>
+          {/* Header */}
+          <div className="grid grid-cols-[auto_1fr_150px_150px_120px_100px] gap-3 px-3 py-3 bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
+            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={filteredOrders.length > 0 && selectedItems.size === filteredOrders.length}
+                onChange={handleSelectAll}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+            </div>
+            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+              Müşteri
+            </div>
+            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+              Sipariş Tarihi
+            </div>
+            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+              Toplam Tutar
+            </div>
+            <div className="text-sm font-semibold tracking-wide text-left text-gray-700 dark:text-gray-300">
+              Durum
+            </div>
+            <div className="text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">
+              İşlemler
+            </div>
+          </div>
+
+          {/* Body */}
           {filteredOrders.length > 0 ? (
             <VirtualList
               items={filteredOrders}

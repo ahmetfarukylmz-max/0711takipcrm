@@ -567,43 +567,42 @@ const Payments: React.FC<PaymentsProps> = ({
       {/* Payments Table - Desktop */}
       {viewMode === 'list' && (
         <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      filteredPayments.length > 0 && selectedItems.size === filteredPayments.length
-                    }
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Müşteri
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Sipariş
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Tutar
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Ödeme Yöntemi
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Vade Tarihi
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Durum
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  İşlemler
-                </th>
-              </tr>
-            </thead>
-          </table>
+          {/* Header */}
+          <div className="grid grid-cols-[auto_1fr_120px_120px_150px_120px_120px_100px] gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <div className="text-left">
+              <input
+                type="checkbox"
+                checked={
+                  filteredPayments.length > 0 && selectedItems.size === filteredPayments.length
+                }
+                onChange={handleSelectAll}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Müşteri
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Sipariş
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Tutar
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Ödeme Yöntemi
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Vade Tarihi
+            </div>
+            <div className="text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Durum
+            </div>
+            <div className="text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              İşlemler
+            </div>
+          </div>
+
+          {/* Body */}
           {filteredPayments.length === 0 ? (
             <EmptyState
               icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
