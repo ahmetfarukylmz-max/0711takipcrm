@@ -571,7 +571,17 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                    <colgroup>
+                        <col style={{ width: '50px' }} />
+                        <col style={{ width: '140px' }} />
+                        <col style={{ width: 'auto' }} />
+                        <col style={{ width: '160px' }} />
+                        <col style={{ width: '130px' }} />
+                        <col style={{ width: '120px' }} />
+                        <col style={{ width: '100px' }} />
+                        <col style={{ width: '200px' }} />
+                    </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
                             <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
