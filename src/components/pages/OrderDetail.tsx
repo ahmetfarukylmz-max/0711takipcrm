@@ -27,11 +27,12 @@ const OrderDetail = memo<OrderDetailProps>(({ order, customer, products, payment
     };
 
     // Find payments related to this order
+    // Include all payments except cancelled ones (Bekliyor status payments like checks are counted)
     const relatedPayments = useMemo(() => {
         return payments.filter(p =>
             p.orderId === order.id &&
             !p.isDeleted &&
-            p.status === 'Tahsil Edildi'
+            p.status !== 'İptal'
         );
     }, [payments, order.id]);
 
