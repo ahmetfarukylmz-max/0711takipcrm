@@ -281,31 +281,35 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
       const shipmentsQuery = query(shipmentsRef, where('orderId', '==', orderId));
       const shipmentsSnapshot = await getDocs(shipmentsQuery);
 
-      // Calculate total ordered quantities by product
-      const orderedQuantities = {};
+      // Calculate total ordered quantities by order item index
+      // This handles cases where same product appears multiple times with different quantities
+      const orderedQuantitiesByIndex = {};
       if (order.items && Array.isArray(order.items)) {
-        order.items.forEach(item => {
-          orderedQuantities[item.productId] = (orderedQuantities[item.productId] || 0) + (item.quantity || 0);
+        order.items.forEach((item, itemIndex) => {
+          orderedQuantitiesByIndex[itemIndex] = item.quantity || 0;
         });
       }
 
-      // Calculate total delivered quantities by product
-      const deliveredQuantities = {};
+      // Calculate total delivered quantities by order item index
+      const deliveredQuantitiesByIndex = {};
       shipmentsSnapshot.forEach(shipmentDoc => {
         const shipmentData = shipmentDoc.data();
         // Only count delivered and non-deleted shipments
         if (shipmentData.status === 'Teslim Edildi' && !shipmentData.isDeleted && shipmentData.items && Array.isArray(shipmentData.items)) {
           shipmentData.items.forEach(item => {
-            deliveredQuantities[item.productId] = (deliveredQuantities[item.productId] || 0) + (item.quantity || 0);
+            const orderItemIndex = item.orderItemIndex ?? null;
+            if (orderItemIndex !== null && orderItemIndex !== undefined) {
+              deliveredQuantitiesByIndex[orderItemIndex] = (deliveredQuantitiesByIndex[orderItemIndex] || 0) + (item.quantity || 0);
+            }
           });
         }
       });
 
-      // Check if all products are fully delivered
+      // Check if all order items are fully delivered
       let allDelivered = true;
-      for (const productId in orderedQuantities) {
-        const ordered = orderedQuantities[productId];
-        const delivered = deliveredQuantities[productId] || 0;
+      for (const itemIndex in orderedQuantitiesByIndex) {
+        const ordered = orderedQuantitiesByIndex[itemIndex];
+        const delivered = deliveredQuantitiesByIndex[itemIndex] || 0;
         if (delivered < ordered) {
           allDelivered = false;
           break;

@@ -247,6 +247,15 @@ export interface Meeting {
   updatedAt?: Timestamp;
 }
 
+// Shipment Item Interface
+export interface ShipmentItem {
+  productId: string;
+  productName?: string;
+  quantity: number;
+  unit?: string;
+  orderItemIndex: number; // Index of the order item this shipment item relates to
+}
+
 // Shipment Interface
 export interface Shipment {
   id: string;
@@ -260,6 +269,7 @@ export interface Shipment {
   carrier?: string;
   tracking_number?: string;
   notes?: string;
+  items?: ShipmentItem[]; // Items included in this shipment
   // Invoice tracking
   isInvoiced?: boolean; // Fatura kesildi mi?
   invoicedAt?: Timestamp; // Fatura kesim tarihi

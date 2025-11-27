@@ -10,6 +10,7 @@ interface ShipmentItem {
     unit: string;
     shippedQty: number;
     toShipQty: number;
+    orderItemIndex: number; // Index of the order item in order.items array
 }
 
 interface ShipmentFormData {
@@ -49,10 +50,14 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, shipments 
             const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
 
             // Initialize items with order items and their quantities
-            const items: ShipmentItem[] = order.items.map(item => {
-                // Calculate total shipped quantity for this product
+            // Each order item is tracked by its index in the order.items array
+            const items: ShipmentItem[] = order.items.map((item, itemIndex) => {
+                // Calculate total shipped quantity for THIS SPECIFIC order item (by index)
                 const totalShipped = orderShipments.reduce((sum, shipment) => {
-                    const shipmentItem = shipment.items?.find(si => si.productId === item.productId);
+                    // Find shipment items that match this order item index
+                    const shipmentItem = shipment.items?.find(si =>
+                        si.productId === item.productId && si.orderItemIndex === itemIndex
+                    );
                     return sum + (shipmentItem?.quantity || 0);
                 }, 0);
 
@@ -64,7 +69,8 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, shipments 
                     orderedQty: item.quantity,
                     unit: item.unit || 'Adet',
                     shippedQty: totalShipped,
-                    toShipQty: Math.max(0, remainingQty) // Default to ship remaining quantity
+                    toShipQty: Math.max(0, remainingQty), // Default to ship remaining quantity
+                    orderItemIndex: itemIndex // Track which order item this is
                 };
             });
             setFormData(prev => ({ ...prev, items }));
@@ -112,7 +118,8 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, shipments 
                 productId: item.productId,
                 productName: item.productName,
                 quantity: item.toShipQty,
-                unit: item.unit
+                unit: item.unit,
+                orderItemIndex: item.orderItemIndex // Include order item index for tracking
             }))
         };
 

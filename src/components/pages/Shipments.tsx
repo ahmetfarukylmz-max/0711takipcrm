@@ -184,14 +184,19 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                                 {shipment.items.map((item, index) => {
-                                    // Find ordered quantity from the order
-                                    const orderedQty = relatedOrder?.items?.find(oi => oi.productId === item.productId)?.quantity || 0;
+                                    // Find ordered quantity from the order using orderItemIndex
+                                    const orderItemIndex = item.orderItemIndex ?? index; // Fallback to index for backward compatibility
+                                    const orderItem = relatedOrder?.items?.[orderItemIndex];
+                                    const orderedQty = orderItem?.quantity || 0;
 
-                                    // Calculate total shipped quantity for this product (from all shipments of this order)
+                                    // Calculate total shipped quantity for THIS SPECIFIC order item (by index)
                                     const totalShippedQty = shipments
                                         .filter(s => s.orderId === shipment.orderId && !s.isDeleted)
                                         .reduce((sum, s) => {
-                                            const shipmentItem = s.items?.find(si => si.productId === item.productId);
+                                            const shipmentItem = s.items?.find(si =>
+                                                si.productId === item.productId &&
+                                                (si.orderItemIndex !== undefined ? si.orderItemIndex === orderItemIndex : true)
+                                            );
                                             return sum + (shipmentItem?.quantity || 0);
                                         }, 0);
 
