@@ -413,14 +413,14 @@ const Quotes = memo<QuotesProps>(({ quotes, orders = [], shipments = [], onSave,
             <div className="hidden md:block overflow-auto rounded-xl shadow-sm bg-white dark:bg-gray-800">
                 <table className="w-full table-fixed">
                     <colgroup>
-                        <col style={{ width: '50px' }} />
-                        <col style={{ width: 'auto' }} />
-                        <col style={{ width: '130px' }} />
-                        <col style={{ width: '130px' }} />
-                        <col style={{ width: '140px' }} />
-                        <col style={{ width: '120px' }} />
-                        <col style={{ width: '130px' }} />
-                        <col style={{ width: '100px' }} />
+                        <col style={{ width: '40px' }} />
+                        <col style={{ width: '20%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '90px' }} />
                     </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
