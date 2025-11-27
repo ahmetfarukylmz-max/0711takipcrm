@@ -169,7 +169,8 @@ const Reports = memo<ReportsProps>(({ orders, customers, teklifler, gorusmeler, 
 
         activeCustomers.forEach(customer => {
             const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
-            const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi');
+            // Include all payments except cancelled ones (Bekliyor status payments like checks are counted)
+            const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal');
 
             const totalOrders = customerOrders.reduce((sum, order) => {
                 const amount = order.total_amount || 0;
