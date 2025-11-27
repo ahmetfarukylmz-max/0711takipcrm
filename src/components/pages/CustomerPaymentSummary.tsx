@@ -7,14 +7,14 @@ interface CustomerPaymentSummaryProps {
   customer: Customer;
   payments: Payment[];
   orders: Order[];
-  onPaymentClick?: (payment: Payment) => void;
+  onViewPayment?: (payment: Payment) => void;
 }
 
 const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
   customer,
   payments,
   orders,
-  onPaymentClick
+  onViewPayment
 }) => {
   // Analytics hesapla
   const analytics = useMemo(() => {
@@ -222,8 +222,8 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
                   const payment = payments.find(p =>
                     p.dueDate === item.date || p.paidDate === item.date
                   );
-                  if (payment && onPaymentClick) {
-                    onPaymentClick(payment);
+                  if (payment && onViewPayment) {
+                    onViewPayment(payment);
                   }
                 }}
               >
