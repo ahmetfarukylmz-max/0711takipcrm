@@ -324,6 +324,30 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
         }
     };
 
+    const handleRevertStatus = (shipment: Shipment) => {
+        let previousStatus: string;
+        switch (shipment.status) {
+            case 'Teslim Edildi':
+                previousStatus = 'Yolda';
+                onUpdate({ ...shipment, status: previousStatus });
+                toast.success('Sevkiyat durumu "Yolda" olarak güncellendi!');
+                break;
+            case 'Yolda':
+                previousStatus = 'Hazırlanıyor';
+                onUpdate({ ...shipment, status: previousStatus });
+                toast.success('Sevkiyat durumu "Hazırlanıyor" olarak güncellendi!');
+                break;
+            default:
+                toast.error('Bu durum geri alınamaz!');
+                return;
+        }
+    };
+
+    const handleCancelShipment = (shipment: Shipment) => {
+        onUpdate({ ...shipment, status: 'İptal Edildi' });
+        toast.success('Sevkiyat iptal edildi!');
+    };
+
     const handleOpenModal = (shipment: Shipment) => {
         setCurrentShipment(shipment);
         setIsModalOpen(true);
@@ -652,6 +676,14 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                     ...(shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' ? [{
                                                         label: `${getNextStatusIcon(shipment.status)} ${getNextStatusText(shipment.status)}`,
                                                         onClick: () => handleQuickStatusUpdate(shipment)
+                                                    }] : []),
+                                                    ...(shipment.status === 'Teslim Edildi' || shipment.status === 'Yolda' ? [{
+                                                        label: '◀️ Durumu Geri Al',
+                                                        onClick: () => handleRevertStatus(shipment)
+                                                    }] : []),
+                                                    ...(shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' ? [{
+                                                        label: '🚫 Sevkiyatı İptal Et',
+                                                        onClick: () => handleCancelShipment(shipment)
                                                     }] : []),
                                                     {
                                                         label: shipment.status === 'Teslim Edildi' ? '📋 Görüntüle' : '✏️ Düzenle',
