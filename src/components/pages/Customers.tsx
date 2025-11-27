@@ -7,6 +7,7 @@ import CustomerForm from '../forms/CustomerForm';
 import CustomerDetail from './CustomerDetail';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
+import PaymentForm from '../forms/PaymentForm';
 import ShipmentDetail from './ShipmentDetail';
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
@@ -91,7 +92,9 @@ const Customers = memo<CustomersProps>(({
     const [currentQuote, setCurrentQuote] = useState<Quote | null>(null);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
+    const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
     const [isShipmentViewModalOpen, setIsShipmentViewModalOpen] = useState(false);
+    const [isPaymentViewModalOpen, setIsPaymentViewModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [statusFilter, setStatusFilter] = useState('Tümü');
@@ -160,6 +163,15 @@ const Customers = memo<CustomersProps>(({
 
     const handleCloseShipmentView = () => {
         setIsShipmentViewModalOpen(false);
+    };
+
+    const handleViewPayment = (payment: Payment) => {
+        setCurrentPayment(payment);
+        setIsPaymentViewModalOpen(true);
+    };
+
+    const handleClosePaymentView = () => {
+        setIsPaymentViewModalOpen(false);
     };
 
     const handleDelete = (customer: Customer) => {
@@ -379,6 +391,7 @@ const Customers = memo<CustomersProps>(({
                     onViewOrder={handleViewOrder}
                     onViewQuote={handleViewQuote}
                     onViewShipment={handleViewShipment}
+                    onViewPayment={handleViewPayment}
                     onNavigate={setActivePage}
                 />
 
@@ -456,6 +469,24 @@ const Customers = memo<CustomersProps>(({
                             />
                         );
                     })()}
+                </Modal>
+
+                <Modal
+                    show={isPaymentViewModalOpen}
+                    onClose={handleClosePaymentView}
+                    title="Ödeme Detayı"
+                    maxWidth="max-w-xl"
+                >
+                    {currentPayment && (
+                        <PaymentForm
+                            payment={currentPayment}
+                            customers={customers}
+                            orders={orders}
+                            onSave={() => handleClosePaymentView()}
+                            onCancel={handleClosePaymentView}
+                            readOnly={true}
+                        />
+                    )}
                 </Modal>
             </>
         );

@@ -70,6 +70,8 @@ interface CustomerDetailProps {
     onViewQuote?: (quote: Quote) => void;
     /** Handler for viewing a shipment */
     onViewShipment?: (shipment: Shipment) => void;
+    /** Handler for viewing a payment */
+    onViewPayment?: (payment: Payment) => void;
     /** Handler for saving a quote */
     onQuoteSave: (quote: Partial<Quote>) => void;
     /** Handler for saving an order */
@@ -105,6 +107,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
     onViewOrder,
     onViewQuote,
     onViewShipment,
+    onViewPayment,
     onQuoteSave,
     onOrderSave,
     onMeetingSave,
@@ -151,8 +154,10 @@ const CustomerDetail = memo<CustomerDetailProps>(({
             onViewQuote && onViewQuote(activity.data as Quote);
         } else if (activity.type === 'shipment') {
             onViewShipment && onViewShipment(activity.data as Shipment);
+        } else if (activity.type === 'payment') {
+            onViewPayment && onViewPayment(activity.data as Payment);
         }
-    }, [onViewOrder, onViewQuote, onViewShipment]);
+    }, [onViewOrder, onViewQuote, onViewShipment, onViewPayment]);
 
     // Calculate statistics
     const stats = useMemo<Stats>(() => {
@@ -648,7 +653,13 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                             <div className="space-y-2">
                                 {payments.filter(p => p.customerId === customer.id && !p.isDeleted).length > 0 ? (
                                     payments.filter(p => p.customerId === customer.id && !p.isDeleted).map(payment => (
-                                        <div key={payment.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <div
+                                            key={payment.id}
+                                            onClick={() => onViewPayment && onViewPayment(payment)}
+                                            className={`flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors ${
+                                                onViewPayment ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''
+                                            }`}
+                                        >
                                             <div>
                                                 <div className="font-medium text-gray-900 dark:text-gray-100">
                                                     {payment.paymentMethod || 'Ödeme'}
@@ -782,7 +793,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                                         key={index}
                                         onClick={() => handleItemClick(activity)}
                                         className={`flex items-center gap-3 text-sm p-2 rounded-lg transition-colors ${
-                                            (activity.type === 'order' || activity.type === 'quote' || activity.type === 'shipment')
+                                            (activity.type === 'order' || activity.type === 'quote' || activity.type === 'shipment' || activity.type === 'payment')
                                                 ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'
                                                 : ''
                                         }`}
@@ -821,7 +832,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                                     <div
                                         onClick={() => handleItemClick(activity)}
                                         className={`bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-colors ${
-                                            (activity.type === 'order' || activity.type === 'quote' || activity.type === 'shipment')
+                                            (activity.type === 'order' || activity.type === 'quote' || activity.type === 'shipment' || activity.type === 'payment')
                                                 ? 'cursor-pointer hover:border-blue-400 dark:hover:border-blue-500'
                                                 : ''
                                         }`}
@@ -1057,6 +1068,7 @@ const CustomerDetail = memo<CustomerDetailProps>(({
                         customer={customer}
                         payments={payments}
                         orders={orders}
+                        onViewPayment={onViewPayment}
                     />
                 )}
             </div>
