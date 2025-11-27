@@ -77,7 +77,8 @@ const Balances = memo<BalancesProps>(({ customers, orders, payments, onCustomerC
 
     return activeCustomers.map(customer => {
       const customerOrders = orders.filter(o => o.customerId === customer.id && !o.isDeleted);
-      const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi');
+      // Include all payments except cancelled ones (Bekliyor status payments like checks are counted)
+      const customerPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal');
       const customerPendingPayments = payments.filter(p => p.customerId === customer.id && !p.isDeleted && p.status !== 'Tahsil Edildi' && p.status !== 'İptal');
 
       const orderDetails = customerOrders.map(o => ({
