@@ -571,16 +571,16 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-auto rounded-lg shadow bg-white dark:bg-gray-800">
-                <table className="w-full table-fixed">
+                <table className="w-full">
                     <colgroup>
-                        <col style={{ width: '50px' }} />
-                        <col style={{ width: '140px' }} />
-                        <col style={{ width: 'auto' }} />
-                        <col style={{ width: '160px' }} />
-                        <col style={{ width: '130px' }} />
+                        <col style={{ width: '40px' }} />
                         <col style={{ width: '120px' }} />
-                        <col style={{ width: '100px' }} />
-                        <col style={{ width: '200px' }} />
+                        <col style={{ width: '20%' }} />
+                        <col style={{ width: '15%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '120px' }} />
                     </colgroup>
                     <thead className="bg-gray-50 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600">
                         <tr>
@@ -623,63 +623,54 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                     <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
                                     <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
                                     <td className="p-3 text-sm text-center">
-                                        <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(shipment.status)}`}>
+                                        <span className={`p-1.5 text-xs font-medium uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(shipment.status)}`}>
                                             {shipment.status}
                                         </span>
                                     </td>
                                     <td className="p-3 text-sm text-center">
                                         {shipment.isInvoiced ? (
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded">
-                                                    ✅ Kesildi
-                                                </span>
-                                                {shipment.invoiceNotes && (
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400" title={shipment.invoiceNotes}>
-                                                        {shipment.invoiceNotes.length > 15 ? shipment.invoiceNotes.substring(0, 15) + '...' : shipment.invoiceNotes}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <span
+                                                className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded whitespace-nowrap"
+                                                title={shipment.invoiceNotes || 'Fatura kesildi'}
+                                            >
+                                                ✅ Kesildi
+                                            </span>
                                         ) : (
-                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded">
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold rounded whitespace-nowrap">
                                                 ❌ Yok
                                             </span>
                                         )}
                                     </td>
                                     <td className="p-3 text-sm">
                                         <div className="flex items-center justify-end gap-2">
-                                            {/* Hızlı Durum Değiştirme - Sadece aktif sevkiyatlar için */}
+                                            {/* Hızlı Durum Değiştirme - Sadece aktif sevkiyatlar için - Kompakt hali */}
                                             {shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' && (
                                                 <button
                                                     onClick={() => handleQuickStatusUpdate(shipment)}
-                                                    className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm whitespace-nowrap"
-                                                    title={`${getNextStatusText(shipment.status)}`}
+                                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                                    title={getNextStatusText(shipment.status)}
                                                 >
-                                                    <span className="mr-1">{getNextStatusIcon(shipment.status)}</span>
-                                                    {getNextStatusText(shipment.status)}
+                                                    <span className="text-sm">{getNextStatusIcon(shipment.status)}</span>
                                                 </button>
                                             )}
 
-                                            {/* Detay Butonu */}
-                                            <button
-                                                onClick={() => handleOpenModal(shipment)}
-                                                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                                title="Detay Görüntüle"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                            </button>
-
-                                            {/* Dropdown Menü */}
+                                            {/* Dropdown Menü - Detay dahil */}
                                             <ActionsDropdown
                                                 actions={[
                                                     {
-                                                        label: shipment.status === 'Teslim Edildi' ? 'Görüntüle' : 'Düzenle',
+                                                        label: '👁️ Detay Görüntüle',
+                                                        onClick: () => handleOpenModal(shipment)
+                                                    },
+                                                    ...(shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' ? [{
+                                                        label: `${getNextStatusIcon(shipment.status)} ${getNextStatusText(shipment.status)}`,
+                                                        onClick: () => handleQuickStatusUpdate(shipment)
+                                                    }] : []),
+                                                    {
+                                                        label: shipment.status === 'Teslim Edildi' ? '📋 Görüntüle' : '✏️ Düzenle',
                                                         onClick: () => handleOpenModal(shipment)
                                                     },
                                                     {
-                                                        label: 'Sil',
+                                                        label: '🗑️ Sil',
                                                         onClick: () => handleDelete(shipment),
                                                         destructive: true
                                                     }
@@ -691,7 +682,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                             );
                         }) : (
                             <tr>
-                                <td colSpan={7} className="p-0">
+                                <td colSpan={8} className="p-0">
                                     <EmptyState
                                         icon={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'search' : 'shipments'}
                                         title={searchQuery || filters.status !== 'Tümü' || filters.dateRange !== 'Tümü' || filters.customer !== 'Tümü' ? 'Sevkiyat Bulunamadı' : 'Henüz Sevkiyat Yok'}
