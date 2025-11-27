@@ -623,79 +623,9 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                     <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{shipment.carrier || (shipment as any).transporter}</td>
                                     <td className="p-3 text-sm text-center text-gray-700 dark:text-gray-300">{formatDate(shipment.shipment_date)}</td>
                                     <td className="p-3 text-sm text-center">
-                                        <div className="flex flex-col items-center gap-2">
-                                            {/* Mini Progress Indicator */}
-                                            <div className="flex items-center gap-1">
-                                                {/* Hazırlanıyor Stage */}
-                                                <div
-                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                                        shipment.status === 'Hazırlanıyor'
-                                                            ? 'bg-yellow-500 ring-2 ring-yellow-300 ring-offset-1'
-                                                            : shipment.status === 'Yolda' || shipment.status === 'Teslim Edildi'
-                                                            ? 'bg-green-500'
-                                                            : 'bg-gray-300 dark:bg-gray-600'
-                                                    }`}
-                                                    title="Hazırlanıyor"
-                                                />
-                                                <div
-                                                    className={`w-4 h-0.5 transition-all duration-300 ${
-                                                        shipment.status === 'Yolda' || shipment.status === 'Teslim Edildi'
-                                                            ? 'bg-green-500'
-                                                            : 'bg-gray-300 dark:bg-gray-600'
-                                                    }`}
-                                                />
-                                                {/* Yolda Stage */}
-                                                <div
-                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                                        shipment.status === 'Yolda'
-                                                            ? 'bg-blue-500 ring-2 ring-blue-300 ring-offset-1'
-                                                            : shipment.status === 'Teslim Edildi'
-                                                            ? 'bg-green-500'
-                                                            : 'bg-gray-300 dark:bg-gray-600'
-                                                    }`}
-                                                    title="Yolda"
-                                                />
-                                                <div
-                                                    className={`w-4 h-0.5 transition-all duration-300 ${
-                                                        shipment.status === 'Teslim Edildi'
-                                                            ? 'bg-green-500'
-                                                            : 'bg-gray-300 dark:bg-gray-600'
-                                                    }`}
-                                                />
-                                                {/* Teslim Edildi Stage */}
-                                                <div
-                                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                                        shipment.status === 'Teslim Edildi'
-                                                            ? 'bg-green-500 ring-2 ring-green-300 ring-offset-1'
-                                                            : 'bg-gray-300 dark:bg-gray-600'
-                                                    }`}
-                                                    title="Teslim Edildi"
-                                                />
-                                            </div>
-
-                                            {/* Interactive Status Badge */}
-                                            {shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' ? (
-                                                <button
-                                                    onClick={() => handleQuickStatusUpdate(shipment)}
-                                                    className={`group relative px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center gap-1.5 ${getStatusClass(shipment.status)}`}
-                                                    title={`${shipment.status} → ${getNextStatusText(shipment.status)}`}
-                                                >
-                                                    <span>{shipment.status}</span>
-                                                    <svg
-                                                        className="w-3 h-3 transform group-hover:translate-x-0.5 transition-transform"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </button>
-                                            ) : (
-                                                <span className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(shipment.status)}`}>
-                                                    {shipment.status}
-                                                </span>
-                                            )}
-                                        </div>
+                                        <span className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(shipment.status)}`}>
+                                            {shipment.status}
+                                        </span>
                                     </td>
                                     <td className="p-3 text-sm text-center">
                                         {shipment.isInvoiced ? (
@@ -712,19 +642,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                         )}
                                     </td>
                                     <td className="p-3 text-sm">
-                                        <div className="flex items-center justify-end gap-2">
-                                            {/* Hızlı Durum Değiştirme - Sadece aktif sevkiyatlar için - Kompakt hali */}
-                                            {shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' && (
-                                                <button
-                                                    onClick={() => handleQuickStatusUpdate(shipment)}
-                                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
-                                                    title={getNextStatusText(shipment.status)}
-                                                >
-                                                    <span className="text-sm">{getNextStatusIcon(shipment.status)}</span>
-                                                </button>
-                                            )}
-
-                                            {/* Dropdown Menü - Detay dahil */}
+                                        <div className="flex items-center justify-end">
                                             <ActionsDropdown
                                                 actions={[
                                                     {
