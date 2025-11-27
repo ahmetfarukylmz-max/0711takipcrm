@@ -622,7 +622,7 @@ const Customers = memo<CustomersProps>(({
                                             {customer.city}
                                         </td>
                                         <td className="p-3 text-sm text-center">
-                                            <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(status)}`}>
+                                            <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(status)}`}>
                                                 {status}
                                             </span>
                                         </td>
