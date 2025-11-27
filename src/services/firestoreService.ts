@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
 import { logger } from '../utils/logger';
@@ -269,12 +269,57 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
       updatedAt: new Date().toISOString(),
     });
 
-    // Update order status
+    // Get order details to calculate if all items are delivered
     const orderRef = doc(db, `users/${userId}/orders`, orderId);
-    await updateDoc(orderRef, {
-      status: 'Tamamlandı',
-      updatedAt: new Date().toISOString(),
-    });
+    const orderDoc = await getDoc(orderRef);
+
+    if (orderDoc.exists()) {
+      const order = orderDoc.data();
+
+      // Get all shipments for this order
+      const shipmentsRef = collection(db, `users/${userId}/shipments`);
+      const shipmentsQuery = query(shipmentsRef, where('orderId', '==', orderId));
+      const shipmentsSnapshot = await getDocs(shipmentsQuery);
+
+      // Calculate total ordered quantities by product
+      const orderedQuantities = {};
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          orderedQuantities[item.productId] = (orderedQuantities[item.productId] || 0) + (item.quantity || 0);
+        });
+      }
+
+      // Calculate total delivered quantities by product
+      const deliveredQuantities = {};
+      shipmentsSnapshot.forEach(shipmentDoc => {
+        const shipmentData = shipmentDoc.data();
+        // Only count delivered and non-deleted shipments
+        if (shipmentData.status === 'Teslim Edildi' && !shipmentData.isDeleted && shipmentData.items && Array.isArray(shipmentData.items)) {
+          shipmentData.items.forEach(item => {
+            deliveredQuantities[item.productId] = (deliveredQuantities[item.productId] || 0) + (item.quantity || 0);
+          });
+        }
+      });
+
+      // Check if all products are fully delivered
+      let allDelivered = true;
+      for (const productId in orderedQuantities) {
+        const ordered = orderedQuantities[productId];
+        const delivered = deliveredQuantities[productId] || 0;
+        if (delivered < ordered) {
+          allDelivered = false;
+          break;
+        }
+      }
+
+      // Update order status only if all items are delivered
+      if (allDelivered) {
+        await updateDoc(orderRef, {
+          status: 'Tamamlandı',
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
 
     // Update stock for each shipped item
     if (shipment.items && Array.isArray(shipment.items)) {
