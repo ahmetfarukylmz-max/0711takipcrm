@@ -55,9 +55,14 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ order, products, shipments 
                 // Calculate total shipped quantity for THIS SPECIFIC order item (by index)
                 const totalShipped = orderShipments.reduce((sum, shipment) => {
                     // Find shipment items that match this order item index
-                    const shipmentItem = shipment.items?.find(si =>
-                        si.productId === item.productId && si.orderItemIndex === itemIndex
-                    );
+                    const shipmentItem = shipment.items?.find(si => {
+                        // Modern match: Use exact index if available
+                        if (si.orderItemIndex !== undefined) {
+                            return si.orderItemIndex === itemIndex;
+                        }
+                        // Legacy fallback: Match by productId (best effort for old data)
+                        return si.productId === item.productId;
+                    });
                     return sum + (shipmentItem?.quantity || 0);
                 }, 0);
 
