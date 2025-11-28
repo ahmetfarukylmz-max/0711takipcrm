@@ -773,7 +773,7 @@ const CrmApp = () => {
                     />
                 );
             case 'Sevkiyat':
-                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
+                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} onGeneratePdf={handleGeneratePdf} loading={dataLoading} />;
             case 'Ödemeler':
                 return (
                     <Payments
@@ -820,7 +820,7 @@ const CrmApp = () => {
             case 'Admin':
                 return <Admin />;
             case 'belge-hazirla':
-                return <PdfGenerator doc={editingDocument} customers={customers} products={products} />;
+                return <PdfGenerator doc={editingDocument} customers={customers} products={products} orders={orders} />;
             default:
                 return (
                     <Dashboard

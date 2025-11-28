@@ -9,16 +9,34 @@ interface ShipmentDetailProps {
     order?: Order | null;
     /** Associated customer */
     customer?: Customer | null;
+    /** Callback to generate PDF */
+    onGeneratePdf?: (shipment: Shipment) => void;
 }
 
 /**
  * ShipmentDetail component - Displays detailed information about a shipment
  */
-const ShipmentDetail = memo<ShipmentDetailProps>(({ shipment, order, customer }) => {
+const ShipmentDetail = memo<ShipmentDetailProps>(({ shipment, order, customer, onGeneratePdf }) => {
     if (!shipment) return null;
 
     return (
-        <div className="space-y-6 p-4">
+        <div className="space-y-6 p-1">
+            {/* Header with Print Button */}
+            <div className="flex justify-end mb-2">
+                {onGeneratePdf && (
+                    <button
+                        onClick={() => onGeneratePdf(shipment)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        title="İrsaliye Yazdır"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span>İrsaliye Yazdır</span>
+                    </button>
+                )}
+            </div>
+
             {/* Shipment Info */}
             <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm">
                 <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Sevkiyat Bilgileri</h3>

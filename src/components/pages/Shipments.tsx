@@ -268,6 +268,8 @@ interface ShipmentsProps {
     onUpdate: (shipment: Partial<Shipment>) => void;
     /** Callback when shipment is deleted */
     onDelete: (id: string) => void;
+    /** Callback to generate PDF */
+    onGeneratePdf: (shipment: Shipment) => void;
     /** Loading state */
     loading?: boolean;
 }
@@ -275,7 +277,7 @@ interface ShipmentsProps {
 /**
  * Shipments component - Shipment management page
  */
-const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete, loading = false }) => {
+const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete, onGeneratePdf, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, shipment: null });
@@ -675,6 +677,10 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                             <ActionsDropdown
                                                 actions={[
                                                     {
+                                                        label: '📄 İrsaliye Yazdır',
+                                                        onClick: () => onGeneratePdf(shipment)
+                                                    },
+                                                    {
                                                         label: '👁️ Detay Görüntüle',
                                                         onClick: () => handleOpenModal(shipment)
                                                     },
@@ -773,6 +779,14 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                     )}
                                     <MobileActions
                                         actions={[
+                                            {
+                                                label: 'İrsaliye Yazdır',
+                                                onClick: (e) => {
+                                                    e?.stopPropagation();
+                                                    onGeneratePdf(shipment);
+                                                },
+                                                variant: 'secondary'
+                                            },
                                             {
                                                 label: shipment.status === 'Teslim Edildi' ? 'Görüntüle' : 'Düzenle',
                                                 onClick: (e) => {
