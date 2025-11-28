@@ -21,8 +21,8 @@ interface PdfGeneratorProps {
  * PdfGenerator component - Generates customizable PDF documents from quotes, orders or shipments
  */
 const PdfGenerator = memo<PdfGeneratorProps>(({ doc, customers, products, orders = [], shipments = [] }) => {
-    // Try to load default logo from public folder
-    const [logo, setLogo] = useState<string | null>('/logo.png'); 
+    // Try to load default logo from public folder or use the remote URL found in Orders.tsx
+    const [logo, setLogo] = useState<string | null>('https://i.ibb.co/rGFcQ4GB/logo-Photoroom.png'); 
     const [themeColor, setThemeColor] = useState<string>('#3b82f6');
     const [showProductDescriptions, setShowProductDescriptions] = useState<boolean>(true);
     const [showUnitPrices, setShowUnitPrices] = useState<boolean>(true);

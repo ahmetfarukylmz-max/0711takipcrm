@@ -182,24 +182,14 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 {/* Header */}
                 <header className="flex justify-between items-start pb-6 border-b-2 mb-6" style={{ borderColor: themeColor }}>
                     <div className="w-1/2">
-                        {/* Check if logo is a valid URL/DataURI, otherwise fallback to text if it's just a placeholder path and file doesn't exist (browser handles broken image, but we can condition it) */}
-                        {logo && logo !== '/logo.png' ? ( // Assumes /logo.png might not exist yet, but if user uploads it replaces this string
+                        {logo ? (
                             <img src={logo} alt="Logo" className="h-20 mb-4 object-contain" />
-                        ) : logo === '/logo.png' ? (
-                             // Use a fallback or check if we want to display the text title if logo is missing
-                             // For now, we try to render img, if it fails user will see alt text or broken icon.
-                             // Better: if default, show Title. 
-                             // Actually, let's stick to the logic: if logo provided, show it.
-                             <img 
-                                src="/logo.png" 
-                                onError={(e) => {e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden');}} 
-                                alt="Logo" 
-                                className="h-20 mb-4 object-contain" 
-                             />
-                        ) : null}
+                        ) : (
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">{companyInfo.name}</h1>
+                        )}
                          
-                        {/* Fallback Title if logo fails or not present */}
-                        <h1 className={`text-2xl font-bold text-gray-900 mb-2 ${logo && logo !== '/logo.png' ? 'hidden' : ''}`}>{companyInfo.name}</h1>
+                        {/* Fallback Title if logo is present but hidden (handled by alt above if needed, but simplified logic here) */}
+                        <h1 className={`text-2xl font-bold text-gray-900 mb-2 ${logo ? 'hidden' : ''}`}>{companyInfo.name}</h1>
 
                         <div className="text-xs text-gray-600 leading-relaxed">
                             <p>{companyInfo.address}</p>
