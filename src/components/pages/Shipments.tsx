@@ -268,8 +268,6 @@ interface ShipmentsProps {
     onUpdate: (shipment: Partial<Shipment>) => void;
     /** Callback when shipment is deleted */
     onDelete: (id: string) => void;
-    /** Callback to generate PDF */
-    onGeneratePdf: (shipment: Shipment) => void;
     /** Loading state */
     loading?: boolean;
 }
@@ -277,7 +275,7 @@ interface ShipmentsProps {
 /**
  * Shipments component - Shipment management page
  */
-const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete, onGeneratePdf, loading = false }) => {
+const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [], customers = [], onDelivery, onUpdate, onDelete, loading = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, shipment: null });
@@ -293,6 +291,158 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
     const handleDelivery = (shipmentId: string) => {
         onDelivery(shipmentId);
+    };
+
+    const handlePrintDeliveryNote = (shipment: Shipment) => {
+        const order = orders.find(o => o.id === shipment.orderId);
+        const customer = customers.find(c => c.id === order?.customerId);
+
+        if (!order || !customer) {
+            toast.error('Sipariş veya müşteri bilgisi bulunamadı!');
+            return;
+        }
+
+        const companyInfo = {
+            name: 'AKÇELİK METAL SANAYİ',
+            address: 'Küçükbalıklı mh. 11 Eylül Bulvarı No:208/A Osmangazi/Bursa',
+            phone: '+90 0224 256 86 56',
+            email: 'satis@akcelik-grup.com',
+            logoUrl: 'https://i.ibb.co/rGFcQ4GB/logo-Photoroom.png',
+        };
+
+        const itemsHtml = (shipment.items || []).map((item, index) => {
+            const product = products.find(p => p.id === item.productId);
+            const isEven = index % 2 === 0;
+            
+            // Calculate quantities
+            const orderItemIndex = item.orderItemIndex ?? index;
+            const orderItem = order.items?.[orderItemIndex];
+            const orderedQty = orderItem?.quantity || 0;
+
+            // Calculate total shipped quantity for THIS SPECIFIC order item (by index)
+            const totalShippedQty = shipments
+                .filter(s => s.orderId === shipment.orderId && !s.isDeleted)
+                .reduce((sum, s) => {
+                    const shipmentItem = s.items?.find(si =>
+                        si.productId === item.productId &&
+                        (si.orderItemIndex !== undefined ? si.orderItemIndex === orderItemIndex : true)
+                    );
+                    return sum + (shipmentItem?.quantity || 0);
+                }, 0);
+
+            const remainingQty = Math.max(0, orderedQty - totalShippedQty);
+            const unit = item.unit || 'Adet';
+
+            return `
+                <tr class="border-b border-gray-200 ${isEven ? 'bg-gray-50' : 'bg-white'}">
+                    <td class="py-2 px-3 text-center text-gray-500 text-xs">${index + 1}</td>
+                    <td class="py-2 px-3 text-sm text-gray-900">${product?.name || item.productName || 'Bilinmeyen Ürün'}</td>
+                    <td class="py-2 px-3 text-center text-sm text-gray-700">${orderedQty} ${unit}</td>
+                    <td class="py-2 px-3 text-center text-sm font-bold text-gray-900 bg-gray-100">${item.quantity} ${unit}</td>
+                    <td class="py-2 px-3 text-center text-sm text-gray-700">${remainingQty} ${unit}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const printContent = `
+            <html>
+            <head>
+                <title>İrsaliye ${shipment.id}</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .no-print { display: none; }
+                        @page { margin: 1cm; }
+                    }
+                </style>
+            </head>
+            <body class="bg-white p-8">
+                <div class="max-w-4xl mx-auto bg-white">
+                    <div class="p-8">
+                        <header class="flex justify-between items-start pb-6 border-b-2 border-gray-900">
+                            <div>
+                                <img src="${companyInfo.logoUrl}" alt="${companyInfo.name} Logosu" class="h-16 mb-3"/>
+                                <h1 class="text-xl font-bold text-gray-900">${companyInfo.name}</h1>
+                                <p class="text-xs text-gray-600 mt-1">${companyInfo.address}</p>
+                                <p class="text-xs text-gray-600">${companyInfo.phone} | ${companyInfo.email}</p>
+                            </div>
+                            <div class="text-right">
+                                <h2 class="text-3xl font-bold text-gray-900 mb-3">SEVK İRSALİYESİ</h2>
+                                <div class="text-xs text-gray-600 space-y-1">
+                                    <p><span class="font-semibold">Sevk Tarihi:</span> ${formatDate(shipment.shipment_date)}</p>
+                                    <p><span class="font-semibold">Sipariş No:</span> ${getShortOrderNumber(order)}</p>
+                                    <p><span class="font-semibold">Nakliye:</span> ${shipment.carrier || (shipment as any).transporter}</p>
+                                    ${shipment.trackingNumber ? `<p><span class="font-semibold">Takip No:</span> ${shipment.trackingNumber}</p>` : ''}
+                                </div>
+                            </div>
+                        </header>
+
+                        <section class="mt-6">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">Müşteri Bilgileri</h3>
+                            <div class="border border-gray-300 p-3 text-xs">
+                                <p class="font-bold text-gray-900">${customer.name}</p>
+                                <p class="text-gray-600">${customer.address || ''}, ${customer.city || ''}</p>
+                                <p class="text-gray-600">Tel: ${customer.phone || ''} ${customer.email ? '| E-posta: ' + customer.email : ''}</p>
+                                ${customer.taxOffice || customer.taxNumber ? `<p class="text-gray-600 mt-1">${customer.taxOffice ? 'Vergi Dairesi: ' + customer.taxOffice : ''} ${customer.taxOffice && customer.taxNumber ? '|' : ''} ${customer.taxNumber ? 'Vergi No: ' + customer.taxNumber : ''}</p>` : ''}
+                            </div>
+                        </section>
+
+                        <section class="mt-6">
+                            <table class="w-full border-collapse border border-gray-300">
+                                <thead>
+                                    <tr class="bg-gray-900 text-white">
+                                        <th class="py-2 px-3 text-center text-xs font-semibold border-r border-gray-700">#</th>
+                                        <th class="py-2 px-3 text-left text-xs font-semibold border-r border-gray-700">Ürün</th>
+                                        <th class="py-2 px-3 text-center text-xs font-semibold border-r border-gray-700">Sipariş</th>
+                                        <th class="py-2 px-3 text-center text-xs font-semibold border-r border-gray-700">Sevk Edilen</th>
+                                        <th class="py-2 px-3 text-center text-xs font-semibold">Kalan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                            </table>
+                        </section>
+
+                        ${shipment.notes ? `
+                        <section class="mt-6 border border-gray-300 p-3">
+                            <h3 class="text-xs font-semibold text-gray-900 mb-2 uppercase">Özel Notlar</h3>
+                            <p class="text-xs text-gray-600 whitespace-pre-wrap">${shipment.notes}</p>
+                        </section>
+                        ` : ''}
+
+                        <section class="grid grid-cols-2 gap-12 mt-12 border-t border-gray-300 pt-8">
+                            <div class="text-center">
+                                <h4 class="font-bold text-gray-900 mb-12">TESLİM EDEN</h4>
+                                <div class="border-t border-gray-300 mx-8 pt-2">
+                                    <p class="text-xs text-gray-500">İmza / Kaşe</p>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <h4 class="font-bold text-gray-900 mb-12">TESLİM ALAN</h4>
+                                <div class="border-t border-gray-300 mx-8 pt-2">
+                                    <p class="text-xs text-gray-500">İmza / Kaşe</p>
+                                    <p class="text-xs text-gray-400 mt-1">Malzemeleri eksiksiz ve hasarsız teslim aldım.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                <div class="text-center mt-6 no-print">
+                    <button onclick="window.print()" class="bg-gray-900 text-white px-6 py-2 hover:bg-gray-800 text-sm font-medium rounded shadow">
+                        Yazdır / PDF Kaydet
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        }
     };
 
     // Helper functions for quick status updates
@@ -678,7 +828,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                 actions={[
                                                     {
                                                         label: '📄 İrsaliye Yazdır',
-                                                        onClick: () => onGeneratePdf(shipment)
+                                                        onClick: () => handlePrintDeliveryNote(shipment)
                                                     },
                                                     {
                                                         label: '👁️ Detay Görüntüle',
@@ -783,7 +933,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                 label: 'İrsaliye Yazdır',
                                                 onClick: (e) => {
                                                     e?.stopPropagation();
-                                                    onGeneratePdf(shipment);
+                                                    handlePrintDeliveryNote(shipment);
                                                 },
                                                 variant: 'secondary'
                                             },

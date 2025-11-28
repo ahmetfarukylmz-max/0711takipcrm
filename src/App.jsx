@@ -773,7 +773,7 @@ const CrmApp = () => {
                     />
                 );
             case 'Sevkiyat':
-                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} onGeneratePdf={handleGeneratePdf} loading={dataLoading} />;
+                return <Shipments shipments={shipments} orders={orders} products={products} customers={customers} onDelivery={handleDelivery} onUpdate={handleShipmentUpdate} onDelete={handleShipmentDelete} loading={dataLoading} />;
             case 'Ödemeler':
                 return (
                     <Payments
