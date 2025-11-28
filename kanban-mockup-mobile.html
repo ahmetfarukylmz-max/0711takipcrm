@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TAKIP CRM - Mobil Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+        }
+        .mobile-card {
+            touch-action: pan-y;
+            transition: transform 0.2s ease;
+        }
+        .mobile-card:active {
+            transform: scale(0.98);
+        }
+        .bottom-sheet {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            transition: bottom 0.3s ease;
+            z-index: 1000;
+            max-height: 80vh;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+        .bottom-sheet.active {
+            bottom: 0;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 999;
+        }
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .swipe-indicator {
+            width: 40px;
+            height: 4px;
+            background: #cbd5e1;
+            border-radius: 2px;
+            margin: 12px auto 16px;
+        }
+        .tab-active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .status-chip {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            font-size: 24px;
+            color: white;
+            z-index: 100;
+        }
+        .fab:active {
+            transform: scale(0.9);
+        }
+        .pull-to-refresh {
+            text-align: center;
+            padding: 10px;
+            color: #64748b;
+            font-size: 12px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Mobile Header -->
+    <div class="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="px-4 pt-4 pb-2">
+            <div class="flex items-center justify-between mb-3">
+                <button onclick="openMenu()" class="p-2 -ml-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h1 class="text-lg font-bold text-gray-900 dark:text-white">📋 Siparişler</h1>
+                <button onclick="openSearch()" class="p-2 -mr-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Status Tabs -->
+            <div class="flex gap-1 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                <button onclick="switchTab('bekliyor')" class="tab-active px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2">
+                    Bekliyor <span class="ml-1 text-xs">(8)</span>
+                </button>
+                <button onclick="switchTab('hazirlaniyor')" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap border-b-2 border-transparent">
+                    Hazırlanıyor <span class="ml-1 text-xs">(6)</span>
+                </button>
+                <button onclick="switchTab('tamamlandi')" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap border-b-2 border-transparent">
+                    Tamamlandı <span class="ml-1 text-xs">(9)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pull to Refresh -->
+    <div class="pull-to-refresh">
+        ⬇️ Yenilemek için aşağı çekin
+    </div>
+
+    <!-- Mobile Card List -->
+    <div class="px-4 py-3 space-y-3 pb-24">
+        <!-- Card 1 - Priority -->
+        <div class="mobile-card bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border-l-4 border-red-500" onclick="openBottomSheet('card1')">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">SIP-2024-1145</span>
+                        <span class="status-chip bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                            🔥 GECİKMİŞ
+                        </span>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">Mega Gıda San.</h3>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        12 ürün • Teslim: 25 Kas 2024
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">₺87,400</div>
+                    <div class="text-xs text-gray-500">Çek</div>
+                </div>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+                <button onclick="event.stopPropagation(); quickAction('status')" class="flex-1 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium active:bg-blue-100">
+                    📊 Durumu Değiştir
+                </button>
+                <button onclick="event.stopPropagation(); quickAction('edit')" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg active:bg-gray-200">
+                    ✏️
+                </button>
+                <button onclick="event.stopPropagation(); quickAction('more')" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg active:bg-gray-200">
+                    ⋮
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 2 - Normal -->
+        <div class="mobile-card bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm" onclick="openBottomSheet('card2')">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">SIP-2024-1158</span>
+                        <span class="status-chip bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                            ⏰ 3 gün
+                        </span>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">ABC Tekstil A.Ş.</h3>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        5 ürün • Teslim: 30 Kas 2024
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">₺45,600</div>
+                    <div class="text-xs text-gray-500">Peşin</div>
+                </div>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+                <button onclick="event.stopPropagation(); quickAction('status')" class="flex-1 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
+                    📊 Durumu Değiştir
+                </button>
+                <button onclick="event.stopPropagation(); quickAction('edit')" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    ✏️
+                </button>
+            </div>
+        </div>
+
+        <!-- Card 3 - Simple -->
+        <div class="mobile-card bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm" onclick="openBottomSheet('card3')">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">SIP-2024-1159</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white text-base mb-1">XYZ Makina Ltd.</h3>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        2 ürün • Teslim: 2 Ara 2024
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">₺12,300</div>
+                    <div class="text-xs text-gray-500">Vadeli 30</div>
+                </div>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+                <button onclick="event.stopPropagation(); quickAction('status')" class="flex-1 py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
+                    📊 Durumu Değiştir
+                </button>
+                <button onclick="event.stopPropagation(); quickAction('edit')" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    ✏️
+                </button>
+            </div>
+        </div>
+
+        <!-- Load More -->
+        <div class="text-center py-4">
+            <button class="px-6 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
+                + 5 sipariş daha yükle
+            </button>
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="newOrder()">
+        +
+    </button>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
+        <div class="flex items-center justify-around py-2">
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span class="text-xs">Ana Sayfa</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 p-2 text-blue-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-xs font-medium">Siparişler</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span class="text-xs">Müşteriler</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 p-2 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span class="text-xs">Profil</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay" onclick="closeBottomSheet()"></div>
+
+    <!-- Bottom Sheet - Order Details -->
+    <div class="bottom-sheet dark:bg-gray-800" id="bottomSheet">
+        <div class="swipe-indicator"></div>
+
+        <div class="px-4 pb-6 overflow-y-auto max-h-[70vh]">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Sipariş Detayı</h2>
+                <button onclick="closeBottomSheet()" class="p-2 -mr-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Order Info -->
+            <div class="space-y-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-mono text-gray-500 dark:text-gray-400">SIP-2024-1145</span>
+                        <span class="status-chip bg-red-100 text-red-800">🔴 Bekliyor</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Mega Gıda San.</h3>
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-3">₺87,400</div>
+
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div class="text-gray-500 dark:text-gray-400">Sipariş Tarihi</div>
+                            <div class="font-medium text-gray-900 dark:text-white">20 Kas 2024</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 dark:text-gray-400">Teslim Tarihi</div>
+                            <div class="font-medium text-red-600 dark:text-red-400">25 Kas 2024 ⚠️</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 dark:text-gray-400">Ödeme</div>
+                            <div class="font-medium text-gray-900 dark:text-white">Çek</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500 dark:text-gray-400">Ürün Sayısı</div>
+                            <div class="font-medium text-gray-900 dark:text-white">12 ürün</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Change -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Durum Değiştir</label>
+                    <select class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-base">
+                        <option>🔴 Bekliyor</option>
+                        <option>🟡 Hazırlanıyor</option>
+                        <option>🟢 Tamamlandı</option>
+                        <option>⚫ İptal Edildi</option>
+                    </select>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="py-3 bg-blue-600 text-white rounded-lg font-medium active:bg-blue-700">
+                        📞 Müşteriyi Ara
+                    </button>
+                    <button class="py-3 bg-green-600 text-white rounded-lg font-medium active:bg-green-700">
+                        🚚 Sevkiyat Oluştur
+                    </button>
+                    <button class="py-3 bg-purple-600 text-white rounded-lg font-medium active:bg-purple-700">
+                        💰 Ödeme Kaydet
+                    </button>
+                    <button class="py-3 bg-gray-600 text-white rounded-lg font-medium active:bg-gray-700">
+                        ✏️ Düzenle
+                    </button>
+                </div>
+
+                <!-- Products -->
+                <div>
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ürünler (12)</h4>
+                    <div class="space-y-2">
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+                            <div>
+                                <div class="font-medium text-gray-900 dark:text-white">Ürün A</div>
+                                <div class="text-xs text-gray-500">5 adet × ₺8,500</div>
+                            </div>
+                            <div class="font-medium text-gray-900 dark:text-white">₺42,500</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex justify-between items-center">
+                            <div>
+                                <div class="font-medium text-gray-900 dark:text-white">Ürün B</div>
+                                <div class="text-xs text-gray-500">7 adet × ₺6,400</div>
+                            </div>
+                            <div class="font-medium text-gray-900 dark:text-white">₺44,800</div>
+                        </div>
+                        <button class="text-sm text-blue-600 dark:text-blue-400 font-medium">+ 10 ürün daha</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Sheet - Status Change -->
+    <div class="bottom-sheet dark:bg-gray-800" id="statusSheet">
+        <div class="swipe-indicator"></div>
+
+        <div class="px-4 pb-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Durumu Değiştir</h3>
+
+            <div class="space-y-2">
+                <button onclick="changeStatus('bekliyor')" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left flex items-center gap-3 active:bg-gray-100">
+                    <span class="text-2xl">🔴</span>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900 dark:text-white">Bekliyor</div>
+                        <div class="text-xs text-gray-500">Henüz başlanmadı</div>
+                    </div>
+                    <span class="text-gray-400">(8)</span>
+                </button>
+
+                <button onclick="changeStatus('hazirlaniyor')" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left flex items-center gap-3 active:bg-gray-100">
+                    <span class="text-2xl">🟡</span>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900 dark:text-white">Hazırlanıyor</div>
+                        <div class="text-xs text-gray-500">İşlem devam ediyor</div>
+                    </div>
+                    <span class="text-gray-400">(6)</span>
+                </button>
+
+                <button onclick="changeStatus('tamamlandi')" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left flex items-center gap-3 active:bg-gray-100">
+                    <span class="text-2xl">🟢</span>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900 dark:text-white">Tamamlandı</div>
+                        <div class="text-xs text-gray-500">Başarıyla tamamlandı</div>
+                    </div>
+                    <span class="text-gray-400">(9)</span>
+                </button>
+
+                <button onclick="changeStatus('iptal')" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left flex items-center gap-3 active:bg-gray-100">
+                    <span class="text-2xl">⚫</span>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-900 dark:text-white">İptal Edildi</div>
+                        <div class="text-xs text-gray-500">Sipariş iptal edildi</div>
+                    </div>
+                    <span class="text-gray-400">(1)</span>
+                </button>
+            </div>
+
+            <button onclick="closeStatusSheet()" class="w-full mt-4 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg font-medium">
+                İptal
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function openBottomSheet(cardId) {
+            document.getElementById('bottomSheet').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBottomSheet() {
+            document.getElementById('bottomSheet').classList.remove('active');
+            document.getElementById('statusSheet').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function quickAction(action) {
+            if (action === 'status') {
+                closeBottomSheet();
+                setTimeout(() => {
+                    document.getElementById('statusSheet').classList.add('active');
+                    document.getElementById('overlay').classList.add('active');
+                }, 100);
+            } else if (action === 'edit') {
+                alert('Düzenleme ekranı açılıyor...');
+            } else if (action === 'more') {
+                alert('Daha fazla seçenek...');
+            }
+        }
+
+        function changeStatus(status) {
+            alert(`Durum "${status}" olarak değiştirildi!`);
+            closeBottomSheet();
+        }
+
+        function closeStatusSheet() {
+            document.getElementById('statusSheet').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function switchTab(tab) {
+            // Remove active from all tabs
+            document.querySelectorAll('.tab-active').forEach(el => {
+                el.classList.remove('tab-active', 'border-blue-500', 'text-blue-600');
+                el.classList.add('text-gray-600', 'border-transparent');
+            });
+
+            // Add active to clicked tab
+            event.target.classList.add('tab-active', 'border-blue-500', 'text-blue-600');
+            event.target.classList.remove('text-gray-600', 'border-transparent');
+
+            alert(`"${tab}" sekmesine geçildi`);
+        }
+
+        function newOrder() {
+            alert('Yeni sipariş oluştur ekranı açılıyor...');
+        }
+
+        function openMenu() {
+            alert('Menü açılıyor...');
+        }
+
+        function openSearch() {
+            alert('Arama ekranı açılıyor...');
+        }
+
+        // Swipe down to close bottom sheet
+        let startY = 0;
+        document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+            sheet.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
+
+            sheet.addEventListener('touchmove', (e) => {
+                const currentY = e.touches[0].clientY;
+                const diff = currentY - startY;
+
+                if (diff > 0 && sheet.scrollTop === 0) {
+                    e.preventDefault();
+                    sheet.style.transform = `translateY(${diff}px)`;
+                }
+            });
+
+            sheet.addEventListener('touchend', (e) => {
+                const diff = e.changedTouches[0].clientY - startY;
+
+                if (diff > 100) {
+                    closeBottomSheet();
+                }
+
+                sheet.style.transform = '';
+            });
+        });
+
+        console.log('📱 Mobil Kanban Mockup');
+    </script>
+</body>
+</html>

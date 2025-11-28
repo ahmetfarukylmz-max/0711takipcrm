@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAKIP CRM - Sevkiyatlar Kanban Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .kanban-card { transition: all 0.2s ease; }
+        .kanban-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .kanban-column { min-height: 600px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .tracking-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div class="min-h-screen">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-[1920px] mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🚚 Sevkiyatlar</h1>
+                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">21 Sevkiyat</span>
+                        <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-sm font-medium">⚠️ 3 Faturalanmamış</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="dark:hidden">🌙</span>
+                            <span class="hidden dark:inline">☀️</span>
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2">
+                            <span>+</span> Yeni Sevkiyat
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <input type="text" placeholder="🔍 Sipariş no, kargo takip no..." class="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                    <select class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                        <option>Tüm Kargo Firmaları</option>
+                        <option>MNG Kargo</option>
+                        <option>Yurtiçi Kargo</option>
+                        <option>Aras Kargo</option>
+                        <option>PTT Kargo</option>
+                    </select>
+                    <select class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                        <option>Fatura Durumu</option>
+                        <option>✅ Faturalanmış</option>
+                        <option>⚠️ Faturalanmamış</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-[1920px] mx-auto px-6 py-6">
+            <div class="flex gap-4 overflow-x-auto custom-scrollbar pb-4">
+
+                <!-- Hazırlanıyor -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-yellow-50 dark:bg-yellow-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                                    Hazırlanıyor
+                                </h3>
+                                <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-medium">6</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">📦 Paketleniyor</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border-2 border-orange-300 dark:border-orange-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">SEV-2024-0234</span>
+                                    <span class="px-2 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded font-medium">⚠️ Faturalanmamış</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ABC Tekstil A.Ş.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>📦 Sipariş: <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">SIP-2024-1158</a></div>
+                                        <div class="mt-1">📅 Sevkiyat: 28 Kas 2024</div>
+                                        <div class="mt-1">🚚 Teslim: 30 Kas 2024</div>
+                                    </div>
+                                    <div class="p-2 bg-gray-50 dark:bg-gray-600/50 rounded text-xs">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-400">5 ürün</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">₺45,600</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium">🚚 Gönder</button>
+                                        <button class="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded-lg">📄 Faturala</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-600 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">SEV-2024-0235</span>
+                                    <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded">✓ Faturalandı</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Delta Elektronik</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>📦 Sipariş: <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">SIP-2024-1156</a></div>
+                                        <div class="mt-1">📅 Sevkiyat: 28 Kas 2024</div>
+                                        <div class="mt-1">🚚 Teslim: 28 Kas 2024 (Bugün)</div>
+                                    </div>
+                                    <div class="p-2 bg-gray-50 dark:bg-gray-600/50 rounded text-xs">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-400">8 ürün</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">₺34,200</span>
+                                        </div>
+                                    </div>
+                                    <button class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg font-medium">🚚 Kargoya Ver</button>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 4 sevkiyat</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gönderildi -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-blue-500 rounded-full tracking-dot"></span>
+                                    Gönderildi
+                                </h3>
+                                <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">4</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">🚚 Kargoda</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-blue-200 dark:border-blue-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">SEV-2024-0232</span>
+                                    <button class="text-gray-400">⋮</button>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Prima Mobilya</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>📦 Sipariş: <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">SIP-2024-1154</a></div>
+                                        <div class="mt-1">📅 Gönderim: 27 Kas 2024</div>
+                                        <div class="mt-1">🚚 Teslim: 30 Kas 2024</div>
+                                    </div>
+                                    <div class="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-xs">
+                                        <div class="font-medium text-blue-700 dark:text-blue-300 mb-1">🚛 MNG Kargo</div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-400">Takip No:</span>
+                                            <span class="font-mono text-blue-600 dark:text-blue-400">MNG789456123</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-gray-50 dark:bg-gray-600/50 rounded text-xs">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-400">4 ürün</span>
+                                            <span class="font-medium text-gray-900 dark:text-white">₺28,900</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium">📍 Takip Et</button>
+                                        <button class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg">✓ Teslim</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 3 sevkiyat</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yolda -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-indigo-50 dark:bg-indigo-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-indigo-500 rounded-full tracking-dot"></span>
+                                    Yolda
+                                </h3>
+                                <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-sm font-medium">3</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">🛣️ Teslimat aşamasında</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-indigo-200 dark:border-indigo-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">SEV-2024-0230</span>
+                                    <span class="px-2 py-0.5 bg-indigo-600 text-white text-xs rounded font-medium tracking-dot">🚛 Yolda</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Omega Otomotiv</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>📦 Sipariş: <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">SIP-2024-1151</a></div>
+                                        <div class="mt-1">📅 Gönderim: 26 Kas 2024</div>
+                                        <div class="mt-1">🚚 Tahmini Teslim: Bugün (28 Kas)</div>
+                                    </div>
+                                    <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-300 dark:border-indigo-700 rounded text-xs">
+                                        <div class="font-medium text-indigo-700 dark:text-indigo-300 mb-2">🚛 Yurtiçi Kargo</div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-gray-600 dark:text-gray-400">Takip:</span>
+                                            <span class="font-mono text-indigo-600 dark:text-indigo-400">YK456123789</span>
+                                        </div>
+                                        <div class="text-indigo-700 dark:text-indigo-300 font-medium">📍 Son konum: Ankara Transfer Merkezi</div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg font-medium">✅ Teslim Edildi</button>
+                                        <button class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg">📍</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 2 sevkiyat</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teslim Edildi -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-green-50 dark:bg-green-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    Teslim Edildi
+                                </h3>
+                                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium">8</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">✅ Tamamlandı</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-green-200 dark:border-green-700 cursor-move opacity-90">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">SEV-2024-0225</span>
+                                    <span class="px-2 py-0.5 bg-green-600 text-white text-xs rounded font-medium">✓ Teslim</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Alfa Kimya Ltd.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>📦 Sipariş: <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">SIP-2024-1150</a></div>
+                                        <div class="mt-1">📅 Gönderim: 20 Kas 2024</div>
+                                        <div class="mt-1 text-green-600 dark:text-green-400">✅ Teslim: 22 Kas 2024</div>
+                                    </div>
+                                    <div class="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded text-xs">
+                                        <div class="flex items-center gap-2 text-green-700 dark:text-green-300 mb-1">
+                                            <span>✓</span>
+                                            <span class="font-medium">Müşteri teslim aldı</span>
+                                        </div>
+                                        <div class="text-gray-600 dark:text-gray-400">Teslim alan: Mehmet Demir</div>
+                                        <div class="text-gray-600 dark:text-gray-400">İmza alındı ✓</div>
+                                    </div>
+                                    <div class="mt-2 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-lg font-medium">📄 İrsaliye</button>
+                                        <button class="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white text-xs rounded-lg">👁️</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 7 teslim edilmiş</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+            <div class="max-w-[1920px] mx-auto px-6 py-3">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-6">
+                        <div><span class="text-gray-500 dark:text-gray-400">Toplam:</span> <span class="font-bold text-gray-900 dark:text-white">21 sevkiyat</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Aktif:</span> <span class="font-bold text-blue-600 dark:text-blue-400">13</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Teslim Edildi:</span> <span class="font-bold text-green-600 dark:text-green-400">8</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Faturalanmamış:</span> <span class="font-bold text-orange-600 dark:text-orange-400">3</span></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
