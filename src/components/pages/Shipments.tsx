@@ -246,6 +246,7 @@ interface ShipmentFilters {
     status: string;
     dateRange: string;
     customer: string;
+    invoice: string;
 }
 
 interface DeleteConfirmState {
@@ -288,7 +289,8 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
     const [filters, setFilters] = useState<ShipmentFilters>({
         status: 'Tümü',
         dateRange: 'Tümü',
-        customer: 'Tümü'
+        customer: 'Tümü',
+        invoice: 'Tümü'
     });
     const [sortBy, setSortBy] = useState<'shipment_date' | 'status' | 'customer'>('shipment_date');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -618,6 +620,12 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
             // Status filter
             if (filters.status !== 'Tümü' && shipment.status !== filters.status) {
                 return false;
+            }
+
+            // Invoice Status filter
+            if (filters.invoice !== 'Tümü') {
+                if (filters.invoice === 'Faturalananlar' && !shipment.isInvoiced) return false;
+                if (filters.invoice === 'Fatura Bekleyenler' && shipment.isInvoiced) return false;
             }
 
             // Date range filter

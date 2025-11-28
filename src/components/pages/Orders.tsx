@@ -79,6 +79,7 @@ const Orders = memo<OrdersProps>(
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Tümü');
+    const [invoiceFilter, setInvoiceFilter] = useState('Tümü');
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({
       isOpen: false,
       item: null,
@@ -388,6 +389,25 @@ const Orders = memo<OrdersProps>(
         filtered = filtered.filter((order) => order.status === statusFilter);
       }
 
+      // Invoice Status Filter
+      if (invoiceFilter !== 'Tümü') {
+          filtered = filtered.filter(order => {
+              const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+              let status = 'Sevk Bekliyor';
+
+              if (orderShipments.length > 0) {
+                  const allInvoiced = orderShipments.every(s => s.isInvoiced);
+                  const someInvoiced = orderShipments.some(s => s.isInvoiced);
+
+                  if (allInvoiced) status = 'Faturalandı';
+                  else if (someInvoiced) status = 'Kısmi Fatura';
+                  else status = 'Fatura Bekliyor';
+              }
+
+              return status === invoiceFilter;
+          });
+      }
+
       // Search filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -552,11 +572,22 @@ const Orders = memo<OrdersProps>(
               </option>
             ))}
           </select>
+          <select
+            value={invoiceFilter}
+            onChange={(e) => setInvoiceFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            <option value="Tümü">Fatura Durumu: Tümü</option>
+            <option value="Faturalandı">Faturalandı</option>
+            <option value="Kısmi Fatura">Kısmi Fatura</option>
+            <option value="Fatura Bekliyor">Fatura Bekliyor</option>
+            <option value="Sevk Bekliyor">Sevk Bekliyor</option>
+          </select>
         </div>
 
         <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
           {filteredOrders.length} sipariş gösteriliyor
-          {(searchQuery || statusFilter !== 'Tümü') && ` (${orders.length} toplam)`}
+          {(searchQuery || statusFilter !== 'Tümü' || invoiceFilter !== 'Tümü') && ` (${orders.length} toplam)`}
         </div>
 
         {/* Desktop Table View */}
