@@ -24,13 +24,15 @@ interface DocumentPreviewProps {
     products: Product[];
     /** Related order for shipment (optional) */
     relatedOrder?: Order;
+    /** All shipments list for calculating totals */
+    allShipments?: Shipment[];
 }
 
 /**
  * DocumentPreview component - Displays a formatted preview of a quote, order or shipment document
  */
 const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
-    ({ doc, logo, themeColor, showProductDescriptions, showUnitPrices, showVatDetails, customNotes, customers, products, relatedOrder }, ref) => {
+    ({ doc, logo, themeColor, showProductDescriptions, showUnitPrices, showVatDetails, customNotes, customers, products, relatedOrder, allShipments = [] }, ref) => {
         // Determine document type
         const isQuote = doc && 'teklif_tarihi' in doc;
         const isShipment = doc && 'shipment_date' in doc;
@@ -96,6 +98,41 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             const unitPrice = (item as any).unit_price || 0;
             const total = quantity * unitPrice;
 
+            // Shipment Calculations
+            let orderedQty = 0;
+            let remainingQty = 0;
+            
+            if (isShipment && relatedOrder) {
+                // Try to find matching item in order
+                // 1. Try by orderItemIndex if available
+                let orderItem;
+                if ((item as any).orderItemIndex !== undefined) {
+                    orderItem = relatedOrder.items[(item as any).orderItemIndex];
+                } 
+                // 2. Fallback: Try by productId (might be inaccurate if same product appears twice)
+                if (!orderItem) {
+                    orderItem = relatedOrder.items.find(oi => oi.productId === item.productId);
+                }
+                
+                if (orderItem) {
+                    orderedQty = orderItem.quantity;
+                    
+                    // Calculate total shipped so far for this item (including this shipment)
+                    const totalShipped = allShipments
+                        .filter(s => s.orderId === (doc as Shipment).orderId && !s.isDeleted)
+                        .reduce((sum, s) => {
+                            // Find matching item in this shipment
+                            const sItem = s.items.find(si => 
+                                si.productId === item.productId && 
+                                ((si as any).orderItemIndex !== undefined ? (si as any).orderItemIndex === (item as any).orderItemIndex : true)
+                            );
+                            return sum + (sItem?.quantity || 0);
+                        }, 0);
+                    
+                    remainingQty = Math.max(0, orderedQty - totalShipped);
+                }
+            }
+
             return (
                 <tr key={index} className="border-b border-gray-200">
                     <td className="py-1 px-2 text-center text-gray-500 text-xs">{index + 1}</td>
@@ -103,7 +140,18 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                         {product?.name || (item as any).productName || (item as any).product_name || 'Bilinmeyen Ürün'}
                         {showProductDescriptions && <p className="text-xs text-gray-500">{product?.description || ''}</p>}
                     </td>
-                    <td className="py-1 px-2 text-center text-sm text-gray-700">{quantity} {unit}</td>
+                    
+                    {/* Shipment Specific Columns */}
+                    {isShipment ? (
+                        <>
+                            <td className="py-1 px-2 text-center text-sm text-gray-500">{orderedQty > 0 ? `${orderedQty} ${unit}` : '-'}</td>
+                            <td className="py-1 px-2 text-center text-sm font-bold text-gray-900 bg-gray-50">{quantity} {unit}</td>
+                            <td className="py-1 px-2 text-center text-sm text-gray-500">{remainingQty} {unit}</td>
+                        </>
+                    ) : (
+                        // Standard Columns
+                        <td className="py-1 px-2 text-center text-sm text-gray-700">{quantity} {unit}</td>
+                    )}
                     
                     {!isShipment && showUnitPrices && (
                         <td className="py-1 px-2 text-right text-sm text-gray-700">
@@ -134,11 +182,25 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 {/* Header */}
                 <header className="flex justify-between items-start pb-6 border-b-2 mb-6" style={{ borderColor: themeColor }}>
                     <div className="w-1/2">
-                        {logo ? (
+                        {/* Check if logo is a valid URL/DataURI, otherwise fallback to text if it's just a placeholder path and file doesn't exist (browser handles broken image, but we can condition it) */}
+                        {logo && logo !== '/logo.png' ? ( // Assumes /logo.png might not exist yet, but if user uploads it replaces this string
                             <img src={logo} alt="Logo" className="h-20 mb-4 object-contain" />
-                        ) : (
-                            <h1 className="text-2xl font-bold text-gray-900 mb-2">{companyInfo.name}</h1>
-                        )}
+                        ) : logo === '/logo.png' ? (
+                             // Use a fallback or check if we want to display the text title if logo is missing
+                             // For now, we try to render img, if it fails user will see alt text or broken icon.
+                             // Better: if default, show Title. 
+                             // Actually, let's stick to the logic: if logo provided, show it.
+                             <img 
+                                src="/logo.png" 
+                                onError={(e) => {e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden');}} 
+                                alt="Logo" 
+                                className="h-20 mb-4 object-contain" 
+                             />
+                        ) : null}
+                         
+                        {/* Fallback Title if logo fails or not present */}
+                        <h1 className={`text-2xl font-bold text-gray-900 mb-2 ${logo && logo !== '/logo.png' ? 'hidden' : ''}`}>{companyInfo.name}</h1>
+
                         <div className="text-xs text-gray-600 leading-relaxed">
                             <p>{companyInfo.address}</p>
                             <p>{companyInfo.phone} | {companyInfo.email}</p>
@@ -203,7 +265,15 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                             <tr className="header-bg header-text">
                                 <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider rounded-tl-md">#</th>
                                 <th className="py-2 px-3 text-left text-xs font-bold uppercase tracking-wider w-1/2">Ürün / Hizmet</th>
-                                <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider">Miktar</th>
+                                {isShipment ? (
+                                    <>
+                                        <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider">Sipariş</th>
+                                        <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider bg-white/10">Sevk</th>
+                                        <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider">Kalan</th>
+                                    </>
+                                ) : (
+                                    <th className="py-2 px-3 text-center text-xs font-bold uppercase tracking-wider">Miktar</th>
+                                )}
                                 {!isShipment && showUnitPrices && <th className="py-2 px-3 text-right text-xs font-bold uppercase tracking-wider">Birim Fiyat</th>}
                                 {!isShipment && <th className="py-2 px-3 text-right text-xs font-bold uppercase tracking-wider rounded-tr-md">Toplam</th>}
                             </tr>

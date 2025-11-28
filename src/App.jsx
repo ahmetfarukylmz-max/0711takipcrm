@@ -820,7 +820,7 @@ const CrmApp = () => {
             case 'Admin':
                 return <Admin />;
             case 'belge-hazirla':
-                return <PdfGenerator doc={editingDocument} customers={customers} products={products} orders={orders} />;
+                return <PdfGenerator doc={editingDocument} customers={customers} products={products} orders={orders} shipments={shipments} />;
             default:
                 return (
                     <Dashboard

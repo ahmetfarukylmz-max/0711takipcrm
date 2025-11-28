@@ -13,13 +13,16 @@ interface PdfGeneratorProps {
     products: Product[];
     /** List of orders (needed for shipment context) */
     orders?: Order[];
+    /** List of shipments (needed for calculating remaining quantities) */
+    shipments?: Shipment[];
 }
 
 /**
  * PdfGenerator component - Generates customizable PDF documents from quotes, orders or shipments
  */
-const PdfGenerator = memo<PdfGeneratorProps>(({ doc, customers, products, orders = [] }) => {
-    const [logo, setLogo] = useState<string | null>(null);
+const PdfGenerator = memo<PdfGeneratorProps>(({ doc, customers, products, orders = [], shipments = [] }) => {
+    // Try to load default logo from public folder
+    const [logo, setLogo] = useState<string | null>('/logo.png'); 
     const [themeColor, setThemeColor] = useState<string>('#3b82f6');
     const [showProductDescriptions, setShowProductDescriptions] = useState<boolean>(true);
     const [showUnitPrices, setShowUnitPrices] = useState<boolean>(true);
@@ -202,6 +205,7 @@ const PdfGenerator = memo<PdfGeneratorProps>(({ doc, customers, products, orders
                             customers={customers}
                             products={products}
                             relatedOrder={relatedOrder}
+                            allShipments={shipments}
                         />
                     </div>
                 </div>
