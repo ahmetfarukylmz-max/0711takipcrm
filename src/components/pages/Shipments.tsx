@@ -280,6 +280,10 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
     const [currentShipment, setCurrentShipment] = useState<Shipment | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, shipment: null });
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    // Bulk Invoice State
+    const [isBulkInvoiceModalOpen, setIsBulkInvoiceModalOpen] = useState(false);
+    const [bulkInvoiceData, setBulkInvoiceData] = useState({ invoiceDate: new Date().toISOString().split('T')[0], invoiceNo: '' });
+
     const [searchQuery, setSearchQuery] = useState('');
     const [filters, setFilters] = useState<ShipmentFilters>({
         status: 'Tümü',
@@ -291,6 +295,32 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
 
     const handleDelivery = (shipmentId: string) => {
         onDelivery(shipmentId);
+    };
+
+    // Bulk Invoice Handlers
+    const handleBatchInvoice = () => {
+        setBulkInvoiceData({ invoiceDate: new Date().toISOString().split('T')[0], invoiceNo: '' });
+        setIsBulkInvoiceModalOpen(true);
+    };
+
+    const confirmBatchInvoice = () => {
+        const selectedShipments = activeShipments.filter(s => selectedItems.has(s.id));
+        
+        // Update each selected shipment
+        selectedShipments.forEach(shipment => {
+            if (!shipment.isInvoiced) { // Only update if not already invoiced (or force update?) - let's just update
+                onUpdate({
+                    ...shipment,
+                    isInvoiced: true,
+                    invoicedAt: new Date(bulkInvoiceData.invoiceDate).toISOString(),
+                    invoiceNotes: bulkInvoiceData.invoiceNo ? `${bulkInvoiceData.invoiceNo}` : shipment.invoiceNotes
+                });
+            }
+        });
+
+        toast.success(`${selectedItems.size} adet sevkiyat faturalandı olarak işaretlendi.`);
+        setIsBulkInvoiceModalOpen(false);
+        setSelectedItems(new Set()); // Clear selection
     };
 
     const handlePrintDeliveryNote = (shipment: Shipment) => {
@@ -656,16 +686,28 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Sevkiyat Yönetimi</h1>
                 {selectedItems.size > 0 && (
-                    <button
-                        onClick={handleBatchDelete}
-                        className="flex items-center flex-1 sm:flex-none bg-red-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-red-600 w-full sm:w-auto"
-                    >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        <span className="hidden sm:inline">Seçili {selectedItems.size} Sevkiyatı Sil</span>
-                        <span className="sm:hidden">Sil ({selectedItems.size})</span>
-                    </button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={handleBatchInvoice}
+                            className="flex items-center justify-center flex-1 sm:flex-none bg-green-600 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-green-700 w-full sm:w-auto"
+                        >
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="hidden sm:inline">Seçilileri Faturalandır</span>
+                            <span className="sm:hidden">Fatura ({selectedItems.size})</span>
+                        </button>
+                        <button
+                            onClick={handleBatchDelete}
+                            className="flex items-center justify-center flex-1 sm:flex-none bg-red-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-red-600 w-full sm:w-auto"
+                        >
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="hidden sm:inline">Sil</span>
+                            <span className="sm:hidden">Sil ({selectedItems.size})</span>
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -985,6 +1027,58 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         onCancel={() => setIsModalOpen(false)}
                     />
                 )}
+            </Modal>
+
+            <Modal
+                show={isBulkInvoiceModalOpen}
+                onClose={() => setIsBulkInvoiceModalOpen(false)}
+                title="Toplu Fatura İşaretle"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-300">
+                        Seçili <strong>{selectedItems.size}</strong> adet sevkiyatı faturalandı olarak işaretlemek üzeresiniz.
+                    </p>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Fatura Tarihi
+                        </label>
+                        <input
+                            type="date"
+                            value={bulkInvoiceData.invoiceDate}
+                            onChange={(e) => setBulkInvoiceData({ ...bulkInvoiceData, invoiceDate: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Fatura No / Açıklama (Opsiyonel)
+                        </label>
+                        <input
+                            type="text"
+                            value={bulkInvoiceData.invoiceNo}
+                            onChange={(e) => setBulkInvoiceData({ ...bulkInvoiceData, invoiceNo: e.target.value })}
+                            placeholder="Örn: GIB2023000000123"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button
+                            onClick={() => setIsBulkInvoiceModalOpen(false)}
+                            className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-400"
+                        >
+                            İptal
+                        </button>
+                        <button
+                            onClick={confirmBatchInvoice}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        >
+                            Onayla ve İşaretle
+                        </button>
+                    </div>
+                </div>
             </Modal>
 
             <ConfirmDialog

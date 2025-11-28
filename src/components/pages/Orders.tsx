@@ -592,6 +592,9 @@ const Orders = memo<OrdersProps>(
                 <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                   Durum
                 </th>
+                <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
+                  Fatura
+                </th>
                 <th className="p-3 text-sm font-semibold tracking-wide text-right text-gray-700 dark:text-gray-300">
                   İşlemler
                 </th>
@@ -612,6 +615,27 @@ const Orders = memo<OrdersProps>(
                       label: 'Sevk Et',
                       onClick: () => handleOpenShipmentModal(order),
                     });
+                  }
+
+                  // Invoice Status Logic
+                  const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+                  let invoiceStatusLabel = 'Sevk Bekliyor';
+                  let invoiceStatusClass = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+
+                  if (orderShipments.length > 0) {
+                      const allInvoiced = orderShipments.every(s => s.isInvoiced);
+                      const someInvoiced = orderShipments.some(s => s.isInvoiced);
+
+                      if (allInvoiced) {
+                          invoiceStatusLabel = 'Faturalandı';
+                          invoiceStatusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+                      } else if (someInvoiced) {
+                          invoiceStatusLabel = 'Kısmi Fatura';
+                          invoiceStatusClass = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+                      } else {
+                          invoiceStatusLabel = 'Fatura Bekliyor';
+                          invoiceStatusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+                      }
                   }
 
                   const cancelCheck = orderCancelChecks[order.id];
@@ -658,6 +682,13 @@ const Orders = memo<OrdersProps>(
                           className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg whitespace-nowrap ${getStatusClass(order.status)}`}
                         >
                           {order.status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm text-center">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg whitespace-nowrap ${invoiceStatusClass}`}
+                        >
+                          {invoiceStatusLabel}
                         </span>
                       </td>
                       <td className="p-3 text-sm text-right">
@@ -707,6 +738,27 @@ const Orders = memo<OrdersProps>(
               renderItem={(order, index, style) => {
                 const customer = customers.find((c) => c.id === order.customerId);
                 const cancelCheck = orderCancelChecks[order.id];
+
+                // Invoice Status Logic
+                const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+                let invoiceStatusLabel = '';
+                let invoiceStatusClass = '';
+
+                if (orderShipments.length > 0) {
+                    const allInvoiced = orderShipments.every(s => s.isInvoiced);
+                    const someInvoiced = orderShipments.some(s => s.isInvoiced);
+
+                    if (allInvoiced) {
+                        invoiceStatusLabel = 'Faturalandı';
+                        invoiceStatusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+                    } else if (someInvoiced) {
+                        invoiceStatusLabel = 'Kısmi Fatura';
+                        invoiceStatusClass = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+                    } else {
+                        invoiceStatusLabel = 'Fatura Bekliyor';
+                        invoiceStatusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+                    }
+                }
 
                 const mobileActions = [
                   {
@@ -758,11 +810,20 @@ const Orders = memo<OrdersProps>(
                       subtitle={`${formatDate(order.order_date)} • ${formatCurrency(order.total_amount, order.currency || 'TRY')}`}
                       onClick={() => handleOpenDetailModal(order)}
                       rightContent={
-                        <span
-                          className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
-                        >
-                          {order.status}
-                        </span>
+                        <div className="flex flex-col gap-1 items-end">
+                            <span
+                            className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
+                            >
+                            {order.status}
+                            </span>
+                            {invoiceStatusLabel && (
+                                <span
+                                className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${invoiceStatusClass}`}
+                                >
+                                {invoiceStatusLabel}
+                                </span>
+                            )}
+                        </div>
                       }
                       actions={
                         <div className="space-y-2">
