@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAKIP CRM - Görüşmeler Kanban Board (Satış Hunisi)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .kanban-card { transition: all 0.2s ease; }
+        .kanban-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .kanban-column { min-height: 600px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .hot-lead { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div class="min-h-screen">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-[1920px] mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🤝 Görüşmeler - Satış Hunisi</h1>
+                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">25 Görüşme</span>
+                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium">🎯 %60 Dönüşüm</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="dark:hidden">🌙</span>
+                            <span class="hidden dark:inline">☀️</span>
+                        </button>
+                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2">
+                            <span>+</span> Yeni Görüşme
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <input type="text" placeholder="🔍 Müşteri adı, ürün..." class="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                    <select class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                        <option>Tüm Görüşme Tipleri</option>
+                        <option>🆕 İlk Temas</option>
+                        <option>📊 Teklif Sunumu</option>
+                        <option>🔄 Takip</option>
+                        <option>📞 Telefon</option>
+                        <option>🏢 Ofis Ziyareti</option>
+                    </select>
+                    <select class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white">
+                        <option>Son 30 Gün</option>
+                        <option>Bu Hafta</option>
+                        <option>Bu Ay</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-[1920px] mx-auto px-6 py-6">
+            <div class="flex gap-4 overflow-x-auto custom-scrollbar pb-4">
+
+                <!-- İlgileniyor -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-green-50 dark:bg-green-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    İlgileniyor
+                                </h3>
+                                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm font-medium">15</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">🎯 Potansiyel: ₺1,250,000</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <!-- Card 1 - HOT LEAD -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border-2 border-green-400 dark:border-green-600 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">GÖR-2024-0445</span>
+                                    <span class="px-2 py-0.5 bg-red-500 text-white text-xs rounded font-bold hot-lead">🔥 HOT</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Omega Otomotiv A.Ş.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 27 Kas 2024</div>
+                                        <div class="mt-1">📍 Tip: Ofis Ziyareti</div>
+                                    </div>
+                                    <div class="p-2 bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded text-xs">
+                                        <div class="font-medium text-green-700 dark:text-green-300 mb-1">💰 Tahmini Ciro: ₺450,000</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            <div>• 18 ürün için teklif istedi</div>
+                                            <div>• Karar verici ile görüştük</div>
+                                            <div>• Bütçe onaylandı ✓</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-xs">
+                                        <div class="font-medium text-purple-700 dark:text-purple-300 mb-1">📦 İlgilendiği Ürünler (3):</div>
+                                        <div class="text-gray-600 dark:text-gray-400">Ürün A, Ürün B, Ürün C...</div>
+                                    </div>
+                                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded text-xs">
+                                        <div class="font-medium text-blue-700 dark:text-blue-300 mb-1">⏰ Sonraki Aksiyon:</div>
+                                        <div class="text-blue-600 dark:text-blue-400 font-medium">29 Kas 2024 - Teklif sunumu</div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg font-medium">📄 Teklif Oluştur</button>
+                                        <button class="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg">📞</button>
+                                        <button class="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white text-xs rounded-lg">✏️</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2 - Normal lead -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-green-200 dark:border-green-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">GÖR-2024-0446</span>
+                                    <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded">İlgileniyor</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Beta Gıda San.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 25 Kas 2024</div>
+                                        <div class="mt-1">📍 Tip: Telefon</div>
+                                    </div>
+                                    <div class="p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs">
+                                        <div class="font-medium text-green-700 dark:text-green-300 mb-1">💰 Tahmini: ₺150,000</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            <div>• Ürün fiyatları sordu</div>
+                                            <div>• Referans istedi</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                                        <div class="font-medium text-blue-700 dark:text-blue-300">⏰ Sonraki: 30 Kas - Takip araması</div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium">💬 Takip Et</button>
+                                        <button class="px-3 py-2 bg-green-600 text-white text-xs rounded-lg">📄</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 3 - Yeni lead -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-600 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">GÖR-2024-0447</span>
+                                    <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">🆕 Yeni</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Sigma Plastik Ltd.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 28 Kas 2024 (Bugün)</div>
+                                        <div class="mt-1">📍 Tip: İlk Temas</div>
+                                    </div>
+                                    <div class="p-2 bg-green-50 dark:bg-green-900/20 rounded text-xs">
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            <div>• Website formu üzerinden ulaştı</div>
+                                            <div>• Plastik ham madde arıyor</div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium">📞 Ara</button>
+                                        <button class="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white text-xs rounded-lg">✏️</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 12 görüşme</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teklif Bekliyor -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-yellow-50 dark:bg-yellow-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                                    Teklif Bekliyor
+                                </h3>
+                                <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-sm font-medium">7</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">📊 Potansiyel: ₺680,000</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <!-- Card 1 - Teklif hazırlanacak -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border-2 border-yellow-300 dark:border-yellow-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">GÖR-2024-0441</span>
+                                    <span class="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded font-medium">⏰ ACİL</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Delta Elektronik</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 24 Kas 2024</div>
+                                        <div class="mt-1">📍 Ofis Ziyareti</div>
+                                    </div>
+                                    <div class="p-2 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded text-xs">
+                                        <div class="font-medium text-yellow-700 dark:text-yellow-300 mb-1">💰 Tahmini: ₺280,000</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            <div>• Detaylı teklif istedi</div>
+                                            <div>• 29 Kas'a kadar bekleniyor!</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded text-xs">
+                                        <div class="font-medium text-purple-700 dark:text-purple-300 mb-1">📦 Talep Edilen (24 ürün):</div>
+                                        <div class="text-gray-600 dark:text-gray-400">Elektronik komponentler, kablolar...</div>
+                                    </div>
+                                    <div class="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded text-xs">
+                                        <div class="font-medium text-yellow-800 dark:text-yellow-300 mb-2">⚡ Teklif hazırla! (1 gün kaldı)</div>
+                                        <button class="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium">📄 Hemen Teklif Oluştur</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2 - Teklif sunuldu -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-yellow-200 dark:border-yellow-700 cursor-move">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">GÖR-2024-0438</span>
+                                    <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">📄 Teklif Sunuldu</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Alfa Kimya Ltd.</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 22 Kas 2024</div>
+                                        <div class="mt-1">📍 Teklif Sunumu</div>
+                                    </div>
+                                    <div class="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs">
+                                        <div class="font-medium text-yellow-700 dark:text-yellow-300 mb-1">💰 Teklif: ₺124,500</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            <div>• Teklif sunuldu (25 Kas)</div>
+                                            <div>• Değerlendirme aşamasında</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <span>📄</span>
+                                            <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">TEK-2024-0847</a>
+                                            <span class="text-gray-500">oluşturuldu</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                                        <div class="font-medium text-blue-700 dark:text-blue-300">⏰ Sonraki: 30 Kas - Takip</div>
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium">💬 Geri Bildirim Al</button>
+                                        <button class="px-3 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white text-xs rounded-lg">📄</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">+ 5 görüşme</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- İlgilenmiyor -->
+                <div class="flex-shrink-0 w-96 kanban-column">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+                        <div class="p-4 border-b bg-red-50 dark:bg-red-900/20 rounded-t-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                                    İlgilenmiyor
+                                </h3>
+                                <span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm font-medium">3</span>
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">📉 Kayıp Fırsat: ₺95,000</div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                            <!-- Card 1 - Fiyat yüksek -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-red-200 dark:border-red-700 cursor-move opacity-75">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded line-through">GÖR-2024-0435</span>
+                                    <span class="px-2 py-0.5 bg-red-600 text-white text-xs rounded">❌ Kayıp</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Gamma Tekstil</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 20 Kas 2024</div>
+                                        <div class="mt-1">📍 Teklif Sunumu</div>
+                                    </div>
+                                    <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-xs">
+                                        <div class="font-medium text-red-700 dark:text-red-300 mb-1">Kayıp Sebep:</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            💸 "Fiyatlar yüksek, rakipten aldık"
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                                        <div class="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                            <span>📌</span>
+                                            <span>Hatırlatma: 3 ay sonra tekrar ulaş</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 flex gap-2">
+                                        <button class="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-lg font-medium">🔄 Hatırlatma Ayarla</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2 - Bütçe yok -->
+                            <div class="kanban-card bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm border border-red-200 dark:border-red-700 cursor-move opacity-75">
+                                <div class="flex items-start justify-between mb-2">
+                                    <span class="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded line-through">GÖR-2024-0433</span>
+                                    <span class="px-2 py-0.5 bg-red-600 text-white text-xs rounded">❌</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Epsilon İnşaat</h4>
+                                <div class="space-y-2">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div>🗓️ Görüşme: 18 Kas 2024</div>
+                                    </div>
+                                    <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-xs">
+                                        <div class="font-medium text-red-700 dark:text-red-300 mb-1">Kayıp Sebep:</div>
+                                        <div class="text-gray-700 dark:text-gray-300">
+                                            📊 "Bütçe yetersiz, proje ertelendi"
+                                        </div>
+                                    </div>
+                                    <div class="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-xs">
+                                        <div class="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+                                            <span>⏰</span>
+                                            <span>Proje 2025 Q2'de başlayacak</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-8 text-gray-400 text-sm">
+                                <div class="text-4xl mb-2">📊</div>
+                                <p>Kayıp fırsatları</p>
+                                <p class="text-xs mt-1">analiz edip iyileştirin</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg">
+            <div class="max-w-[1920px] mx-auto px-6 py-3">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-6">
+                        <div><span class="text-gray-500 dark:text-gray-400">Toplam Görüşme:</span> <span class="font-bold text-gray-900 dark:text-white">25</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">İlgileniyor:</span> <span class="font-bold text-green-600 dark:text-green-400">15 (₺1.25M)</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Teklif Bekliyor:</span> <span class="font-bold text-yellow-600 dark:text-yellow-400">7 (₺680K)</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Dönüşüm Oranı:</span> <span class="font-bold text-blue-600 dark:text-blue-400">%60</span></div>
+                        <div><span class="text-gray-500 dark:text-gray-400">Kayıp:</span> <span class="font-bold text-red-600 dark:text-red-400">3 (₺95K)</span></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
