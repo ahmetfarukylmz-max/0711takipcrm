@@ -357,6 +357,93 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
 };
 
 /**
+ * Delete shipment, revert stock if delivered, and update order status
+ * @param {string} userId - User ID
+ * @param {string} shipmentId - Shipment ID
+ * @param {string} userEmail - User email for logging
+ * @returns {Promise<boolean>} Success status
+ */
+export const deleteShipment = async (userId, shipmentId, userEmail = 'system') => {
+  if (!userId || !shipmentId) return false;
+
+  try {
+    // 1. Get shipment details
+    const shipmentRef = doc(db, `users/${userId}/shipments`, shipmentId);
+    const shipmentDoc = await getDoc(shipmentRef);
+
+    if (!shipmentDoc.exists()) {
+      logger.error('Shipment not found:', shipmentId);
+      return false;
+    }
+
+    const shipment = shipmentDoc.data();
+
+    // 2. If shipment was delivered, revert stock changes (add back to inventory)
+    if (shipment.status === 'Teslim Edildi' && shipment.items && Array.isArray(shipment.items)) {
+      for (const item of shipment.items) {
+        await updateProductStock(userId, item.productId, item.quantity, { // Positive quantity to add back
+          type: 'Sevkiyat İptali/Silme',
+          relatedId: shipmentId,
+          relatedType: 'shipment',
+          relatedReference: shipment.orderNumber || shipment.orderId,
+          notes: `Sevkiyat silindi, stok iade edildi: ${shipment.customerName || 'Müşteri'}`,
+          createdBy: userId,
+          createdByEmail: userEmail,
+        });
+      }
+    }
+
+    // 3. Mark shipment as deleted
+    await updateDoc(shipmentRef, {
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      deletedBy: userId,
+      deletedByEmail: userEmail
+    });
+
+    // 4. Update related order status
+    if (shipment.orderId) {
+      const orderRef = doc(db, `users/${userId}/orders`, shipment.orderId);
+      const orderDoc = await getDoc(orderRef);
+      
+      if (orderDoc.exists()) {
+        const order = orderDoc.data();
+        // If order was completed, revert it to 'Hazırlanıyor' or 'Bekliyor'
+        // Ideally we should check if there are other active shipments, but reverting to 'Hazırlanıyor' is safe
+        // as the user can create a new shipment to complete it again.
+        if (order.status === 'Tamamlandı') {
+           // Check if there are ANY other delivered shipments remaining
+           const shipmentsRef = collection(db, `users/${userId}/shipments`);
+           const q = query(shipmentsRef, where('orderId', '==', shipment.orderId), where('isDeleted', '==', false), where('status', '==', 'Teslim Edildi'));
+           const snapshot = await getDocs(q);
+           
+           // If no delivered shipments remain, maybe 'Bekliyor'? If some remain, 'Hazırlanıyor'.
+           // To simplify, 'Hazırlanıyor' is a good fallback for partial state.
+           const newStatus = snapshot.empty ? 'Hazırlanıyor' : 'Hazırlanıyor'; 
+           
+           await updateDoc(orderRef, {
+             status: newStatus,
+             updatedAt: new Date().toISOString()
+           });
+        }
+      }
+    }
+
+    // 5. Log activity
+    await logActivity(userId, 'DELETE_SHIPMENT', {
+      shipmentId,
+      orderId: shipment.orderId,
+      message: `Sevkiyat silindi (Stok iadesi: ${shipment.status === 'Teslim Edildi' ? 'Evet' : 'Hayır'})`
+    });
+
+    return true;
+  } catch (error) {
+    logger.error('Error deleting shipment:', error);
+    return false;
+  }
+};
+
+/**
  * Soft delete a document (marks as deleted instead of removing)
  * @param {string} userId - User ID
  * @param {string} collectionName - Collection name
