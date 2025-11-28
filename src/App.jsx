@@ -619,15 +619,25 @@ const CrmApp = () => {
             itemName: `${customerName} - Sevkiyat`,
             itemType: 'sevkiyat',
             onConfirm: () => {
-                deleteDocument(user.uid, 'shipments', id).then(() => {
-                    logUserActivity('DELETE_SHIPMENT', { message: `${customerName} müşterisinin sevkiyatı silindi` });
-                    showUndoableDelete(
-                        `${customerName} müşterisinin sevkiyatı silindi`,
-                        () => {
-                            undoDelete(user.uid, 'shipments', id);
-                            logUserActivity('UNDO_DELETE_SHIPMENT', { message: `Sevkiyat geri alındı: ${customerName}` });
+                // Use specialized delete function that handles stock reversion and order status
+                import('./services/firestoreService').then(({ deleteShipment }) => {
+                    deleteShipment(user.uid, id, user.email).then((success) => {
+                        if (success) {
+                            toast.success('Sevkiyat silindi ve stoklar iade edildi.');
+                            // Note: deleteShipment handles logging, so we don't need to log manually here
+                            // But we keep undo functionality for UI consistency (though complex to undo stock changes fully)
+                            showUndoableDelete(
+                                `${customerName} müşterisinin sevkiyatı silindi`,
+                                () => {
+                                    // Undo logic is complex for shipment (stock reversion etc.), for now just basic restore
+                                    undoDelete(user.uid, 'shipments', id);
+                                    logUserActivity('UNDO_DELETE_SHIPMENT', { message: `Sevkiyat geri alındı: ${customerName}` });
+                                }
+                            );
+                        } else {
+                            toast.error('Sevkiyat silinirken bir hata oluştu.');
                         }
-                    );
+                    });
                 });
             }
         });
