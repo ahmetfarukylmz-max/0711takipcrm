@@ -747,6 +747,18 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                         </select>
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fatura Durumu</label>
+                        <select
+                            value={filters.invoice}
+                            onChange={(e) => setFilters({ ...filters, invoice: e.target.value })}
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        >
+                            <option value="Tümü">Tümü</option>
+                            <option value="Fatura Bekleyenler">Fatura Bekleyenler</option>
+                            <option value="Faturalananlar">Faturalananlar</option>
+                        </select>
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarih</label>
                         <select
                             value={filters.dateRange}
