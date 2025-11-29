@@ -241,21 +241,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 />
             </div>
 
-            {/* Category Selection */}
-            <FormSelect
-                label="Kategori (Opsiyonel)"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-            >
-                <option value="">Kategori Seçiniz</option>
-                {PRODUCT_CATEGORIES.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                    </option>
-                ))}
-            </FormSelect>
-
             {/* Stock Management */}
             <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2">
