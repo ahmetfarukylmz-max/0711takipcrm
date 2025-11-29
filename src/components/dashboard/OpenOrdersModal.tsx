@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
-import type { Order, Customer } from '../../types';
+import type { Order, Customer, Shipment } from '../../types';
 
 interface OpenOrdersModalProps {
     /** List of open orders (Bekliyor, Hazırlanıyor) */
     orders: Order[];
     /** List of customers */
     customers: Customer[];
+    /** List of shipments to check partial delivery status */
+    shipments: Shipment[];
     /** Callback to navigate to Orders page */
     onViewAllOrders: () => void;
 }
@@ -17,6 +19,7 @@ interface OpenOrdersModalProps {
 const OpenOrdersModal: React.FC<OpenOrdersModalProps> = ({
     orders,
     customers,
+    shipments,
     onViewAllOrders
 }) => {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -102,6 +105,9 @@ const OpenOrdersModal: React.FC<OpenOrdersModalProps> = ({
                         const customer = customers.find(c => c.id === order.customerId);
                         const daysUntil = order.delivery_date ? getDaysUntilDelivery(order.delivery_date) : null;
                         const isExpanded = expandedOrder === order.id;
+                        
+                        // Check for partial shipments
+                        const hasShipments = shipments.some(s => s.orderId === order.id && !s.isDeleted);
 
                         return (
                             <div
@@ -128,12 +134,17 @@ const OpenOrdersModal: React.FC<OpenOrdersModalProps> = ({
                                                     #{order.id.slice(-6)}
                                                 </span>
                                             </p>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                <span className="font-medium">Durum:</span>{' '}
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-gray-600 dark:text-gray-400 font-medium">Durum:</span>
                                                 <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${getStatusColor(order.status)}`}>
                                                     {order.status}
                                                 </span>
-                                            </p>
+                                                {hasShipments && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                                        📦 Kısmi Sevk
+                                                    </span>
+                                                )}
+                                            </div>
                                             {order.delivery_date && daysUntil !== null && (
                                                 <p className={`font-medium ${getUrgencyTextColor(daysUntil)}`}>
                                                     <span className="font-medium">Teslim:</span>{' '}

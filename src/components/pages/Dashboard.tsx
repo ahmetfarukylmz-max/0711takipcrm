@@ -565,6 +565,7 @@ const Dashboard = memo<DashboardProps>(({
                 <OpenOrdersModal
                     orders={openOrders}
                     customers={customers}
+                    shipments={shipments}
                     onViewAllOrders={() => {
                         setShowOpenOrdersModal(false);
                         setActivePage('Siparişler');
