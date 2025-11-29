@@ -5,7 +5,10 @@ import FormTextarea from '../common/FormTextarea';
 import { currencies, DEFAULT_CURRENCY } from '../../constants';
 import type { Product, Currency } from '../../types';
 import { sanitizeText } from '../../utils/sanitize';
-import { PRODUCT_CATEGORIES } from '../../utils/categories';
+import { PRODUCT_CATEGORIES, getCategoryById } from '../../utils/categories';
+import { getNextProductCode } from '../../services/counterService';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 interface ProductFormProps {
     /** Existing product to edit (undefined for new product) */
@@ -39,6 +42,8 @@ interface ProductFormData {
  * ProductForm component - Form for creating/editing products
  */
 const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) => {
+    const { user } = useAuth();
+    const [isGeneratingCode, setIsGeneratingCode] = useState(false);
     const [formData, setFormData] = useState<ProductFormData>({
         name: product?.name || '',
         code: product?.code || '',
@@ -76,6 +81,32 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         }
 
         setFormData({ ...formData, [name]: sanitizedValue });
+    };
+
+    const handleGenerateCode = async () => {
+        if (!user) return;
+        
+        if (!formData.category) {
+            toast.error('Lütfen önce bir kategori seçin');
+            return;
+        }
+
+        const category = getCategoryById(formData.category);
+        if (!category || !category.prefix) {
+            toast.error('Seçilen kategori için otomatik kod desteği yok (Kısaltma tanımlanmamış)');
+            return;
+        }
+
+        setIsGeneratingCode(true);
+        try {
+            const newCode = await getNextProductCode(user.uid, category.prefix);
+            setFormData(prev => ({ ...prev, code: newCode }));
+            toast.success(`Yeni kod oluşturuldu: ${newCode}`);
+        } catch (error) {
+            toast.error('Kod oluşturulurken hata oluştu');
+        } finally {
+            setIsGeneratingCode(false);
+        }
     };
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -127,12 +158,33 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 onChange={handleChange}
                 required
             />
-            <FormInput
-                label="Ürün Kodu"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-            />
+            
+            {/* Ürün Kodu Alanı ve Oto Kod Butonu */}
+            <div className="flex items-end gap-2">
+                <div className="flex-1">
+                    <FormInput
+                        label="Ürün Kodu"
+                        name="code"
+                        value={formData.code}
+                        onChange={handleChange}
+                        placeholder="Örn: GLV-001 (Boş bırakılabilir)"
+                    />
+                </div>
+                <button
+                    type="button"
+                    onClick={handleGenerateCode}
+                    disabled={isGeneratingCode || !formData.category}
+                    className={`mb-4 px-3 py-2.5 rounded-md text-sm font-medium transition-colors border ${
+                        !formData.category
+                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+                    }`}
+                    title={!formData.category ? "Önce kategori seçiniz" : "Otomatik kod oluştur"}
+                >
+                    {isGeneratingCode ? '...' : '⚡ Oto Kod'}
+                </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <FormSelect
                     label="Birim"

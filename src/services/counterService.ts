@@ -118,6 +118,54 @@ export const getNextQuoteNumber = async (userId: string): Promise<string> => {
 };
 
 /**
+ * Get next product code based on category prefix
+ * @param userId - User ID
+ * @param prefix - Category prefix (e.g., "GLV", "DKP")
+ * @returns Formatted product code (e.g., "GLV-001")
+ */
+export const getNextProductCode = async (userId: string, prefix: string): Promise<string> => {
+  if (!userId) throw new Error('User ID is required');
+  if (!prefix) return '';
+
+  const counterRef = doc(db, `users/${userId}/counters/product_${prefix}`);
+
+  try {
+    // Use transaction to ensure atomic increment
+    const result = await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+
+      let currentValue = 1;
+
+      if (counterDoc.exists()) {
+        const data = counterDoc.data();
+        currentValue = (data.value || 0) + 1;
+      }
+
+      // Update counter
+      transaction.set(
+        counterRef,
+        {
+          value: currentValue,
+          lastUpdated: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+
+      return currentValue;
+    });
+
+    // Format the number (e.g., 001)
+    const paddedNumber = result.toString().padStart(3, '0');
+    return `${prefix}-${paddedNumber}`;
+  } catch (error) {
+    logger.error(`Error getting next product code for ${prefix}:`, error);
+    // Fallback: random suffix to avoid blocking
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${prefix}-${randomSuffix}`;
+  }
+};
+
+/**
  * Initialize counters for a new user
  * @param userId - User ID
  */

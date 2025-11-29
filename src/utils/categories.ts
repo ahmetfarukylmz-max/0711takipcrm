@@ -8,6 +8,7 @@ export interface CategoryDefinition {
   id: string;
   name: string;
   icon?: string;
+  prefix?: string;
 }
 
 /**
@@ -17,32 +18,38 @@ export const PRODUCT_CATEGORIES: CategoryDefinition[] = [
   {
     id: 'galvaniz',
     name: 'Galvaniz',
-    icon: '🔷'
+    icon: '🔷',
+    prefix: 'GLV'
   },
   {
     id: 'dkp',
     name: 'DKP',
-    icon: '⚪'
+    icon: '⚪',
+    prefix: 'DKP'
   },
   {
     id: 'siyah',
     name: 'Siyah',
-    icon: '⚫'
+    icon: '⚫',
+    prefix: 'SYH'
   },
   {
     id: 'boyali',
     name: 'Boyalı',
-    icon: '🎨'
+    icon: '🎨',
+    prefix: 'BYL'
   },
   {
     id: 'baklavali-sac',
     name: 'Baklavalı Sac',
-    icon: '◆'
+    icon: '◆',
+    prefix: 'BKL'
   },
   {
     id: 'hrp',
     name: 'HRP',
-    icon: '🔶'
+    icon: '🔶',
+    prefix: 'HRP'
   }
 ];
 
