@@ -62,7 +62,14 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
 
         const updatedShipment: Partial<Shipment> = {
             ...shipment,
-            ...formData,
+            // If readOnly (Delivered), only update invoice fields
+            ...(readOnly ? {} : {
+                shipment_date: formData.shipment_date,
+                carrier: formData.carrier,
+                notes: formData.notes,
+            }),
+            isInvoiced: formData.isInvoiced,
+            invoiceNotes: formData.invoiceNotes,
             // Fatura kesildi işaretlenmişse ve daha önce işaretlenmemişse, tarihi kaydet
             invoicedAt: formData.isInvoiced && !shipment.isInvoiced
                 ? new Date().toISOString()
@@ -76,6 +83,11 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">Sevkiyat Bilgileri</h3>
+                {readOnly && (
+                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-sm rounded-lg border border-blue-200 dark:border-blue-800">
+                        ℹ️ Bu sevkiyat teslim edildiği için sadece fatura bilgileri güncellenebilir.
+                    </div>
+                )}
 
                 <div className="space-y-4">
                     <div>
@@ -124,7 +136,7 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                         />
                     </div>
 
-                    {/* Fatura Durumu */}
+                    {/* Fatura Durumu - Always Editable */}
                     <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                         <div className="flex items-center gap-3">
                             <input
@@ -133,10 +145,9 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                                 name="isInvoiced"
                                 checked={formData.isInvoiced}
                                 onChange={handleCheckboxChange}
-                                disabled={readOnly}
-                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             />
-                            <label htmlFor="isInvoiced" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="isInvoiced" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
                                 Fatura kesildi
                             </label>
                             {formData.isInvoiced && shipment.invoicedAt && (
@@ -157,8 +168,7 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                                     value={formData.invoiceNotes}
                                     onChange={handleChange}
                                     placeholder="Fatura no, ek bilgiler..."
-                                    disabled={readOnly}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                         )}
@@ -229,14 +239,13 @@ const ShipmentEditForm: React.FC<ShipmentEditFormProps> = ({ shipment, orders = 
                 >
                     {readOnly ? 'Kapat' : 'İptal'}
                 </button>
-                {!readOnly && (
-                    <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                    >
-                        Kaydet
-                    </button>
-                )}
+                
+                <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                    {readOnly ? 'Fatura Bilgisini Kaydet' : 'Kaydet'}
+                </button>
             </div>
         </form>
     );
