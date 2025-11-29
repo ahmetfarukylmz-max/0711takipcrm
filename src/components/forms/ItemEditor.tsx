@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FormInput from '../common/FormInput';
 import FormSelect from '../common/FormSelect';
+import ProductSelector from './ProductSelector';
 import { TrashIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
 import LotSelectionDialog from '../costing/LotSelectionDialog';
@@ -41,15 +42,15 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
 
     const handleAddItem = () => {
         if (products.length > 0) {
-            const firstProduct = products[0];
+            // Start with empty item to force user to select product
             setItems([
                 ...items,
                 {
-                    productId: firstProduct.id,
-                    productName: firstProduct.name,
+                    productId: '',
+                    productName: '',
                     quantity: 1,
-                    unit: firstProduct.unit,
-                    unit_price: firstProduct.selling_price
+                    unit: 'Kg',
+                    unit_price: 0
                 }
             ]);
         }
@@ -218,17 +219,12 @@ const ItemEditor: React.FC<ItemEditorProps> = ({ items, setItems, products, pric
                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 sm:hidden">
                                 Ürün
                             </label>
-                            <FormSelect
+                            <ProductSelector
+                                products={products}
                                 value={item.productId}
-                                onChange={e => handleItemChange(index, 'productId', e.target.value)}
+                                onChange={(value) => handleItemChange(index, 'productId', value)}
                                 disabled={priceOnlyMode}
-                            >
-                                {products.map(p => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name}
-                                    </option>
-                                ))}
-                            </FormSelect>
+                            />
                         </div>
 
                         {/* Miktar, Birim, Fiyat - Mobilde yan yana */}
