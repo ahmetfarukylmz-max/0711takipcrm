@@ -37,6 +37,7 @@ interface MeetingFormData {
     status: string;
     meetingType: string;
     next_action_date: string;
+    next_action_type: string;
     next_action_notes: string;
 }
 
@@ -69,6 +70,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
         status: meeting?.status || 'Planlandı',
         meetingType: (meeting as any)?.meetingType || 'İlk Temas',
         next_action_date: meeting?.next_action_date || '',
+        next_action_type: meeting?.next_action_type || 'Telefonla Arama',
         next_action_notes: meeting?.next_action_notes || ''
     });
 
@@ -137,6 +139,7 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                 outcome: formData.outcome as any,
                 status: formData.status,
                 next_action_date: formData.next_action_date || undefined,
+                next_action_type: formData.next_action_type || undefined,
                 next_action_notes: formData.next_action_notes || undefined
             };
 
@@ -344,26 +347,49 @@ const MeetingForm: React.FC<MeetingFormProps> = ({
                     <option>Teklif Bekliyor</option>
                     <option>Sonra Değerlendirecek</option>
                     <option>İlgilenmiyor</option>
+                    <option>Satışa Dönüştü (Kazanıldı)</option>
+                    <option>Kaybedildi</option>
                     <option>Tahsilat</option>
                 </FormSelect>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
-                    <FormInput
-                        label="Sonraki Eylem Tarihi"
-                        name="next_action_date"
-                        type="date"
-                        value={formData.next_action_date}
-                        onChange={handleChange}
-                        disabled={readOnly}
-                    />
-                    <FormInput
-                        label="Sonraki Eylem Notu"
-                        name="next_action_notes"
-                        value={formData.next_action_notes}
-                        onChange={handleChange}
-                        placeholder="Örn: Teklifi hatırlat"
-                        disabled={readOnly}
-                    />
+                
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 mt-4">
+                    <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
+                        <span>📅</span> Sonraki Adım Planla (Otomatik Hatırlatma)
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <FormSelect
+                            label="Eylem Tipi"
+                            name="next_action_type"
+                            value={formData.next_action_type}
+                            onChange={handleChange}
+                            disabled={readOnly}
+                        >
+                            <option>Telefonla Arama</option>
+                            <option>E-posta Gönder</option>
+                            <option>WhatsApp Mesajı</option>
+                            <option>Müşteri Ziyareti</option>
+                            <option>Online Toplantı</option>
+                            <option>Teklif Hazırla</option>
+                        </FormSelect>
+                        <FormInput
+                            label="Tarih"
+                            name="next_action_date"
+                            type="date"
+                            value={formData.next_action_date}
+                            onChange={handleChange}
+                            disabled={readOnly}
+                        />
+                        <FormInput
+                            label="Not / Konu"
+                            name="next_action_notes"
+                            value={formData.next_action_notes}
+                            onChange={handleChange}
+                            placeholder="Örn: Teklifi hatırlat"
+                            disabled={readOnly}
+                        />
+                    </div>
                 </div>
+
                 <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
                     <div className="flex flex-col sm:flex-row gap-3">
                         {!readOnly && onCreateQuote && inquiredProducts.length > 0 && formData.customerId && (

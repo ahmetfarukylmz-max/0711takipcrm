@@ -66,14 +66,21 @@ const UpcomingActionsModal: React.FC<UpcomingActionsModalProps> = ({
     };
 
     /**
-     * Get meeting type icon
+     * Get action type icon
      */
-    const getMeetingTypeIcon = (type?: string): string => {
-        if (!type) return '📞';
+    const getActionTypeIcon = (type?: string): string => {
+        if (!type) return '📅';
+        if (type === 'Telefonla Arama') return '📞';
+        if (type === 'E-posta Gönder') return '📧';
+        if (type === 'WhatsApp Mesajı') return '💬';
+        if (type === 'Müşteri Ziyareti') return '🤝';
+        if (type === 'Online Toplantı') return '💻';
+        if (type === 'Teklif Hazırla') return '📝';
+        
+        // Fallback to meeting types
         if (type.includes('İlk')) return '👋';
         if (type.includes('Teklif')) return '📄';
-        if (type.includes('Takip')) return '🔄';
-        return '📞';
+        return '📅';
     };
 
     /**
@@ -125,6 +132,7 @@ const UpcomingActionsModal: React.FC<UpcomingActionsModalProps> = ({
                 {sortedMeetings.map((meeting) => {
                     const customer = customers.find(c => c.id === meeting.customerId);
                     const daysUntil = getDaysUntil(meeting.next_action_date!);
+                    const actionType = meeting.next_action_type || meeting.meetingType || 'Genel Takip';
 
                     return (
                         <div
@@ -135,19 +143,23 @@ const UpcomingActionsModal: React.FC<UpcomingActionsModalProps> = ({
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-lg">{getMeetingTypeIcon(meeting.meetingType)}</span>
-                                        <span className="text-lg">{getUrgencyIcon(daysUntil)}</span>
+                                        <span className="text-xl">{getActionTypeIcon(actionType)}</span>
                                         <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                                             {customer?.name || 'Bilinmeyen Müşteri'}
                                         </h3>
+                                        {daysUntil <= 3 && (
+                                            <span className="text-lg animate-pulse">{getUrgencyIcon(daysUntil)}</span>
+                                        )}
                                     </div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        {meeting.meetingType || 'Görüşme'} •
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                        {actionType}
+                                    </p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
                                         {formatDate(meeting.next_action_date!)}
                                         {meeting.meeting_time && ` • ${meeting.meeting_time}`}
                                     </p>
                                     <p className={`text-xs font-bold mt-1 ${getUrgencyTextColor(daysUntil)}`}>
-                                        {getUrgencyIcon(daysUntil)} {getTimeText(daysUntil).toUpperCase()}
+                                        {getTimeText(daysUntil).toUpperCase()}
                                     </p>
                                 </div>
                             </div>
@@ -157,7 +169,7 @@ const UpcomingActionsModal: React.FC<UpcomingActionsModalProps> = ({
                                 {meeting.next_action_notes && (
                                     <div className="bg-white dark:bg-gray-800 rounded p-3 border border-gray-200 dark:border-gray-600">
                                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                            📝 Eylem Notu:
+                                            📝 Konu / Not:
                                         </p>
                                         <p className="text-sm text-gray-900 dark:text-gray-100">
                                             {meeting.next_action_notes}
@@ -168,16 +180,10 @@ const UpcomingActionsModal: React.FC<UpcomingActionsModalProps> = ({
                                 {/* Meeting Info */}
                                 <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                                     {meeting.notes && (
-                                        <p><span className="font-medium">Not:</span> {meeting.notes}</p>
+                                        <p><span className="font-medium">Görüşme Notu:</span> {meeting.notes.substring(0, 50)}{meeting.notes.length > 50 ? '...' : ''}</p>
                                     )}
                                     {meeting.outcome && (
                                         <p><span className="font-medium">Sonuç:</span> {meeting.outcome}</p>
-                                    )}
-                                    {customer?.phone && (
-                                        <p><span className="font-medium">Telefon:</span> {customer.phone}</p>
-                                    )}
-                                    {customer?.email && (
-                                        <p><span className="font-medium">E-posta:</span> {customer.email}</p>
                                     )}
                                 </div>
                             </div>

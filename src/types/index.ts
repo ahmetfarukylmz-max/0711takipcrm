@@ -236,6 +236,7 @@ export interface Meeting {
   outcome?: MeetingOutcome;
   notes?: string;
   next_action_date?: string;
+  next_action_type?: string; // Eylem Tipi (Arama, Ziyaret vb.)
   next_action_notes?: string;
   status?: string;
   inquiredProducts?: InquiredProduct[]; // Products customer asked about
