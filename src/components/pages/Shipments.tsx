@@ -880,10 +880,6 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                         label: '📄 İrsaliye Yazdır',
                                                         onClick: () => handlePrintDeliveryNote(shipment)
                                                     },
-                                                    {
-                                                        label: '👁️ Detay Görüntüle',
-                                                        onClick: () => handleOpenModal(shipment)
-                                                    },
                                                     ...(shipment.status !== 'Teslim Edildi' && shipment.status !== 'İptal Edildi' && shipment.status !== 'İade Edildi' ? [{
                                                         label: `${getNextStatusIcon(shipment.status)} ${getNextStatusText(shipment.status)}`,
                                                         onClick: () => handleQuickStatusUpdate(shipment)
@@ -897,7 +893,7 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                         onClick: () => handleCancelShipment(shipment)
                                                     }] : []),
                                                     {
-                                                        label: shipment.status === 'Teslim Edildi' ? '📋 Görüntüle' : '✏️ Düzenle',
+                                                        label: shipment.status === 'Teslim Edildi' ? '📋 Detay/Fatura' : '✏️ Düzenle',
                                                         onClick: () => handleOpenModal(shipment)
                                                     },
                                                     {
