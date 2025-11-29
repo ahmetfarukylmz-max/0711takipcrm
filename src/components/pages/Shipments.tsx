@@ -892,10 +892,25 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                         label: '🚫 Sevkiyatı İptal Et',
                                                         onClick: () => handleCancelShipment(shipment)
                                                     }] : []),
-                                                    {
-                                                        label: shipment.status === 'Teslim Edildi' ? '📋 Detay/Fatura' : '✏️ Düzenle',
-                                                        onClick: () => handleOpenModal(shipment)
-                                                    },
+                                                    // Düzenle / Görüntüle / Fatura Ayrımı
+                                                    ...(shipment.status === 'Teslim Edildi' 
+                                                        ? [
+                                                            {
+                                                                label: '👁️ Detay Görüntüle',
+                                                                onClick: () => handleOpenModal(shipment)
+                                                            },
+                                                            {
+                                                                label: '🧾 Fatura Düzenle',
+                                                                onClick: () => handleOpenModal(shipment)
+                                                            }
+                                                        ]
+                                                        : [
+                                                            {
+                                                                label: '✏️ Düzenle',
+                                                                onClick: () => handleOpenModal(shipment)
+                                                            }
+                                                        ]
+                                                    ),
                                                     {
                                                         label: '🗑️ Sil',
                                                         onClick: () => handleDelete(shipment),
@@ -983,14 +998,34 @@ const Shipments = memo<ShipmentsProps>(({ shipments, orders = [], products = [],
                                                 },
                                                 variant: 'secondary'
                                             },
-                                            {
-                                                label: shipment.status === 'Teslim Edildi' ? 'Görüntüle' : 'Düzenle',
-                                                onClick: (e) => {
-                                                    e?.stopPropagation();
-                                                    handleOpenModal(shipment);
+                                            // Teslim Edildiyse Detay ve Fatura Ayrı, Değilse Düzenle
+                                            ...(shipment.status === 'Teslim Edildi' ? [
+                                                {
+                                                    label: '👁️ Detay',
+                                                    onClick: (e) => {
+                                                        e?.stopPropagation();
+                                                        handleOpenModal(shipment);
+                                                    },
+                                                    variant: 'secondary' as const
                                                 },
-                                                variant: 'primary'
-                                            },
+                                                {
+                                                    label: '🧾 Fatura',
+                                                    onClick: (e) => {
+                                                        e?.stopPropagation();
+                                                        handleOpenModal(shipment);
+                                                    },
+                                                    variant: 'primary' as const
+                                                }
+                                            ] : [
+                                                {
+                                                    label: '✏️ Düzenle',
+                                                    onClick: (e) => {
+                                                        e?.stopPropagation();
+                                                        handleOpenModal(shipment);
+                                                    },
+                                                    variant: 'primary' as const
+                                                }
+                                            ]),
                                             {
                                                 label: 'Sil',
                                                 onClick: (e) => {
