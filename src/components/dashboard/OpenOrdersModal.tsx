@@ -179,19 +179,47 @@ const OpenOrdersModal: React.FC<OpenOrdersModalProps> = ({
                                             Sipariş Ürünleri:
                                         </h4>
                                         <div className="space-y-1.5">
-                                            {order.items.map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex justify-between text-sm bg-white dark:bg-gray-800 rounded p-2"
-                                                >
-                                                    <span className="text-gray-700 dark:text-gray-300">
-                                                        {item.productName || 'Ürün'}
-                                                    </span>
-                                                    <span className="text-gray-600 dark:text-gray-400">
-                                                        {item.quantity} {item.unit || 'Adet'} × {formatCurrency(item.unit_price, order.currency)}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                            {order.items.map((item, idx) => {
+                                                // Calculate shipped qty for this item
+                                                const totalShipped = shipments
+                                                    .filter(s => s.orderId === order.id && !s.isDeleted)
+                                                    .reduce((sum, s) => {
+                                                        const sItem = s.items?.find(si => 
+                                                            si.productId === item.productId && 
+                                                            (si.orderItemIndex !== undefined ? si.orderItemIndex === idx : true)
+                                                        );
+                                                        return sum + (sItem?.quantity || 0);
+                                                    }, 0);
+                                                
+                                                const remaining = (item.quantity || 0) - totalShipped;
+                                                const isFullyShipped = remaining <= 0;
+
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        className={`flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm rounded p-2 border ${
+                                                            isFullyShipped 
+                                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800' 
+                                                                : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                                        }`}
+                                                    >
+                                                        <span className="text-gray-900 dark:text-gray-100 font-medium mb-1 sm:mb-0">
+                                                            {item.productName || 'Ürün'}
+                                                        </span>
+                                                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                                                            <span title="Sipariş Miktarı">Sipariş: <strong>{item.quantity}</strong></span>
+                                                            <span title="Sevk Edilen">Sevk: <strong>{totalShipped}</strong></span>
+                                                            <span 
+                                                                title="Kalan Miktar" 
+                                                                className={`font-bold ${remaining > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`}
+                                                            >
+                                                                Kalan: {remaining}
+                                                            </span>
+                                                            <span className="text-gray-400">({item.unit || 'Adet'})</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         {order.notes && (
                                             <div className="mt-3 text-sm">
