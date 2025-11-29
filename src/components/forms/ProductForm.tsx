@@ -63,13 +63,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
         requireLotApproval: product?.requireLotApproval || false
     });
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleChange = async (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
 
         // Handle checkbox separately
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
-            setFormData({ ...formData, [name]: checked });
+            setFormData(prev => ({ ...prev, [name]: checked }));
             return;
         }
 
@@ -80,37 +80,39 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
             sanitizedValue = sanitizeText(value);
         }
 
-        setFormData({ ...formData, [name]: sanitizedValue });
-    };
+        setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
 
-    const handleGenerateCode = async () => {
-        if (!user) return;
-        
-        if (!formData.category) {
-            toast.error('Lütfen önce bir kategori seçin');
-            return;
-        }
-
-        const category = getCategoryById(formData.category);
-        if (!category || !category.prefix) {
-            toast.error('Seçilen kategori için otomatik kod desteği yok (Kısaltma tanımlanmamış)');
-            return;
-        }
-
-        setIsGeneratingCode(true);
-        try {
-            const newCode = await getNextProductCode(user.uid, category.prefix);
-            setFormData(prev => ({ ...prev, code: newCode }));
-            toast.success(`Yeni kod oluşturuldu: ${newCode}`);
-        } catch (error) {
-            toast.error('Kod oluşturulurken hata oluştu');
-        } finally {
-            setIsGeneratingCode(false);
+        // Auto-generate code when category changes
+        if (name === 'category' && value) {
+            if (!user) return;
+            
+            const category = getCategoryById(value);
+            if (category && category.prefix) {
+                // Only generate if code is empty or looks like an auto-generated code (to avoid overwriting custom codes)
+                // Actually, user request implies auto-fill on selection.
+                // Let's set a loading state or placeholder
+                setIsGeneratingCode(true);
+                try {
+                    const newCode = await getNextProductCode(user.uid, category.prefix);
+                    setFormData(prev => ({ ...prev, code: newCode }));
+                } catch (error) {
+                    console.error("Error generating code", error);
+                } finally {
+                    setIsGeneratingCode(false);
+                }
+            }
         }
     };
+
+    // Removed manual button handler as it is now automatic
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (!formData.category) {
+            toast.error('Lütfen bir kategori seçin');
+            return;
+        }
 
         // Build product object and remove undefined values
         const productData: Partial<Product> = {
@@ -159,30 +161,39 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                 required
             />
             
-            {/* Ürün Kodu Alanı ve Oto Kod Butonu */}
-            <div className="flex items-end gap-2">
-                <div className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category Selection - Now Required */}
+                <FormSelect
+                    label="Kategori"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                >
+                    <option value="">Kategori Seçiniz</option>
+                    {PRODUCT_CATEGORIES.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.name}
+                        </option>
+                    ))}
+                </FormSelect>
+
+                {/* Ürün Kodu - Auto Generated */}
+                <div className="relative">
                     <FormInput
                         label="Ürün Kodu"
                         name="code"
                         value={formData.code}
                         onChange={handleChange}
-                        placeholder="Örn: GLV-001 (Boş bırakılabilir)"
+                        placeholder={isGeneratingCode ? "Oluşturuluyor..." : "Otomatik (Kategori Seçince)"}
+                        disabled={isGeneratingCode}
                     />
+                    {isGeneratingCode && (
+                        <div className="absolute right-3 top-9">
+                            <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                        </div>
+                    )}
                 </div>
-                <button
-                    type="button"
-                    onClick={handleGenerateCode}
-                    disabled={isGeneratingCode || !formData.category}
-                    className={`mb-4 px-3 py-2.5 rounded-md text-sm font-medium transition-colors border ${
-                        !formData.category
-                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
-                    }`}
-                    title={!formData.category ? "Önce kategori seçiniz" : "Otomatik kod oluştur"}
-                >
-                    {isGeneratingCode ? '...' : '⚡ Oto Kod'}
-                </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
