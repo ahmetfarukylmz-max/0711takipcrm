@@ -1,25 +1,9 @@
-import { create } from 'zustand';
+import { StateCreator } from 'zustand';
+import { StoreState, DataSlice, CollectionKey } from '../types';
+import { Customer, Order, Quote, Payment, Shipment } from '../../types';
 
-/**
- * Zustand Global Store
- * Centralizes application state management to reduce props drilling
- * and improve performance with selective re-rendering
- */
-const useStore = create((set, get) => ({
-  // ============================================================================
-  // STATE
-  // ============================================================================
-
-  // UI State
-  activePage: 'Anasayfa',
-  editingDocument: null,
-  showGuide: false,
-  overdueItems: [],
-  prefilledQuote: null,
-  refreshing: false,
-  selectedProductId: null, // For navigating from Dashboard to Product Detail
-
-  // Data Collections
+export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set, get) => ({
+  // Initial State
   collections: {
     customers: [],
     products: [],
@@ -29,36 +13,10 @@ const useStore = create((set, get) => ({
     gorusmeler: [],
     customTasks: [],
     payments: [],
-    stock_movements: [], // Stock movement history
+    stock_movements: [],
+    suppliers: [],
+    purchaseOrders: [],
   },
-
-  // Loading & Connection Status
-  dataLoading: false,
-  connectionStatus: 'connected',
-
-  // ============================================================================
-  // ACTIONS - UI State
-  // ============================================================================
-
-  setActivePage: (page) => set({ activePage: page }),
-
-  setEditingDocument: (doc) => set({ editingDocument: doc }),
-
-  setShowGuide: (show) => set({ showGuide: show }),
-
-  toggleGuide: () => set((state) => ({ showGuide: !state.showGuide })),
-
-  setOverdueItems: (items) => set({ overdueItems: items }),
-
-  setPrefilledQuote: (quote) => set({ prefilledQuote: quote }),
-
-  clearPrefilledQuote: () => set({ prefilledQuote: null }),
-
-  setRefreshing: (refreshing) => set({ refreshing }),
-
-  setSelectedProductId: (productId) => set({ selectedProductId: productId }),
-
-  clearSelectedProductId: () => set({ selectedProductId: null }),
 
   // ============================================================================
   // ACTIONS - Data Collections
@@ -83,24 +41,28 @@ const useStore = create((set, get) => ({
     })),
 
   updateInCollection: (collectionName, itemId, updatedItem) =>
-    set((state) => ({
-      collections: {
-        ...state.collections,
-        [collectionName]: state.collections[collectionName].map((item) =>
-          item.id === itemId ? { ...item, ...updatedItem } : item
-        ),
-      },
-    })),
+    set((state) => {
+      const currentCollection = state.collections[collectionName] as any[];
+      return {
+        collections: {
+          ...state.collections,
+          [collectionName]: currentCollection.map((item) =>
+            item.id === itemId ? { ...item, ...updatedItem } : item
+          ),
+        },
+      };
+    }),
 
   removeFromCollection: (collectionName, itemId) =>
-    set((state) => ({
-      collections: {
-        ...state.collections,
-        [collectionName]: state.collections[collectionName].filter(
-          (item) => item.id !== itemId
-        ),
-      },
-    })),
+    set((state) => {
+      const currentCollection = state.collections[collectionName] as any[];
+      return {
+        collections: {
+          ...state.collections,
+          [collectionName]: currentCollection.filter((item) => item.id !== itemId),
+        },
+      };
+    }),
 
   // Optimistic UI helpers
   addPendingItem: (collectionName, tempItem) =>
@@ -112,28 +74,28 @@ const useStore = create((set, get) => ({
     })),
 
   removePendingItem: (collectionName, tempId) =>
-    set((state) => ({
-      collections: {
-        ...state.collections,
-        [collectionName]: state.collections[collectionName].filter(
-          (item) => item.id !== tempId
-        ),
-      },
-    })),
+    set((state) => {
+      const currentCollection = state.collections[collectionName] as any[];
+      return {
+        collections: {
+          ...state.collections,
+          [collectionName]: currentCollection.filter((item) => item.id !== tempId),
+        },
+      };
+    }),
 
   updatePendingItem: (collectionName, tempId, realItem) =>
-    set((state) => ({
-      collections: {
-        ...state.collections,
-        [collectionName]: state.collections[collectionName].map((item) =>
-          item.id === tempId ? { ...realItem, _pending: false } : item
-        ),
-      },
-    })),
-
-  setDataLoading: (loading) => set({ dataLoading: loading }),
-
-  setConnectionStatus: (status) => set({ connectionStatus: status }),
+    set((state) => {
+      const currentCollection = state.collections[collectionName] as any[];
+      return {
+        collections: {
+          ...state.collections,
+          [collectionName]: currentCollection.map((item) =>
+            item.id === tempId ? { ...realItem, _pending: false } : item
+          ),
+        },
+      };
+    }),
 
   // ============================================================================
   // SELECTORS - Get specific items
@@ -180,44 +142,32 @@ const useStore = create((set, get) => ({
 
   getOrdersByCustomer: (customerId) => {
     const state = get();
-    return state.collections.orders.filter(
-      (o) => o.customerId === customerId && !o.isDeleted
-    );
+    return state.collections.orders.filter((o) => o.customerId === customerId && !o.isDeleted);
   },
 
   getQuotesByCustomer: (customerId) => {
     const state = get();
-    return state.collections.teklifler.filter(
-      (t) => t.customerId === customerId && !t.isDeleted
-    );
+    return state.collections.teklifler.filter((t) => t.customerId === customerId && !t.isDeleted);
   },
 
   getMeetingsByCustomer: (customerId) => {
     const state = get();
-    return state.collections.gorusmeler.filter(
-      (g) => g.customerId === customerId && !g.isDeleted
-    );
+    return state.collections.gorusmeler.filter((g) => g.customerId === customerId && !g.isDeleted);
   },
 
   getShipmentsByOrder: (orderId) => {
     const state = get();
-    return state.collections.shipments.filter(
-      (s) => s.orderId === orderId && !s.isDeleted
-    );
+    return state.collections.shipments.filter((s) => s.orderId === orderId && !s.isDeleted);
   },
 
   getPaymentsByCustomer: (customerId) => {
     const state = get();
-    return state.collections.payments.filter(
-      (p) => p.customerId === customerId && !p.isDeleted
-    );
+    return state.collections.payments.filter((p) => p.customerId === customerId && !p.isDeleted);
   },
 
   getPaymentsByOrder: (orderId) => {
     const state = get();
-    return state.collections.payments.filter(
-      (p) => p.orderId === orderId && !p.isDeleted
-    );
+    return state.collections.payments.filter((p) => p.orderId === orderId && !p.isDeleted);
   },
 
   // ============================================================================
@@ -250,16 +200,12 @@ const useStore = create((set, get) => ({
 
   getActiveOrders: () => {
     const state = get();
-    return state.collections.orders.filter(
-      (o) => !o.isDeleted && o.status !== 'Tamamlandı'
-    );
+    return state.collections.orders.filter((o) => !o.isDeleted && o.status !== 'Tamamlandı');
   },
 
   getPendingQuotes: () => {
     const state = get();
-    return state.collections.teklifler.filter(
-      (t) => !t.isDeleted && t.status === 'Hazırlandı'
-    );
+    return state.collections.teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı');
   },
 
   getOverduePayments: () => {
@@ -280,6 +226,4 @@ const useStore = create((set, get) => ({
       (s) => !s.isDeleted && s.status === 'Teslim Edildi' && !s.isInvoiced
     );
   },
-}));
-
-export default useStore;
+});
