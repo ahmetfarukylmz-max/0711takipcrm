@@ -12,13 +12,14 @@ import CheckPortfolio from './CheckPortfolio';
 import VirtualList from '../common/VirtualList';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import useStore from '../../store/useStore';
 import type { Payment, Customer, Order } from '../../types';
 import { logger } from '../../utils/logger';
 
 interface PaymentsProps {
-  payments: Payment[];
-  customers: Customer[];
-  orders: Order[];
+  payments?: Payment[];
+  customers?: Customer[];
+  orders?: Order[];
   onSave: (payment: Partial<Payment>) => Promise<void> | void;
   onDelete: (id: string) => void;
   loading?: boolean;
@@ -27,15 +28,25 @@ interface PaymentsProps {
 }
 
 const Payments: React.FC<PaymentsProps> = ({
-  payments,
-  customers,
-  orders,
+  payments: propPayments,
+  customers: propCustomers,
+  orders: propOrders,
   onSave,
   onDelete,
   loading = false,
   selectedPaymentId,
   onPaymentSelected,
 }) => {
+  // Get data from store
+  const storePayments = useStore((state) => state.collections.payments);
+  const storeCustomers = useStore((state) => state.collections.customers);
+  const storeOrders = useStore((state) => state.collections.orders);
+
+  // Fallback logic
+  const payments = propPayments || storePayments || [];
+  const customers = propCustomers || storeCustomers || [];
+  const orders = propOrders || storeOrders || [];
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPayment, setCurrentPayment] = useState<Payment | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -397,9 +408,7 @@ const Payments: React.FC<PaymentsProps> = ({
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Ödeme Yönetimi
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Ödeme Yönetimi</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Toplam {filteredPayments.length} ödeme
           </p>
@@ -620,7 +629,9 @@ const Payments: React.FC<PaymentsProps> = ({
                     <EmptyState
                       icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'payments'}
                       title={
-                        searchQuery || statusFilter !== 'Tümü' ? 'Ödeme Bulunamadı' : 'Henüz Ödeme Yok'
+                        searchQuery || statusFilter !== 'Tümü'
+                          ? 'Ödeme Bulunamadı'
+                          : 'Henüz Ödeme Yok'
                       }
                       description={
                         searchQuery || statusFilter !== 'Tümü'
@@ -662,7 +673,8 @@ const Payments: React.FC<PaymentsProps> = ({
                       </div>
                       {payment.originalAmount && (
                         <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 truncate">
-                          💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)})
+                          💰 Kısmi ödeme ({formatCurrency(payment.originalAmount, payment.currency)}
+                          )
                         </div>
                       )}
                     </td>

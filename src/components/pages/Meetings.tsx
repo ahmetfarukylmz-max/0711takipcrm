@@ -14,6 +14,7 @@ import { formatDate, getStatusClass } from '../../utils/formatters';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import useStore from '../../store/useStore';
 import type { Meeting, Customer, Product } from '../../types';
 
 const locales = {
@@ -50,11 +51,11 @@ interface DeleteConfirmState {
 
 interface MeetingsProps {
   /** List of meetings */
-  meetings: Meeting[];
+  meetings?: Meeting[];
   /** List of customers */
-  customers: Customer[];
+  customers?: Customer[];
   /** List of products */
-  products: Product[];
+  products?: Product[];
   /** Callback when meeting is saved */
   onSave: (meeting: Partial<Meeting>) => void;
   /** Callback when meeting is deleted */
@@ -78,9 +79,9 @@ interface MeetingsProps {
  */
 const Meetings = memo<MeetingsProps>(
   ({
-    meetings,
-    customers,
-    products,
+    meetings: propMeetings,
+    customers: propCustomers,
+    products: propProducts,
     onSave,
     onDelete,
     onCustomerSave,
@@ -90,6 +91,16 @@ const Meetings = memo<MeetingsProps>(
     selectedCustomerId,
     onCustomerSelected,
   }) => {
+    // Get data from store
+    const storeMeetings = useStore((state) => state.collections.gorusmeler);
+    const storeCustomers = useStore((state) => state.collections.customers);
+    const storeProducts = useStore((state) => state.collections.products);
+
+    // Fallback logic
+    const meetings = propMeetings || storeMeetings || [];
+    const customers = propCustomers || storeCustomers || [];
+    const products = propProducts || storeProducts || [];
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentMeeting, setCurrentMeeting] = useState<Meeting | null>(null);

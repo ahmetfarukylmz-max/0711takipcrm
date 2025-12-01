@@ -18,6 +18,7 @@ import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatte
 import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
 import { canCancelOrder } from '../../utils/orderHelpers';
 import { formatOrderNumber } from '../../utils/numberFormatters';
+import useStore from '../../store/useStore';
 import type { Order, Customer, Product, Shipment, Payment } from '../../types';
 import { logger } from '../../utils/logger';
 
@@ -28,7 +29,7 @@ interface DeleteConfirmState {
 
 interface OrdersProps {
   /** List of orders */
-  orders: Order[];
+  orders?: Order[];
   /** Callback when order is saved */
   onSave: (order: Partial<Order>) => void;
   /** Callback when order is deleted */
@@ -38,9 +39,9 @@ interface OrdersProps {
   /** Callback when shipment is created */
   onShipment: (shipment: Partial<Shipment>) => void;
   /** List of customers */
-  customers: Customer[];
+  customers?: Customer[];
   /** List of products */
-  products: Product[];
+  products?: Product[];
   /** List of shipments */
   shipments?: Shipment[];
   /** List of payments */
@@ -60,20 +61,34 @@ interface OrdersProps {
  */
 const Orders = memo<OrdersProps>(
   ({
-    orders,
+    orders: propOrders,
     onSave,
     onDelete,
     onCancel,
     onShipment,
-    customers,
-    products,
-    shipments = [],
-    payments = [],
+    customers: propCustomers,
+    products: propProducts,
+    shipments: propShipments = [],
+    payments: propPayments = [],
     onMarkAsPaid,
     onGoToPayment,
     onGeneratePdf,
     loading = false,
   }) => {
+    // Get data from store
+    const storeOrders = useStore((state) => state.collections.orders);
+    const storeCustomers = useStore((state) => state.collections.customers);
+    const storeProducts = useStore((state) => state.collections.products);
+    const storeShipments = useStore((state) => state.collections.shipments);
+    const storePayments = useStore((state) => state.collections.payments);
+
+    // Fallback logic
+    const orders = propOrders || storeOrders || [];
+    const customers = propCustomers || storeCustomers || [];
+    const products = propProducts || storeProducts || [];
+    const shipments = propShipments.length > 0 ? propShipments : storeShipments || [];
+    const payments = propPayments.length > 0 ? propPayments : storePayments || [];
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -391,21 +406,21 @@ const Orders = memo<OrdersProps>(
 
       // Invoice Status Filter
       if (invoiceFilter !== 'Tümü') {
-          filtered = filtered.filter(order => {
-              const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
-              let status = 'Sevk Bekliyor';
+        filtered = filtered.filter((order) => {
+          const orderShipments = shipments.filter((s) => s.orderId === order.id && !s.isDeleted);
+          let status = 'Sevk Bekliyor';
 
-              if (orderShipments.length > 0) {
-                  const allInvoiced = orderShipments.every(s => s.isInvoiced);
-                  const someInvoiced = orderShipments.some(s => s.isInvoiced);
+          if (orderShipments.length > 0) {
+            const allInvoiced = orderShipments.every((s) => s.isInvoiced);
+            const someInvoiced = orderShipments.some((s) => s.isInvoiced);
 
-                  if (allInvoiced) status = 'Faturalandı';
-                  else if (someInvoiced) status = 'Kısmi Fatura';
-                  else status = 'Fatura Bekliyor';
-              }
+            if (allInvoiced) status = 'Faturalandı';
+            else if (someInvoiced) status = 'Kısmi Fatura';
+            else status = 'Fatura Bekliyor';
+          }
 
-              return status === invoiceFilter;
-          });
+          return status === invoiceFilter;
+        });
       }
 
       // Search filter
@@ -452,9 +467,7 @@ const Orders = memo<OrdersProps>(
               <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 Sipariş Yönetimi
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Yükleniyor...
-              </p>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Yükleniyor...</p>
             </div>
           </div>
           {/* Desktop: Table skeleton */}
@@ -587,7 +600,8 @@ const Orders = memo<OrdersProps>(
 
         <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
           {filteredOrders.length} sipariş gösteriliyor
-          {(searchQuery || statusFilter !== 'Tümü' || invoiceFilter !== 'Tümü') && ` (${orders.length} toplam)`}
+          {(searchQuery || statusFilter !== 'Tümü' || invoiceFilter !== 'Tümü') &&
+            ` (${orders.length} toplam)`}
         </div>
 
         {/* Desktop Table View */}
@@ -606,7 +620,9 @@ const Orders = memo<OrdersProps>(
                 <th className="p-3 text-sm font-semibold tracking-wide text-center text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
-                    checked={filteredOrders.length > 0 && selectedItems.size === filteredOrders.length}
+                    checked={
+                      filteredOrders.length > 0 && selectedItems.size === filteredOrders.length
+                    }
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
@@ -649,24 +665,30 @@ const Orders = memo<OrdersProps>(
                   }
 
                   // Invoice Status Logic
-                  const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+                  const orderShipments = shipments.filter(
+                    (s) => s.orderId === order.id && !s.isDeleted
+                  );
                   let invoiceStatusLabel = 'Sevk Bekliyor';
-                  let invoiceStatusClass = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+                  let invoiceStatusClass =
+                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
 
                   if (orderShipments.length > 0) {
-                      const allInvoiced = orderShipments.every(s => s.isInvoiced);
-                      const someInvoiced = orderShipments.some(s => s.isInvoiced);
+                    const allInvoiced = orderShipments.every((s) => s.isInvoiced);
+                    const someInvoiced = orderShipments.some((s) => s.isInvoiced);
 
-                      if (allInvoiced) {
-                          invoiceStatusLabel = 'Faturalandı';
-                          invoiceStatusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-                      } else if (someInvoiced) {
-                          invoiceStatusLabel = 'Kısmi Fatura';
-                          invoiceStatusClass = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
-                      } else {
-                          invoiceStatusLabel = 'Fatura Bekliyor';
-                          invoiceStatusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-                      }
+                    if (allInvoiced) {
+                      invoiceStatusLabel = 'Faturalandı';
+                      invoiceStatusClass =
+                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+                    } else if (someInvoiced) {
+                      invoiceStatusLabel = 'Kısmi Fatura';
+                      invoiceStatusClass =
+                        'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+                    } else {
+                      invoiceStatusLabel = 'Fatura Bekliyor';
+                      invoiceStatusClass =
+                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+                    }
                   }
 
                   const cancelCheck = orderCancelChecks[order.id];
@@ -734,7 +756,9 @@ const Orders = memo<OrdersProps>(
                     <EmptyState
                       icon={searchQuery || statusFilter !== 'Tümü' ? 'search' : 'orders'}
                       title={
-                        searchQuery || statusFilter !== 'Tümü' ? 'Sipariş Bulunamadı' : 'Henüz Sipariş Yok'
+                        searchQuery || statusFilter !== 'Tümü'
+                          ? 'Sipariş Bulunamadı'
+                          : 'Henüz Sipariş Yok'
                       }
                       description={
                         searchQuery || statusFilter !== 'Tümü'
@@ -771,24 +795,29 @@ const Orders = memo<OrdersProps>(
                 const cancelCheck = orderCancelChecks[order.id];
 
                 // Invoice Status Logic
-                const orderShipments = shipments.filter(s => s.orderId === order.id && !s.isDeleted);
+                const orderShipments = shipments.filter(
+                  (s) => s.orderId === order.id && !s.isDeleted
+                );
                 let invoiceStatusLabel = '';
                 let invoiceStatusClass = '';
 
                 if (orderShipments.length > 0) {
-                    const allInvoiced = orderShipments.every(s => s.isInvoiced);
-                    const someInvoiced = orderShipments.some(s => s.isInvoiced);
+                  const allInvoiced = orderShipments.every((s) => s.isInvoiced);
+                  const someInvoiced = orderShipments.some((s) => s.isInvoiced);
 
-                    if (allInvoiced) {
-                        invoiceStatusLabel = 'Faturalandı';
-                        invoiceStatusClass = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-                    } else if (someInvoiced) {
-                        invoiceStatusLabel = 'Kısmi Fatura';
-                        invoiceStatusClass = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
-                    } else {
-                        invoiceStatusLabel = 'Fatura Bekliyor';
-                        invoiceStatusClass = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-                    }
+                  if (allInvoiced) {
+                    invoiceStatusLabel = 'Faturalandı';
+                    invoiceStatusClass =
+                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+                  } else if (someInvoiced) {
+                    invoiceStatusLabel = 'Kısmi Fatura';
+                    invoiceStatusClass =
+                      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+                  } else {
+                    invoiceStatusLabel = 'Fatura Bekliyor';
+                    invoiceStatusClass =
+                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+                  }
                 }
 
                 const mobileActions = [
@@ -842,18 +871,18 @@ const Orders = memo<OrdersProps>(
                       onClick={() => handleOpenDetailModal(order)}
                       rightContent={
                         <div className="flex flex-col gap-1 items-end">
-                            <span
+                          <span
                             className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${getStatusClass(order.status)}`}
-                            >
+                          >
                             {order.status}
+                          </span>
+                          {invoiceStatusLabel && (
+                            <span
+                              className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${invoiceStatusClass}`}
+                            >
+                              {invoiceStatusLabel}
                             </span>
-                            {invoiceStatusLabel && (
-                                <span
-                                className={`px-2 py-1 text-xs font-medium uppercase tracking-wider rounded-lg ${invoiceStatusClass}`}
-                                >
-                                {invoiceStatusLabel}
-                                </span>
-                            )}
+                          )}
                         </div>
                       }
                       actions={

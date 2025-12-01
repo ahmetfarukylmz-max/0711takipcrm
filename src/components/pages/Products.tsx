@@ -31,7 +31,7 @@ interface DeleteConfirmState {
 
 interface ProductsProps {
   /** List of products */
-  products: Product[];
+  products?: Product[];
   /** List of orders for product analytics */
   orders?: Order[];
   /** List of quotes for product analytics */
@@ -50,22 +50,32 @@ interface ProductsProps {
  * Products component - Product management page
  */
 const Products = memo<ProductsProps>(
-  ({ products, orders = [], quotes = [], customers = [], onSave, onDelete, loading = false }) => {
+  ({
+    products: propProducts,
+    orders: propOrders = [],
+    quotes: propQuotes = [],
+    customers: propCustomers = [],
+    onSave,
+    onDelete,
+    loading = false,
+  }) => {
     // Zustand store - for navigation from Dashboard
     const selectedProductId = useStore((state) => state.selectedProductId);
     const clearSelectedProductId = useStore((state) => state.clearSelectedProductId);
     const stockMovements = useStore((state) => state.collections.stock_movements);
     const user = useStore((state) => state.user);
 
-    // Get all data from store for ProductDetail (in case not passed as props)
+    // Get all data from store
+    const storeProducts = useStore((state) => state.collections.products);
     const storeOrders = useStore((state) => state.collections.orders);
     const storeQuotes = useStore((state) => state.collections.teklifler);
     const storeCustomers = useStore((state) => state.collections.customers);
 
     // Use props if available, otherwise fallback to store
-    const allOrders = orders.length > 0 ? orders : storeOrders;
-    const allQuotes = quotes.length > 0 ? quotes : storeQuotes;
-    const allCustomers = customers.length > 0 ? customers : storeCustomers;
+    const products = propProducts || storeProducts || [];
+    const allOrders = propOrders.length > 0 ? propOrders : storeOrders;
+    const allQuotes = propQuotes.length > 0 ? propQuotes : storeQuotes;
+    const allCustomers = propCustomers.length > 0 ? propCustomers : storeCustomers;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -773,12 +783,8 @@ const Products = memo<ProductsProps>(
         <div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-                Ürün Yönetimi
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Yükleniyor...
-              </p>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Ürün Yönetimi</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Yükleniyor...</p>
             </div>
           </div>
           {/* Desktop: Table skeleton */}
@@ -813,9 +819,7 @@ const Products = memo<ProductsProps>(
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-              Ürün Yönetimi
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Ürün Yönetimi</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               Toplam {filteredProducts.length} ürün
             </p>
