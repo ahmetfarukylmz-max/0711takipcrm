@@ -1,4 +1,14 @@
-import { collection, doc, addDoc, updateDoc, getDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from './firebase';
 import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
 import { logger } from '../utils/logger';
@@ -292,14 +302,20 @@ export const markShipmentDelivered = async (userId, shipmentId, orderId, userEma
 
       // Calculate total delivered quantities by order item index
       const deliveredQuantitiesByIndex = {};
-      shipmentsSnapshot.forEach(shipmentDoc => {
+      shipmentsSnapshot.forEach((shipmentDoc) => {
         const shipmentData = shipmentDoc.data();
         // Only count delivered and non-deleted shipments
-        if (shipmentData.status === 'Teslim Edildi' && !shipmentData.isDeleted && shipmentData.items && Array.isArray(shipmentData.items)) {
-          shipmentData.items.forEach(item => {
+        if (
+          shipmentData.status === 'Teslim Edildi' &&
+          !shipmentData.isDeleted &&
+          shipmentData.items &&
+          Array.isArray(shipmentData.items)
+        ) {
+          shipmentData.items.forEach((item) => {
             const orderItemIndex = item.orderItemIndex ?? null;
             if (orderItemIndex !== null && orderItemIndex !== undefined) {
-              deliveredQuantitiesByIndex[orderItemIndex] = (deliveredQuantitiesByIndex[orderItemIndex] || 0) + (item.quantity || 0);
+              deliveredQuantitiesByIndex[orderItemIndex] =
+                (deliveredQuantitiesByIndex[orderItemIndex] || 0) + (item.quantity || 0);
             }
           });
         }
@@ -381,7 +397,8 @@ export const deleteShipment = async (userId, shipmentId, userEmail = 'system') =
     // 2. If shipment was delivered, revert stock changes (add back to inventory)
     if (shipment.status === 'Teslim Edildi' && shipment.items && Array.isArray(shipment.items)) {
       for (const item of shipment.items) {
-        await updateProductStock(userId, item.productId, item.quantity, { // Positive quantity to add back
+        await updateProductStock(userId, item.productId, item.quantity, {
+          // Positive quantity to add back
           type: 'Sevkiyat İptali/Silme',
           relatedId: shipmentId,
           relatedType: 'shipment',
@@ -398,33 +415,38 @@ export const deleteShipment = async (userId, shipmentId, userEmail = 'system') =
       isDeleted: true,
       deletedAt: new Date().toISOString(),
       deletedBy: userId,
-      deletedByEmail: userEmail
+      deletedByEmail: userEmail,
     });
 
     // 4. Update related order status
     if (shipment.orderId) {
       const orderRef = doc(db, `users/${userId}/orders`, shipment.orderId);
       const orderDoc = await getDoc(orderRef);
-      
+
       if (orderDoc.exists()) {
         const order = orderDoc.data();
         // If order was completed, revert it to 'Hazırlanıyor' or 'Bekliyor'
         // Ideally we should check if there are other active shipments, but reverting to 'Hazırlanıyor' is safe
         // as the user can create a new shipment to complete it again.
         if (order.status === 'Tamamlandı') {
-           // Check if there are ANY other delivered shipments remaining
-           const shipmentsRef = collection(db, `users/${userId}/shipments`);
-           const q = query(shipmentsRef, where('orderId', '==', shipment.orderId), where('isDeleted', '==', false), where('status', '==', 'Teslim Edildi'));
-           const snapshot = await getDocs(q);
-           
-           // If no delivered shipments remain, maybe 'Bekliyor'? If some remain, 'Hazırlanıyor'.
-           // To simplify, 'Hazırlanıyor' is a good fallback for partial state.
-           const newStatus = snapshot.empty ? 'Hazırlanıyor' : 'Hazırlanıyor'; 
-           
-           await updateDoc(orderRef, {
-             status: newStatus,
-             updatedAt: new Date().toISOString()
-           });
+          // Check if there are ANY other delivered shipments remaining
+          const shipmentsRef = collection(db, `users/${userId}/shipments`);
+          const q = query(
+            shipmentsRef,
+            where('orderId', '==', shipment.orderId),
+            where('isDeleted', '==', false),
+            where('status', '==', 'Teslim Edildi')
+          );
+          const snapshot = await getDocs(q);
+
+          // If no delivered shipments remain, maybe 'Bekliyor'? If some remain, 'Hazırlanıyor'.
+          // To simplify, 'Hazırlanıyor' is a good fallback for partial state.
+          const newStatus = snapshot.empty ? 'Hazırlanıyor' : 'Hazırlanıyor';
+
+          await updateDoc(orderRef, {
+            status: newStatus,
+            updatedAt: new Date().toISOString(),
+          });
         }
       }
     }
@@ -433,7 +455,7 @@ export const deleteShipment = async (userId, shipmentId, userEmail = 'system') =
     await logActivity(userId, 'DELETE_SHIPMENT', {
       shipmentId,
       orderId: shipment.orderId,
-      message: `Sevkiyat silindi (Stok iadesi: ${shipment.status === 'Teslim Edildi' ? 'Evet' : 'Hayır'})`
+      message: `Sevkiyat silindi (Stok iadesi: ${shipment.status === 'Teslim Edildi' ? 'Evet' : 'Hayır'})`,
     });
 
     return true;
@@ -489,6 +511,12 @@ export const undoDelete = async (userId, collectionName, docId) => {
   }
 };
 
+interface OptimisticOptions {
+  onOptimisticUpdate?: (doc: any) => void;
+  onSuccess?: (doc: any) => void;
+  onError?: (id: string, error: any) => void;
+}
+
 /**
  * Save document with optimistic UI updates
  * Updates UI immediately before Firestore confirmation for better UX
@@ -496,29 +524,15 @@ export const undoDelete = async (userId, collectionName, docId) => {
  * @param {string} userId - User ID
  * @param {string} collectionName - Collection name
  * @param {Object} data - Data to save
- * @param {Object} options - Optimistic update options
- * @param {Function} options.onOptimisticUpdate - Callback when optimistic update is applied
- * @param {Function} options.onSuccess - Callback when Firestore save succeeds
- * @param {Function} options.onError - Callback when Firestore save fails
+ * @param {OptimisticOptions} options - Optimistic update options
  * @returns {Promise<string>} Document ID
- *
- * @example
- * await saveDocumentOptimistic(userId, 'customers', data, {
- *   onOptimisticUpdate: (tempDoc) => {
- *     // Update UI immediately
- *     addPendingItem('customers', tempDoc);
- *   },
- *   onSuccess: (realDoc) => {
- *     // Replace temp with real
- *     updatePendingItem('customers', tempDoc.id, realDoc);
- *   },
- *   onError: (tempId) => {
- *     // Rollback
- *     removePendingItem('customers', tempId);
- *   }
- * });
  */
-export const saveDocumentOptimistic = async (userId, collectionName, data, options = {}) => {
+export const saveDocumentOptimistic = async (
+  userId: string,
+  collectionName: string,
+  data: any,
+  options: OptimisticOptions = {}
+) => {
   if (!userId) return null;
 
   const { onOptimisticUpdate, onSuccess, onError } = options;
@@ -603,10 +617,15 @@ export const saveDocumentOptimistic = async (userId, collectionName, data, optio
  * @param {string} userId - User ID
  * @param {string} collectionName - Collection name
  * @param {string} docId - Document ID
- * @param {Object} options - Optimistic update options
+ * @param {OptimisticOptions} options - Optimistic update options
  * @returns {Promise<boolean>} Success status
  */
-export const deleteDocumentOptimistic = async (userId, collectionName, docId, options = {}) => {
+export const deleteDocumentOptimistic = async (
+  userId: string,
+  collectionName: string,
+  docId: string,
+  options: OptimisticOptions = {}
+) => {
   const { onOptimisticUpdate, onSuccess, onError } = options;
 
   // 1. Optimistic UI Update

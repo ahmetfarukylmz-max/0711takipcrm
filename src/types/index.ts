@@ -290,6 +290,7 @@ export interface Shipment {
   status: ShipmentStatus;
   carrier?: string;
   tracking_number?: string;
+  trackingNumber?: string; // Alias for camelCase compatibility
   notes?: string;
   items?: ShipmentItem[]; // Items included in this shipment
   // Invoice tracking
