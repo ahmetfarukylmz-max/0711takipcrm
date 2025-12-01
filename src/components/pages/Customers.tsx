@@ -20,6 +20,8 @@ import { getStatusClass, formatPhoneNumberForWhatsApp } from '../../utils/format
 import { exportCustomers } from '../../utils/excelExport';
 import { importCustomers, downloadCustomerTemplate } from '../../utils/excelImport';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useModal } from '../../hooks/useModal';
+import { useConfirm } from '../../hooks/useConfirm';
 import useStore from '../../store/useStore';
 import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 import { logger } from '../../utils/logger';
@@ -103,7 +105,7 @@ const Customers = memo<CustomersProps>(
     const products = propProducts.length > 0 ? propProducts : storeProducts || [];
     const payments = propPayments.length > 0 ? propPayments : storePayments || [];
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const customerModal = useModal<Customer>(); // Replaces isModalOpen
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [isQuoteViewModalOpen, setIsQuoteViewModalOpen] = useState(false);
     const [isOrderViewModalOpen, setIsOrderViewModalOpen] = useState(false);
@@ -118,20 +120,23 @@ const Customers = memo<CustomersProps>(
     const debouncedSearchQuery = useDebounce(searchQuery, 300); // Debounce search for performance
     const [statusFilter, setStatusFilter] = useState('Tümü');
     const [cityFilter, setCityFilter] = useState('Tümü');
-    const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({
-      isOpen: false,
-      customer: null,
-    });
+
+    const deleteConfirm = useConfirm<Customer | { id: string; count: number; name?: string }>(); // Replaces deleteConfirm state
+
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<FixedSizeList>(null);
 
-    const handleOpenModal = useCallback((customer: Customer | null = null) => {
-      setCurrentCustomer(customer);
-      setIsModalOpen(true);
-    }, []);
+    const handleOpenModal = useCallback(
+      (customer: Customer | null = null) => {
+        // If customer is null, it's a "Create" action, otherwise "Edit"
+        // We can pass undefined to open() for Create, or the customer object for Edit
+        customerModal.open(customer || undefined);
+      },
+      [customerModal]
+    );
 
     const handleViewCustomer = useCallback((customer: Customer) => {
       setSelectedCustomer(customer);
@@ -143,10 +148,9 @@ const Customers = memo<CustomersProps>(
 
     const handleEditFromDetail = useCallback(() => {
       if (selectedCustomer) {
-        setCurrentCustomer(selectedCustomer);
-        setIsModalOpen(true);
+        customerModal.open(selectedCustomer);
       }
-    }, [selectedCustomer]);
+    }, [selectedCustomer, customerModal]);
 
     const handleDeleteFromDetail = useCallback(() => {
       if (selectedCustomer) {
@@ -157,7 +161,7 @@ const Customers = memo<CustomersProps>(
 
     const handleSave = (customerData: Partial<Customer>) => {
       onSave(customerData);
-      setIsModalOpen(false);
+      customerModal.close();
     };
 
     const handleViewOrder = (order: Order) => {
@@ -197,18 +201,18 @@ const Customers = memo<CustomersProps>(
     };
 
     const handleDelete = (customer: Customer) => {
-      setDeleteConfirm({ isOpen: true, customer });
+      deleteConfirm.ask(customer);
     };
 
     const confirmDelete = () => {
-      if (deleteConfirm.customer) {
-        if (deleteConfirm.customer.id === 'batch') {
+      if (deleteConfirm.data) {
+        if (deleteConfirm.data.id === 'batch') {
           confirmBatchDelete();
         } else {
-          onDelete(deleteConfirm.customer.id);
-          setDeleteConfirm({ isOpen: false, customer: null });
+          onDelete(deleteConfirm.data.id);
+          deleteConfirm.close();
           // Detay sayfasındaysak, listeye dön
-          if (selectedCustomer && selectedCustomer.id === deleteConfirm.customer.id) {
+          if (selectedCustomer && selectedCustomer.id === deleteConfirm.data.id) {
             setSelectedCustomer(null);
           }
         }
@@ -319,16 +323,16 @@ const Customers = memo<CustomersProps>(
     };
 
     const handleBatchDelete = () => {
-      setDeleteConfirm({
-        isOpen: true,
-        customer: { id: 'batch', count: selectedItems.size } as any,
+      deleteConfirm.ask({
+        id: 'batch',
+        count: selectedItems.size,
       });
     };
 
     const confirmBatchDelete = () => {
       selectedItems.forEach((id) => onDelete(id));
       setSelectedItems(new Set());
-      setDeleteConfirm({ isOpen: false, customer: null });
+      deleteConfirm.close();
     };
 
     // Determine customer status based on activity
@@ -426,14 +430,14 @@ const Customers = memo<CustomersProps>(
 
           {/* Modal'lar - Detay sayfasında da çalışması için buraya eklendi */}
           <Modal
-            show={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            title={currentCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
+            show={customerModal.isOpen}
+            onClose={customerModal.close}
+            title={customerModal.data ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
           >
             <CustomerForm
-              customer={currentCustomer || undefined}
+              customer={customerModal.data || undefined}
               onSave={handleSave}
-              onCancel={() => setIsModalOpen(false)}
+              onCancel={customerModal.close}
             />
           </Modal>
 
@@ -1036,13 +1040,13 @@ const Customers = memo<CustomersProps>(
 
         <ConfirmDialog
           isOpen={deleteConfirm.isOpen}
-          onClose={() => setDeleteConfirm({ isOpen: false, customer: null })}
+          onClose={deleteConfirm.close}
           onConfirm={confirmDelete}
-          title={deleteConfirm.customer?.id === 'batch' ? 'Toplu Silme' : 'Müşteriyi Sil'}
+          title={deleteConfirm.data?.id === 'batch' ? 'Toplu Silme' : 'Müşteriyi Sil'}
           message={
-            deleteConfirm.customer?.id === 'batch'
-              ? `Seçili ${deleteConfirm.customer?.count} müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
-              : `"${deleteConfirm.customer?.name}" müşterisini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+            deleteConfirm.data?.id === 'batch'
+              ? `Seçili ${deleteConfirm.data.count} müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+              : `"${(deleteConfirm.data as Customer)?.name}" müşterisini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
           }
         />
       </div>
