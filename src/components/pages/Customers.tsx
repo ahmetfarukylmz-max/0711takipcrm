@@ -135,7 +135,7 @@ const Customers = memo<CustomersProps>(
         // We can pass undefined to open() for Create, or the customer object for Edit
         customerModal.open(customer || undefined);
       },
-      [customerModal]
+      [customerModal.open]
     );
 
     const handleViewCustomer = useCallback((customer: Customer) => {
@@ -150,7 +150,7 @@ const Customers = memo<CustomersProps>(
       if (selectedCustomer) {
         customerModal.open(selectedCustomer);
       }
-    }, [selectedCustomer, customerModal]);
+    }, [selectedCustomer, customerModal.open]);
 
     const handleDeleteFromDetail = useCallback(() => {
       if (selectedCustomer) {
@@ -880,15 +880,16 @@ const Customers = memo<CustomersProps>(
             </div>
           )}
         </div>
+        {/* Modal'lar - Detay sayfasında da çalışması için buraya eklendi */}
         <Modal
-          show={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          show={customerModal.isOpen}
+          onClose={customerModal.close}
           title={currentCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
         >
           <CustomerForm
             customer={currentCustomer || undefined}
             onSave={handleSave}
-            onCancel={() => setIsModalOpen(false)}
+            onCancel={customerModal.close}
           />
         </Modal>
 
