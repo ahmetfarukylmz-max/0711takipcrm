@@ -1,3 +1,5 @@
+import { Order, Quote } from '../types';
+
 /**
  * NUMBER FORMATTERS
  * Utility functions for formatting order/quote numbers
@@ -6,10 +8,10 @@
 /**
  * Format order number for display
  * Handles both new format (SIP-2025-1001) and legacy format (Firebase ID)
- * @param {Object} order - Order object
+ * @param {Order | null | undefined} order - Order object
  * @returns {string} Formatted order number
  */
-export const formatOrderNumber = (order) => {
+export const formatOrderNumber = (order: Partial<Order> | null | undefined): string => {
   if (!order) return 'N/A';
 
   // If order has orderNumber field, use it
@@ -28,10 +30,10 @@ export const formatOrderNumber = (order) => {
 /**
  * Format quote number for display
  * Handles both new format (TEK-2025-0523) and legacy format (Firebase ID)
- * @param {Object} quote - Quote object
+ * @param {Quote | null | undefined} quote - Quote object
  * @returns {string} Formatted quote number
  */
-export const formatQuoteNumber = (quote) => {
+export const formatQuoteNumber = (quote: Partial<Quote> | null | undefined): string => {
   if (!quote) return 'N/A';
 
   // If quote has quoteNumber field, use it
@@ -49,10 +51,10 @@ export const formatQuoteNumber = (quote) => {
 
 /**
  * Get short order number (for lists/cards)
- * @param {Object} order - Order object
+ * @param {Order | null | undefined} order - Order object
  * @returns {string} Short order number
  */
-export const getShortOrderNumber = (order) => {
+export const getShortOrderNumber = (order: Partial<Order> | null | undefined): string => {
   if (!order) return 'N/A';
 
   if (order.orderNumber) {
@@ -74,10 +76,10 @@ export const getShortOrderNumber = (order) => {
 
 /**
  * Get short quote number (for lists/cards)
- * @param {Object} quote - Quote object
+ * @param {Quote | null | undefined} quote - Quote object
  * @returns {string} Short quote number
  */
-export const getShortQuoteNumber = (quote) => {
+export const getShortQuoteNumber = (quote: Partial<Quote> | null | undefined): string => {
   if (!quote) return 'N/A';
 
   if (quote.quoteNumber) {
@@ -102,7 +104,7 @@ export const getShortQuoteNumber = (quote) => {
  * @param {string} number - Order/Quote number
  * @returns {boolean} True if legacy format
  */
-export const isLegacyFormat = (number) => {
+export const isLegacyFormat = (number: string | undefined | null): boolean => {
   if (!number) return false;
   return number.startsWith('#') && !number.includes('-');
 };
@@ -112,7 +114,14 @@ export const isLegacyFormat = (number) => {
  * @param {string} number - Formatted number (e.g., "SIP-2025-1001")
  * @returns {Object} { prefix, year, sequence }
  */
-export const parseFormattedNumber = (number) => {
+export const parseFormattedNumber = (
+  number: string | undefined | null
+): {
+  prefix: string | null;
+  year: number | null;
+  sequence: number | null;
+  isLegacy: boolean;
+} => {
   if (!number || isLegacyFormat(number)) {
     return { prefix: null, year: null, sequence: null, isLegacy: true };
   }
@@ -123,7 +132,7 @@ export const parseFormattedNumber = (number) => {
       prefix: parts[0], // SIP or TEK
       year: parseInt(parts[1]),
       sequence: parseInt(parts[2]),
-      isLegacy: false
+      isLegacy: false,
     };
   }
 

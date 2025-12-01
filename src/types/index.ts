@@ -16,10 +16,27 @@ export type UserRole = 'admin' | 'user';
 export type OrderStatus = 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı' | 'İptal Edildi';
 export type QuoteStatus = 'Hazırlandı' | 'Onaylandı' | 'Reddedildi';
 export type MeetingOutcome = 'İlgileniyor' | 'İlgilenmiyor' | 'Teklif Bekliyor';
-export type ShipmentStatus = 'Hazırlanıyor' | 'Gönderildi' | 'Yolda' | 'Teslim Edildi' | 'İptal Edildi';
+export type ShipmentStatus =
+  | 'Hazırlanıyor'
+  | 'Gönderildi'
+  | 'Yolda'
+  | 'Teslim Edildi'
+  | 'İptal Edildi';
 export type PaymentStatus = 'Bekliyor' | 'Tahsil Edildi' | 'Gecikti' | 'İptal';
-export type PaymentMethod = 'Nakit' | 'Havale/EFT' | 'Kredi Kartı' | 'Çek' | 'Senet' | 'Belirtilmemiş';
-export type CheckStatus = 'Portföyde' | 'Bankaya Verildi' | 'Tahsil Edildi' | 'Ciro Edildi' | 'Karşılıksız' | 'İade Edildi';
+export type PaymentMethod =
+  | 'Nakit'
+  | 'Havale/EFT'
+  | 'Kredi Kartı'
+  | 'Çek'
+  | 'Senet'
+  | 'Belirtilmemiş';
+export type CheckStatus =
+  | 'Portföyde'
+  | 'Bankaya Verildi'
+  | 'Tahsil Edildi'
+  | 'Ciro Edildi'
+  | 'Karşılıksız'
+  | 'İade Edildi';
 
 // İptal nedenleri
 export type CancellationReason =
@@ -163,7 +180,10 @@ export interface Quote {
   currency?: Currency;
   teklif_tarihi: string; // YYYY-MM-DD
   valid_until?: string;
+  gecerlilik_tarihi?: string; // Legacy field support
   status: QuoteStatus;
+  rejection_reason?: string; // Reason for rejection
+  quoteNumber?: string; // Friendly quote number (TEK-2024-001)
   paymentType?: 'Peşin' | 'Vadeli';
   paymentTerm?: number; // Days for vadeli
   notes?: string;
@@ -233,6 +253,7 @@ export interface Meeting {
   meeting_date: string; // YYYY-MM-DD
   meeting_time?: string; // HH:MM
   meetingType?: string; // İlk Temas, Teklif Sunumu, Takip Görüşmesi, etc.
+  meeting_type?: string; // Legacy field support
   outcome?: MeetingOutcome;
   notes?: string;
   next_action_date?: string;
