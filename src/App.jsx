@@ -451,14 +451,39 @@ const CrmApp = () => {
   // Shipment handler
   const handleShipmentSave = async (shipmentData) => {
     try {
-      // Add createdBy for new shipments
-      if (!shipmentData.id) {
-        shipmentData.createdBy = user.uid;
-        shipmentData.createdByEmail = user.email;
+      // Check if there is an automatic order update (Method B: Over-shipment)
+      const { updatedOrder, ...cleanShipmentData } = shipmentData;
+
+      if (updatedOrder) {
+        // Update the order with new quantities and totals
+        await saveDocument(user.uid, 'orders', {
+          id: cleanShipmentData.orderId,
+          ...updatedOrder,
+        });
+
+        // Log the automatic order update
+        const order = orders.find((o) => o.id === cleanShipmentData.orderId);
+        const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
+
+        logUserActivity('UPDATE_ORDER', {
+          message: `${customerName} siparişi sevkiyat sırasında otomatik güncellendi (Miktar Artışı)`,
+          orderId: cleanShipmentData.orderId,
+        });
+
+        toast.success('Sipariş miktarı güncellendi.');
       }
-      await saveDocument(user.uid, 'shipments', shipmentData);
-      const order = orders.find((o) => o.id === shipmentData.orderId);
+
+      // Add createdBy for new shipments
+      if (!cleanShipmentData.id) {
+        cleanShipmentData.createdBy = user.uid;
+        cleanShipmentData.createdByEmail = user.email;
+      }
+
+      await saveDocument(user.uid, 'shipments', cleanShipmentData);
+
+      const order = orders.find((o) => o.id === cleanShipmentData.orderId);
       const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
+
       logUserActivity('CREATE_SHIPMENT', {
         message: `${customerName} müşterisinin siparişi için sevkiyat oluşturuldu`,
       });
