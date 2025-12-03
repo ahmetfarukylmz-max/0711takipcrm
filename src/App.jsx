@@ -298,8 +298,7 @@ const CrmApp = () => {
       inquiredProducts,
       products,
       setPrefilledQuote,
-      navigateToPage,
-      toast
+      navigateToPage
     );
   };
 
