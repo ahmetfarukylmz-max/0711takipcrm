@@ -7,48 +7,66 @@ import { exportToExcel } from '../../utils/excelExport';
 import { generatePDFExtract } from '../../utils/pdfExtract';
 import { DownloadIcon, PrinterIcon } from '../icons';
 import { useDebounce } from '../../hooks/useDebounce';
-import type { Customer } from '../../types'; // Only Customer type needed for onCustomerClick
+import type { Customer } from '../../types';
 import { logger } from '../../utils/logger';
-import useStore from '../../store/useStore'; // Import Zustand store
+import useStore from '../../store/useStore';
+import {
+  calculateAllCustomerBalances,
+  calculateBalancesSummary,
+  getUniqueCitiesFromCustomers,
+  BalanceStatus,
+  CustomerBalance,
+} from '../../utils/balanceHelpers';
 
 interface BalancesProps {
   onCustomerClick?: (customer: Customer) => void;
 }
 
-type BalanceStatus = 'all' | 'alacak' | 'borc' | 'dengede';
 type SortField = 'name' | 'balance' | 'orders' | 'payments';
 type SortDirection = 'asc' | 'desc';
 type DetailTab = 'orders' | 'payments' | 'duedates';
 
-// CustomerBalance interface and related types are now defined in createDataSlice.ts,
-// so no need to define them here. We will use the type defined in the store.
-
 const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
-  const [statusFilter, setStatusFilter] = useState<BalanceStatus>('all');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [statusFilter, setStatusFilter] = useState<BalanceStatus | 'all'>('all');
   const [cityFilter, setCityFilter] = useState('Tümü');
   const [minBalance, setMinBalance] = useState('');
   const [maxBalance, setMaxBalance] = useState('');
   const [sortField, setSortField] = useState<SortField>('balance');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<any | null>(null); // Type updated to any as CustomerBalance is from store
+  const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<CustomerBalance | null>(
+    null
+  );
   const [detailTab, setDetailTab] = useState<DetailTab>('orders');
   const [alertFilter, setAlertFilter] = useState<
     'all' | 'overdue' | 'highRisk' | 'upcoming' | 'mediumRisk'
   >('all');
   const tableRef = useRef<FixedSizeList>(null);
 
-  // Get data and computed selectors directly from Zustand store
-  const customerBalances = useStore((state) => state.getAllCustomerBalances());
-  const summary = useStore((state) => state.getBalancesSummary());
-  const cities = useStore((state) => state.getUniqueCities());
+  // Get raw data from Zustand store
+  const customers = useStore((state) => state.collections.customers) || [];
+  const orders = useStore((state) => state.collections.orders) || [];
+  const payments = useStore((state) => state.collections.payments) || [];
 
-  // Filter and sort (using debounced search for performance)
+  // Memoize calculations using helper functions to prevent re-renders
+  const customerBalances = useMemo(() => {
+    return calculateAllCustomerBalances(customers, orders, payments);
+  }, [customers, orders, payments]);
+
+  const summary = useMemo(() => {
+    return calculateBalancesSummary(customerBalances);
+  }, [customerBalances]);
+
+  const cities = useMemo(() => {
+    return getUniqueCitiesFromCustomers(customers);
+  }, [customers]);
+
+  // Filter and sort
   const filteredAndSortedBalances = useMemo(() => {
     let filtered = customerBalances;
 
-    // Apply alert filter (highest priority)
+    // Apply alert filter
     if (alertFilter !== 'all') {
       switch (alertFilter) {
         case 'overdue':
@@ -66,7 +84,7 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
       }
     }
 
-    // Apply search filter (debounced)
+    // Apply search filter
     if (debouncedSearchTerm) {
       const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -163,8 +181,7 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
-  const handleRowClick = (customerBalance: any) => {
-    // Type updated to any
+  const handleRowClick = (customerBalance: CustomerBalance) => {
     setSelectedCustomerBalance(customerBalance);
     setDetailTab('orders');
   };
@@ -207,17 +224,13 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
   };
 
   const handleAlertCardClick = (alertType: 'overdue' | 'highRisk' | 'upcoming' | 'mediumRisk') => {
-    // Clear other filters first
     setSearchTerm('');
     setStatusFilter('all');
     setCityFilter('Tümü');
     setMinBalance('');
     setMaxBalance('');
-
-    // Set the alert filter
     setAlertFilter(alertType);
 
-    // Show toast notification
     switch (alertType) {
       case 'overdue':
         toast.success('Vadesi geçmiş ödemeli müşteriler gösteriliyor');
@@ -239,9 +252,7 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
 
     try {
       toast.loading('PDF oluşturuluyor...', { id: 'pdf-generate' });
-
       const filename = await generatePDFExtract(selectedCustomerBalance);
-
       toast.success(`PDF indirildi: ${filename}`, { id: 'pdf-generate' });
     } catch (error) {
       logger.error('PDF generation error:', error);

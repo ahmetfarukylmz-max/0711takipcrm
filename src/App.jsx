@@ -1,4 +1,4 @@
-import React, { useState, lazy, useEffect } from 'react';
+import React, { useState, lazy, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -63,11 +63,13 @@ const CrmApp = () => {
   const editingDocument = useStore((state) => state.editingDocument);
   const setEditingDocument = useStore((state) => state.setEditingDocument);
   const toggleGuide = useStore((state) => state.toggleGuide);
-  const overdueItems = useStore((state) => state.getOverdueMeetings());
+
+  // Overdue items calculation moved to useMemo to prevent infinite render loops
+  // const overdueItems = useStore((state) => state.getOverdueMeetings()); // This caused infinite loop
+
   const prefilledQuote = useStore((state) => state.prefilledQuote);
   const setPrefilledQuote = useStore((state) => state.setPrefilledQuote);
   const clearPrefilledQuote = useStore((state) => state.clearPrefilledQuote);
-  // Removed setCollections, setDataLoading, setConnectionStatus as they are unused
 
   // eslint-disable-next-line no-unused-vars
   const [refreshing, setRefreshing] = useState(false);
@@ -266,6 +268,32 @@ const CrmApp = () => {
   const connectionStatus = useStore((state) => state.connectionStatus);
   const dataLoading = useStore((state) => state.dataLoading);
 
+  // Re-implemented overdueItems calculation using useMemo to fix infinite loop
+  const overdueItems = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return gorusmeler
+      .filter((item) => !item.isDeleted)
+      .filter((meeting) => {
+        const nextActionDate = meeting.next_action_date ? new Date(meeting.next_action_date) : null;
+        return (
+          nextActionDate &&
+          nextActionDate < today &&
+          meeting.status !== 'Tamamlandı' &&
+          meeting.status !== 'İptal Edildi'
+        );
+      })
+      .map((meeting) => {
+        const customer = customers.find((c) => c.id === meeting.customerId);
+        return {
+          ...meeting,
+          type: 'meeting',
+          customerName: customer ? customer.name : 'Bilinmiyor',
+        };
+      });
+  }, [gorusmeler, customers]);
+
   const logUserActivity = (action, details) => {
     logActivity(user.uid, action, details);
   };
@@ -298,7 +326,8 @@ const CrmApp = () => {
       inquiredProducts,
       products,
       setPrefilledQuote,
-      navigateToPage
+      navigateToPage,
+      toast
     );
   };
 
