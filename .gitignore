@@ -13,7 +13,8 @@ dist-ssr
 *.local
 
 # Environment variables
-.env
+# .env # Removed for explicit user request to track it.
+
 
 # Claude Code
 .claude/
