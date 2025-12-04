@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import Modal from '../common/Modal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import QuoteForm from '../forms/QuoteForm';
+import QuoteRejectionDialog from '../forms/QuoteRejectionDialog'; // NEW IMPORT
 import SearchBar from '../common/SearchBar';
 import ActionsDropdown from '../common/ActionsDropdown';
 import MobileListItem from '../common/MobileListItem';
@@ -90,6 +91,15 @@ const Quotes = memo<QuotesProps>(
       isOpen: false,
       item: null,
     });
+    // State for the new Rejection Dialog
+    const [rejectionDialogState, setRejectionDialogState] = useState<{
+      isOpen: boolean;
+      quote: Quote | null;
+    }>({
+      isOpen: false,
+      quote: null,
+    });
+
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Tümü');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -116,6 +126,37 @@ const Quotes = memo<QuotesProps>(
     const handleSave = (quoteData: Partial<Quote>) => {
       onSave(quoteData);
       setIsModalOpen(false);
+    };
+
+    // New handler for rejection
+    const handleReject = (quote: Quote) => {
+      setRejectionDialogState({
+        isOpen: true,
+        quote: quote,
+      });
+    };
+
+    // Callback when rejection is confirmed
+    const confirmRejection = (data: {
+      reasonId: string;
+      reasonNote: string;
+      targetPrice?: number;
+      competitorName?: string;
+      reminderDate?: string;
+    }) => {
+      if (rejectionDialogState.quote) {
+        onSave({
+          id: rejectionDialogState.quote.id,
+          status: 'Reddedildi',
+          rejectionReasonId: data.reasonId,
+          rejection_reason: data.reasonNote, // Keep backward compatibility
+          targetPrice: data.targetPrice,
+          competitorName: data.competitorName,
+          reminderDate: data.reminderDate,
+        });
+        setRejectionDialogState({ isOpen: false, quote: null });
+        toast.success('Teklif reddedildi ve analiz verileri kaydedildi.');
+      }
     };
 
     const handleDelete = (item: Quote) => {
@@ -524,6 +565,15 @@ const Quotes = memo<QuotesProps>(
                     }
                   }
 
+                  // NEW: Add Reject Option if not already rejected or approved
+                  if (quote.status !== 'Reddedildi' && quote.status !== 'Onaylandı') {
+                    quoteActions.push({
+                      label: '🚫 Reddet',
+                      onClick: () => handleReject(quote),
+                      // variant: 'danger' // If supported
+                    });
+                  }
+
                   quoteActions.push({
                     label: 'Sil',
                     onClick: () => handleDelete(quote),
@@ -624,6 +674,38 @@ const Quotes = memo<QuotesProps>(
                 quote.status === 'Hazırlandı' ||
                 (quote.orderId && !orders.find((o) => o.id === quote.orderId && !o.isDeleted));
 
+              // Mobile actions setup
+              const mobileActions = [
+                {
+                  label: 'PDF',
+                  onClick: (e: any) => {
+                    e?.stopPropagation();
+                    handlePrint(quote);
+                  },
+                  variant: 'secondary',
+                },
+              ];
+
+              if (quote.status !== 'Reddedildi' && quote.status !== 'Onaylandı') {
+                mobileActions.push({
+                  label: 'Reddet',
+                  onClick: (e: any) => {
+                    e?.stopPropagation();
+                    handleReject(quote);
+                  },
+                  variant: 'secondary', // or a specific color if supported
+                });
+              }
+
+              mobileActions.push({
+                label: 'Sil',
+                onClick: (e: any) => {
+                  e?.stopPropagation();
+                  handleDelete(quote);
+                },
+                variant: 'danger',
+              });
+
               return (
                 <MobileListItem
                   key={quote.id}
@@ -677,26 +759,7 @@ const Quotes = memo<QuotesProps>(
                           Siparişe Çevir
                         </button>
                       )}
-                      <MobileActions
-                        actions={[
-                          {
-                            label: 'PDF',
-                            onClick: (e) => {
-                              e?.stopPropagation();
-                              handlePrint(quote);
-                            },
-                            variant: 'secondary',
-                          },
-                          {
-                            label: 'Sil',
-                            onClick: (e) => {
-                              e?.stopPropagation();
-                              handleDelete(quote);
-                            },
-                            variant: 'danger',
-                          },
-                        ]}
-                      />
+                      <MobileActions actions={mobileActions} />
                     </div>
                   }
                 />
@@ -743,6 +806,14 @@ const Quotes = memo<QuotesProps>(
             shipments={shipments}
           />
         </Modal>
+
+        {/* NEW: Rejection Logic Dialog */}
+        <QuoteRejectionDialog
+          isOpen={rejectionDialogState.isOpen}
+          onClose={() => setRejectionDialogState({ isOpen: false, quote: null })}
+          onConfirm={confirmRejection}
+          quote={rejectionDialogState.quote}
+        />
 
         <ConfirmDialog
           isOpen={deleteConfirm.isOpen}

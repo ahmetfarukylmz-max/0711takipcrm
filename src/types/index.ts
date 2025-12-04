@@ -182,7 +182,11 @@ export interface Quote {
   valid_until?: string;
   gecerlilik_tarihi?: string; // Legacy field support
   status: QuoteStatus;
-  rejection_reason?: string; // Reason for rejection
+  rejectionReasonId?: string; // Standard rejection reason ID
+  rejection_reason?: string; // Reason for rejection (Free text)
+  targetPrice?: number; // Customer's target price (for Price Gap analysis)
+  competitorName?: string; // Competitor name (for Competitor Intel)
+  reminderDate?: string; // Win-back reminder date
   quoteNumber?: string; // Friendly quote number (TEK-2024-001)
   paymentType?: 'Peşin' | 'Vadeli';
   paymentTerm?: number; // Days for vadeli
