@@ -52,6 +52,8 @@ const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
 const StockLotManagement = lazy(() => import('./components/pages/StockLotManagement'));
 const LotReconciliation = lazy(() => import('./components/pages/LotReconciliation'));
 
+import DebugPanel from './components/common/DebugPanel'; // Import DebugPanel
+
 const CrmApp = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -409,219 +411,222 @@ const CrmApp = () => {
   }
 
   return (
-    <Routes>
-      <Route
-        element={
-          <MainLayout
-            activePage={activePage}
-            setActivePage={navigateToPage}
-            connectionStatus={connectionStatus}
-            onRefresh={handleRefresh}
-            onFABAction={handleFABAction}
-            customers={customers}
+    <>
+      <Routes>
+        <Route
+          element={
+            <MainLayout
+              activePage={activePage}
+              setActivePage={navigateToPage}
+              connectionStatus={connectionStatus}
+              onRefresh={handleRefresh}
+              onFABAction={handleFABAction}
+              customers={customers}
+            />
+          }
+        >
+          <Route
+            path="/"
+            element={
+              <Dashboard
+                customers={customers}
+                orders={orders}
+                teklifler={teklifler}
+                gorusmeler={gorusmeler}
+                products={products}
+                shipments={shipments}
+                overdueItems={overdueItems}
+                customTasks={customTasks}
+                setActivePage={navigateToPage}
+                onMeetingSave={handleMeetingSave}
+                onCustomTaskSave={handleCustomTaskSave}
+                onScheduleMeeting={(customerId) => setSelectedCustomerId(customerId)}
+                loading={dataLoading}
+              />
+            }
           />
-        }
-      >
-        <Route
-          path="/"
-          element={
-            <Dashboard
-              customers={customers}
-              orders={orders}
-              teklifler={teklifler}
-              gorusmeler={gorusmeler}
-              products={products}
-              shipments={shipments}
-              overdueItems={overdueItems}
-              customTasks={customTasks}
-              setActivePage={navigateToPage}
-              onMeetingSave={handleMeetingSave}
-              onCustomTaskSave={handleCustomTaskSave}
-              onScheduleMeeting={(customerId) => setSelectedCustomerId(customerId)}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/customers"
-          element={
-            <Customers
-              customers={customers}
-              onSave={handleCustomerSave}
-              onDelete={handleCustomerDelete}
-              orders={orders}
-              quotes={teklifler}
-              meetings={gorusmeler}
-              shipments={shipments}
-              products={products}
-              payments={payments}
-              onQuoteSave={handleQuoteSave}
-              onOrderSave={handleOrderSave}
-              onMeetingSave={handleMeetingSave}
-              onProductSave={handleProductSave}
-              onShipmentUpdate={handleShipmentUpdate}
-              setActivePage={navigateToPage}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/products"
-          element={
-            <Products
-              products={products}
-              orders={orders}
-              quotes={teklifler}
-              customers={customers}
-              onSave={handleProductSave}
-              onDelete={handleProductDelete}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/quotes"
-          element={
-            <Quotes
-              quotes={teklifler}
-              orders={orders}
-              shipments={shipments}
-              onSave={handleQuoteSave}
-              onDelete={handleQuoteDelete}
-              onConvertToOrder={handleConvertToOrder}
-              customers={customers}
-              products={products}
-              onGeneratePdf={handleGeneratePdf}
-              prefilledQuote={prefilledQuote}
-              onPrefilledQuoteConsumed={clearPrefilledQuote}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/orders"
-          element={
-            <Orders
-              orders={orders}
-              onSave={handleOrderSave}
-              onDelete={handleOrderDelete}
-              onCancel={handleOrderCancel}
-              onShipment={handleShipmentSave}
-              customers={customers}
-              products={products}
-              shipments={shipments}
-              payments={payments}
-              onMarkAsPaid={(paymentId) => {
-                const payment = payments.find((p) => p.id === paymentId);
-                if (payment) {
-                  const today = new Date().toISOString().split('T')[0];
-                  handlePaymentSave({ ...payment, status: 'Tahsil Edildi', paidDate: today });
-                  toast.success('Ödeme tahsil edildi olarak işaretlendi!');
-                }
-              }}
-              onGoToPayment={(paymentId) => {
-                setSelectedPaymentId(paymentId);
-                navigateToPage('Ödemeler');
-              }}
-              onGeneratePdf={handleGeneratePdf}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/meetings"
-          element={
-            <Meetings
-              meetings={gorusmeler}
-              customers={customers}
-              products={products}
-              onSave={handleMeetingSave}
-              onDelete={handleMeetingDelete}
-              onCustomerSave={handleCustomerSave}
-              onProductSave={handleProductSave}
-              onCreateQuote={handleCreateQuoteFromMeeting}
-              loading={dataLoading}
-              selectedCustomerId={selectedCustomerId}
-              onCustomerSelected={() => setSelectedCustomerId(null)}
-            />
-          }
-        />
-        <Route
-          path="/shipments"
-          element={
-            <Shipments
-              shipments={shipments}
-              orders={orders}
-              products={products}
-              customers={customers}
-              onDelivery={handleDelivery}
-              onUpdate={handleShipmentUpdate}
-              onDelete={handleShipmentDelete}
-              loading={dataLoading}
-            />
-          }
-        />
-        <Route
-          path="/payments"
-          element={
-            <Payments
-              payments={payments}
-              customers={customers}
-              orders={orders}
-              onSave={handlePaymentSave}
-              onDelete={handlePaymentDelete}
-              loading={dataLoading}
-              selectedPaymentId={selectedPaymentId}
-              onPaymentSelected={() => setSelectedPaymentId(null)}
-            />
-          }
-        />
-        <Route
-          path="/balances"
-          element={
-            <Balances
-              customers={customers}
-              orders={orders}
-              payments={payments}
-              onCustomerClick={() => {
-                navigateToPage('Müşteriler');
-              }}
-            />
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <Reports
-              orders={orders}
-              customers={customers}
-              teklifler={teklifler}
-              gorusmeler={gorusmeler}
-              shipments={shipments}
-              products={products}
-              payments={payments}
-              onGuideClick={handleToggleGuide}
-            />
-          }
-        />
-        <Route path="/lots" element={<StockLotManagement />} />
-        <Route path="/reconciliation" element={<LotReconciliation />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route
-          path="/pdf-generator"
-          element={
-            <PdfGenerator
-              doc={editingDocument}
-              customers={customers}
-              products={products}
-              orders={orders}
-              shipments={shipments}
-            />
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+          <Route
+            path="/customers"
+            element={
+              <Customers
+                customers={customers}
+                onSave={handleCustomerSave}
+                onDelete={handleCustomerDelete}
+                orders={orders}
+                quotes={teklifler}
+                meetings={gorusmeler}
+                shipments={shipments}
+                products={products}
+                payments={payments}
+                onQuoteSave={handleQuoteSave}
+                onOrderSave={handleOrderSave}
+                onMeetingSave={handleMeetingSave}
+                onProductSave={handleProductSave}
+                onShipmentUpdate={handleShipmentUpdate}
+                setActivePage={navigateToPage}
+                loading={dataLoading}
+              />
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <Products
+                products={products}
+                orders={orders}
+                quotes={teklifler}
+                customers={customers}
+                onSave={handleProductSave}
+                onDelete={handleProductDelete}
+                loading={dataLoading}
+              />
+            }
+          />
+          <Route
+            path="/quotes"
+            element={
+              <Quotes
+                quotes={teklifler}
+                orders={orders}
+                shipments={shipments}
+                onSave={handleQuoteSave}
+                onDelete={handleQuoteDelete}
+                onConvertToOrder={handleConvertToOrder}
+                customers={customers}
+                products={products}
+                onGeneratePdf={handleGeneratePdf}
+                prefilledQuote={prefilledQuote}
+                onPrefilledQuoteConsumed={clearPrefilledQuote}
+                loading={dataLoading}
+              />
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <Orders
+                orders={orders}
+                onSave={handleOrderSave}
+                onDelete={handleOrderDelete}
+                onCancel={handleOrderCancel}
+                onShipment={handleShipmentSave}
+                customers={customers}
+                products={products}
+                shipments={shipments}
+                payments={payments}
+                onMarkAsPaid={(paymentId) => {
+                  const payment = payments.find((p) => p.id === paymentId);
+                  if (payment) {
+                    const today = new Date().toISOString().split('T')[0];
+                    handlePaymentSave({ ...payment, status: 'Tahsil Edildi', paidDate: today });
+                    toast.success('Ödeme tahsil edildi olarak işaretlendi!');
+                  }
+                }}
+                onGoToPayment={(paymentId) => {
+                  setSelectedPaymentId(paymentId);
+                  navigateToPage('Ödemeler');
+                }}
+                onGeneratePdf={handleGeneratePdf}
+                loading={dataLoading}
+              />
+            }
+          />
+          <Route
+            path="/meetings"
+            element={
+              <Meetings
+                meetings={gorusmeler}
+                customers={customers}
+                products={products}
+                onSave={handleMeetingSave}
+                onDelete={handleMeetingDelete}
+                onCustomerSave={handleCustomerSave}
+                onProductSave={handleProductSave}
+                onCreateQuote={handleCreateQuoteFromMeeting}
+                loading={dataLoading}
+                selectedCustomerId={selectedCustomerId}
+                onCustomerSelected={() => setSelectedCustomerId(null)}
+              />
+            }
+          />
+          <Route
+            path="/shipments"
+            element={
+              <Shipments
+                shipments={shipments}
+                orders={orders}
+                products={products}
+                customers={customers}
+                onDelivery={handleDelivery}
+                onUpdate={handleShipmentUpdate}
+                onDelete={handleShipmentDelete}
+                loading={dataLoading}
+              />
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <Payments
+                payments={payments}
+                customers={customers}
+                orders={orders}
+                onSave={handlePaymentSave}
+                onDelete={handlePaymentDelete}
+                loading={dataLoading}
+                selectedPaymentId={selectedPaymentId}
+                onPaymentSelected={() => setSelectedPaymentId(null)}
+              />
+            }
+          />
+          <Route
+            path="/balances"
+            element={
+              <Balances
+                customers={customers}
+                orders={orders}
+                payments={payments}
+                onCustomerClick={() => {
+                  navigateToPage('Müşteriler');
+                }}
+              />
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <Reports
+                orders={orders}
+                customers={customers}
+                teklifler={teklifler}
+                gorusmeler={gorusmeler}
+                shipments={shipments}
+                products={products}
+                payments={payments}
+                onGuideClick={handleToggleGuide}
+              />
+            }
+          />
+          <Route path="/lots" element={<StockLotManagement />} />
+          <Route path="/reconciliation" element={<LotReconciliation />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/pdf-generator"
+            element={
+              <PdfGenerator
+                doc={editingDocument}
+                customers={customers}
+                products={products}
+                orders={orders}
+                shipments={shipments}
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+      <DebugPanel />
+    </>
   );
 };
 
