@@ -153,7 +153,7 @@ export const convertQuoteToOrder = async (userId, quote) => {
     vatAmount: quote.vatAmount,
     total_amount: quote.total_amount,
     order_date: new Date().toISOString().slice(0, 10),
-    status: 'Bekliyor',
+    status: 'Taslak',
     paymentType: quote.paymentType || 'Peşin',
     paymentTerm: quote.paymentTerm || null,
     currency: quote.currency || 'TRY',

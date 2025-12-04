@@ -657,7 +657,10 @@ const Orders = memo<OrdersProps>(
                     { label: 'Özelleştir', onClick: () => onGeneratePdf(order) },
                   ];
 
-                  if (order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') {
+                  if (
+                    order.status !== 'Taslak' &&
+                    (order.status === 'Bekliyor' || order.status === 'Hazırlanıyor')
+                  ) {
                     orderActions.unshift({
                       label: 'Sevk Et',
                       onClick: () => handleOpenShipmentModal(order),
@@ -887,17 +890,18 @@ const Orders = memo<OrdersProps>(
                       }
                       actions={
                         <div className="space-y-2">
-                          {(order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenShipmentModal(order);
-                              }}
-                              className="w-full px-4 py-2.5 rounded-lg font-medium text-sm bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 active:bg-green-100 dark:active:bg-green-900/50"
-                            >
-                              Sevk Et
-                            </button>
-                          )}
+                          {order.status !== 'Taslak' &&
+                            (order.status === 'Bekliyor' || order.status === 'Hazırlanıyor') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenShipmentModal(order);
+                                }}
+                                className="w-full px-4 py-2.5 rounded-lg font-medium text-sm bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 active:bg-green-100 dark:active:bg-green-900/50"
+                              >
+                                Sevk Et
+                              </button>
+                            )}
                           <MobileActions actions={mobileActions} />
                         </div>
                       }

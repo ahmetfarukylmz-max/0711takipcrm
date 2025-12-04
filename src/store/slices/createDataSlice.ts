@@ -187,7 +187,7 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
   getCustomerBalance: (customerId) => {
     const state = get();
     const orders = state.collections.orders.filter(
-      (o) => o.customerId === customerId && !o.isDeleted
+      (o) => o.customerId === customerId && !o.isDeleted && o.status !== 'Taslak'
     );
     const payments = state.collections.payments.filter(
       (p) => p.customerId === customerId && !p.isDeleted && p.status === 'Tahsil Edildi'
@@ -216,7 +216,9 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
 
   getActiveOrders: () => {
     const state = get();
-    return state.collections.orders.filter((o) => !o.isDeleted && o.status !== 'Tamamlandı');
+    return state.collections.orders.filter(
+      (o) => !o.isDeleted && o.status !== 'Tamamlandı' && o.status !== 'Taslak'
+    );
   },
 
   getPendingQuotes: () => {

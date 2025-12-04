@@ -13,8 +13,8 @@ export type VATRate = 0 | 1 | 10 | 20;
 export type UserRole = 'admin' | 'user';
 
 // Durum tipleri
-export type OrderStatus = 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı' | 'İptal Edildi';
-export type QuoteStatus = 'Hazırlandı' | 'Onaylandı' | 'Reddedildi';
+export type OrderStatus = 'Taslak' | 'Bekliyor' | 'Hazırlanıyor' | 'Tamamlandı' | 'İptal Edildi';
+export type QuoteStatus = 'Taslak' | 'Hazırlandı' | 'Onaylandı' | 'Reddedildi';
 export type MeetingOutcome = 'İlgileniyor' | 'İlgilenmiyor' | 'Teklif Bekliyor';
 export type ShipmentStatus =
   | 'Hazırlanıyor'
