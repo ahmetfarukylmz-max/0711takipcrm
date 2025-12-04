@@ -202,15 +202,12 @@ export const useFirestoreCollections = (collectionNames: string[]): FirestoreCol
 
         return onSnapshot(
           collectionRef,
+
           (snapshot) => {
             const documents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            console.log(
-              `🔥 Firestore'dan veri geldi [${collectionName}]:`,
-              documents.length,
-              'kayıt'
-            );
 
             // FIX: Use updateCollection instead of setCollections
+
             updateCollection(collectionName, documents);
 
             setConnectionStatus('Bağlandı');
