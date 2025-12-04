@@ -208,6 +208,11 @@ export const useFirestoreCollections = (collectionNames: string[]): FirestoreCol
           collectionRef,
           (snapshot) => {
             const documents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            console.log(
+              `🔥 Firestore'dan veri geldi [${collectionName}]:`,
+              documents.length,
+              'kayıt'
+            );
 
             setCollections((prev: Record<string, any[]>) => ({
               ...prev,
