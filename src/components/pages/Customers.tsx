@@ -98,6 +98,12 @@ const Customers = memo<CustomersProps>(
     const storePayments = useStore((state) => state.collections.payments);
 
     const customers = propCustomers || storeCustomers || [];
+    console.log('Component Render - Customers:', {
+      prop: propCustomers?.length,
+      store: storeCustomers?.length,
+      final: customers.length,
+    });
+
     const orders = propOrders.length > 0 ? propOrders : storeOrders || [];
     const quotes = propQuotes.length > 0 ? propQuotes : storeQuotes || [];
     const meetings = propMeetings.length > 0 ? propMeetings : storeMeetings || [];
