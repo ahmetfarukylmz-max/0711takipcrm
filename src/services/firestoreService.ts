@@ -28,10 +28,15 @@ export const setStoreInstance = (store) => {
 export const logActivity = async (userId, action, details) => {
   if (!userId) return;
   try {
+    // Sanitize details object to remove undefined values
+    const sanitize = (obj) => {
+      return JSON.parse(JSON.stringify(obj, (key, value) => (value === undefined ? null : value)));
+    };
+
     const logData = {
       userId,
       action,
-      details,
+      details: sanitize(details),
       timestamp: serverTimestamp(),
     };
     await addDoc(collection(db, `users/${userId}/activity_log`), logData);
