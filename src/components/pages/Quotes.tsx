@@ -145,15 +145,26 @@ const Quotes = memo<QuotesProps>(
       reminderDate?: string;
     }) => {
       if (rejectionDialogState.quote) {
-        onSave({
+        // Create update object with only defined values
+        const updateData: Partial<Quote> = {
           id: rejectionDialogState.quote.id,
           status: 'Reddedildi',
           rejectionReasonId: data.reasonId,
-          rejection_reason: data.reasonNote, // Keep backward compatibility
-          targetPrice: data.targetPrice,
-          competitorName: data.competitorName,
-          reminderDate: data.reminderDate,
-        });
+          rejection_reason: data.reasonNote,
+        };
+
+        // Only add optional fields if they have values (not undefined/null/empty)
+        if (data.targetPrice !== undefined && data.targetPrice !== null) {
+          updateData.targetPrice = data.targetPrice;
+        }
+        if (data.competitorName) {
+          updateData.competitorName = data.competitorName;
+        }
+        if (data.reminderDate) {
+          updateData.reminderDate = data.reminderDate;
+        }
+
+        onSave(updateData);
         setRejectionDialogState({ isOpen: false, quote: null });
         toast.success('Teklif reddedildi ve analiz verileri kaydedildi.');
       }
