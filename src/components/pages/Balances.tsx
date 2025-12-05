@@ -10,6 +10,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import type { Customer } from '../../types';
 import { logger } from '../../utils/logger';
 import useStore from '../../store/useStore';
+import { COMPANY_DETAILS } from '../../constants/company';
 import {
   calculateAllCustomerBalances,
   calculateBalancesSummary,
@@ -246,10 +247,6 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
         break;
     }
   };
-
-  import { COMPANY_DETAILS } from '../../constants/company';
-
-  // ... (inside component)
 
   const handlePrintExtract = async () => {
     if (!selectedCustomerBalance) return;
