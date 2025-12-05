@@ -250,13 +250,13 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
   const handlePrintExtract = async () => {
     if (!selectedCustomerBalance) return;
 
+    const toastId = toast.loading('PDF oluşturuluyor...');
     try {
-      toast.loading('PDF oluşturuluyor...', { id: 'pdf-generate' });
       const filename = await generatePDFExtract(selectedCustomerBalance);
-      toast.success(`PDF indirildi: ${filename}`, { id: 'pdf-generate' });
+      toast.success(`PDF indirildi: ${filename}`, { id: toastId });
     } catch (error) {
       logger.error('PDF generation error:', error);
-      toast.error('PDF oluşturulurken hata oluştu', { id: 'pdf-generate' });
+      toast.error('PDF oluşturulurken hata oluştu. Lütfen tekrar deneyin.', { id: toastId });
     }
   };
 

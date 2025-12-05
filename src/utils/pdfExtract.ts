@@ -88,6 +88,7 @@ export const generatePDFExtract = async (
         font-family: 'Inter', Arial, sans-serif;
         color: #1f2937;
         box-sizing: border-box;
+        z-index: -1;
     `;
 
   // Helper to safely escape HTML
@@ -267,12 +268,16 @@ export const generatePDFExtract = async (
   document.body.appendChild(pdfContainer);
 
   try {
+    // Wait for fonts and styles to apply
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Convert DOM to Canvas
     const canvas = await html2canvas(pdfContainer, {
       scale: 2, // High resolution
       useCORS: true,
-      logging: false,
+      logging: true, // Enabled for debugging
       backgroundColor: '#ffffff',
+      allowTaint: true, // Allow loading cross-origin images
     });
 
     // Generate PDF
@@ -297,32 +302,10 @@ export const generatePDFExtract = async (
 
     // Extra pages if content is long
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight; // This logic might need adjustment for perfect multi-page, but for simple extracts usually 1-2 pages
-      // Better logic for multi-page image splitting often involves separate canvases,
-      // but standard approach:
+      position = heightLeft - imgHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, -pageHeight + (heightLeft % pageHeight), imgWidth, imgHeight); // Simplified
-      // Actually standard jspdf addImage with negative offset often works for "scrolling" down the image
-      // Correct generic logic:
-      // Since we already added the first page (0 to pageHeight), the next page should show from pageHeight to 2*pageHeight
-      // Position needs to be negative.
-      // Reset position for next loop?
+      pdf.addImage(imgData, 'PNG', 0, -pageHeight + (heightLeft % pageHeight), imgWidth, imgHeight); // Simplified overflow logic
     }
-    // Note: The multi-page logic with single long image is tricky.
-    // Given the html2canvas snapshot is ONE big image, we just add it.
-    // If it fits on one page (most extracts), great.
-    // If not, we might cut it.
-    // For now, let's stick to the simple single page scaling or basic multi-page.
-    // Reverting to simple multi-page logic:
-    // This part is often buggy with just `addImage`.
-    // Let's use the exact logic from EnhancedDailyReportWithDetails which seems to be:
-    // pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    // while (heightLeft > 0) ... position = heightLeft - imgHeight ? No, that looks weird in the source.
-
-    // Let's try standard A4 fit or basic overflow.
-    // If content is short enough, it's fine.
-    // If huge, `html2canvas` creates a huge image.
-    // Let's assume standard extraction size for now.
 
     const filename = `cari-ekstre-${customerBalance.customer.name.replace(/[^a-z0-9]/gi, '_')}-${
       new Date().toISOString().split('T')[0]
@@ -330,11 +313,13 @@ export const generatePDFExtract = async (
     pdf.save(filename);
     return filename;
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error generating PDF with html2canvas:', error);
     throw error;
   } finally {
     // Cleanup
-    document.body.removeChild(pdfContainer);
+    if (document.body.contains(pdfContainer)) {
+      document.body.removeChild(pdfContainer);
+    }
   }
 };
 
