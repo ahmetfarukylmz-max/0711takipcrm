@@ -77,18 +77,21 @@ export const generatePDFExtract = async (
 ): Promise<string> => {
   // Create a temporary container for the PDF content
   const pdfContainer = document.createElement('div');
+  // Use fixed position with opacity 0 instead of off-screen to ensure rendering
   pdfContainer.style.cssText = `
-        position: absolute;
-        left: -9999px;
+        position: fixed;
+        left: 0;
         top: 0;
         width: 794px; /* A4 width in pixels at 96 DPI approx */
         min-height: 1123px; /* A4 height */
-        background: white;
+        background: #ffffff;
         padding: 40px;
         font-family: 'Inter', Arial, sans-serif;
         color: #1f2937;
         box-sizing: border-box;
-        z-index: -1;
+        z-index: -9999;
+        opacity: 0;
+        pointer-events: none;
     `;
 
   // Helper to safely escape HTML
@@ -268,17 +271,28 @@ export const generatePDFExtract = async (
   document.body.appendChild(pdfContainer);
 
   try {
-    // Wait for fonts and styles to apply
+    // Wait for DOM paint and image loading
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Convert DOM to Canvas
-    const canvas = await html2canvas(pdfContainer, {
-      scale: 2, // High resolution
-      useCORS: true,
-      logging: true, // Enabled for debugging
-      backgroundColor: '#ffffff',
-      allowTaint: true, // Allow loading cross-origin images
+    // Create a promise that rejects after 10 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('PDF oluşturma zaman aşımına uğradı.')), 10000);
     });
+
+    // Race between html2canvas and timeout
+    const canvas = (await Promise.race([
+      html2canvas(pdfContainer, {
+        scale: 2, // High resolution
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        allowTaint: true,
+        // Force dimensions to match container
+        width: 794,
+        windowWidth: 794,
+      }),
+      timeoutPromise,
+    ])) as HTMLCanvasElement;
 
     // Generate PDF
     const imgData = canvas.toDataURL('image/png');
