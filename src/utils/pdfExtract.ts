@@ -147,6 +147,10 @@ export const generatePDFExtract = async (
                             <td style="padding: 4px 0; color: #6b7280;">Adres:</td>
                             <td style="padding: 4px 0; color: #374151;">${safe(customerBalance.customer.address)} ${safe(customerBalance.customer.city)}</td>
                         </tr>
+                        <tr>
+                            <td style="padding: 4px 0; color: #6b7280;">Vergi D.:</td>
+                            <td style="padding: 4px 0; color: #374151;">${safe(customerBalance.customer.taxOffice)} - ${safe(customerBalance.customer.taxNumber)}</td>
+                        </tr>
                     </table>
                 </div>
 
