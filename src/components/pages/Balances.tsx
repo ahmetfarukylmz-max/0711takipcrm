@@ -252,7 +252,18 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
 
     const toastId = toast.loading('PDF oluşturuluyor...');
     try {
-      const filename = await generatePDFExtract(selectedCustomerBalance);
+      // TODO: Bu bilgileri bir Ayarlar sayfasından veya Global Store'dan çek
+      const companyInfo = {
+        name: 'Takip CRM',
+        address: 'Merkez Mah. Ana Cad. No:1',
+        phone: '0850 123 45 67',
+        email: 'info@takipcrm.com',
+        taxOffice: 'Zincirlikuyu',
+        taxNumber: '1234567890',
+        logo: 'https://i.ibb.co/rGFcQ4GB/logo-Photoroom.png',
+      };
+
+      const filename = await generatePDFExtract(selectedCustomerBalance, companyInfo);
       toast.success(`PDF indirildi: ${filename}`, { id: toastId });
     } catch (error) {
       logger.error('PDF generation error:', error);
