@@ -129,10 +129,11 @@ export const generatePDFExtract = async (
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 40px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px;">
                 <div style="display: flex; gap: 20px; align-items: center;">
-                    <!-- Professional Placeholder Logo -->
-                    <div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">
-                        ${companyInfo.name.substring(0, 2).toUpperCase()}
-                    </div>
+                    ${
+                      companyInfo.logo
+                        ? `<img src="${companyInfo.logo}" style="height: 80px; width: auto; object-fit: contain;" crossorigin="anonymous" />`
+                        : `<div style="width: 60px; height: 60px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">${companyInfo.name.substring(0, 2).toUpperCase()}</div>`
+                    }
                     <div>
                         <h1 style="margin: 0; font-size: 24px; font-weight: bold; color: #1e3a8a;">${safe(companyInfo.name)}</h1>
                         <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">
