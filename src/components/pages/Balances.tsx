@@ -247,20 +247,19 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
     }
   };
 
+  import { COMPANY_DETAILS } from '../../constants/company';
+
+  // ... (inside component)
+
   const handlePrintExtract = async () => {
     if (!selectedCustomerBalance) return;
 
     const toastId = toast.loading('PDF oluşturuluyor...');
     try {
-      // TODO: Bu bilgileri bir Ayarlar sayfasından veya Global Store'dan çek
+      // Use shared company details
       const companyInfo = {
-        name: 'Takip CRM',
-        address: 'Merkez Mah. Ana Cad. No:1',
-        phone: '0850 123 45 67',
-        email: 'info@takipcrm.com',
-        taxOffice: 'Zincirlikuyu',
-        taxNumber: '1234567890',
-        logo: 'https://i.ibb.co/rGFcQ4GB/logo-Photoroom.png',
+        ...COMPANY_DETAILS,
+        // You can override specific fields here if needed, or just use the defaults
       };
 
       const filename = await generatePDFExtract(selectedCustomerBalance, companyInfo);
