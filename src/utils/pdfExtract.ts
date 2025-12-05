@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from './formatters';
 
 /**
@@ -62,7 +62,7 @@ const DEFAULT_COMPANY_INFO: CompanyInfo = {
   phone: '0XXX XXX XX XX',
   email: 'info@sirket.com',
   taxOffice: 'Vergi Dairesi',
-  taxNumber: 'XXXXXXXXXX'
+  taxNumber: 'XXXXXXXXXX',
 };
 
 /**
@@ -108,7 +108,9 @@ export const generatePDFExtract = async (
     doc.text(companyInfo.email, pageWidth - 15, 27, { align: 'right' });
   }
   if (companyInfo.taxOffice && companyInfo.taxNumber) {
-    doc.text(`${companyInfo.taxOffice} - VN: ${companyInfo.taxNumber}`, pageWidth - 15, 32, { align: 'right' });
+    doc.text(`${companyInfo.taxOffice} - VN: ${companyInfo.taxNumber}`, pageWidth - 15, 32, {
+      align: 'right',
+    });
   }
 
   // Main Title
@@ -142,10 +144,10 @@ export const generatePDFExtract = async (
     { label: 'Telefon:', value: customerBalance.customer.phone || '-' },
     { label: 'E-posta:', value: customerBalance.customer.email || '-' },
     { label: 'Adres:', value: customerBalance.customer.address || '-' },
-    { label: 'Şehir:', value: customerBalance.customer.city || '-' }
+    { label: 'Şehir:', value: customerBalance.customer.city || '-' },
   ];
 
-  customerInfoLines.forEach(info => {
+  customerInfoLines.forEach((info) => {
     doc.setFont('helvetica', 'bold');
     doc.text(info.label, 15, yPos);
     doc.setFont('helvetica', 'normal');
@@ -199,7 +201,8 @@ export const generatePDFExtract = async (
   }
 
   doc.text('NET BAKİYE:', 20, yPos);
-  const balanceText = (customerBalance.balance >= 0 ? '+' : '') + formatCurrency(customerBalance.balance, 'TRY');
+  const balanceText =
+    (customerBalance.balance >= 0 ? '+' : '') + formatCurrency(customerBalance.balance, 'TRY');
   doc.text(balanceText, 70, yPos);
 
   doc.setTextColor(0, 0, 0);
@@ -234,39 +237,39 @@ export const generatePDFExtract = async (
   yPos += 5;
 
   if (customerBalance.orderDetails.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Tarih', 'Sipariş No', 'Tutar', 'Para Birimi', 'Durum']],
-      body: customerBalance.orderDetails.map(order => [
+      body: customerBalance.orderDetails.map((order) => [
         formatDate(order.date),
         order.orderNumber || '-',
         parseFloat(order.amount.toFixed(2)).toLocaleString('tr-TR', { minimumFractionDigits: 2 }),
         order.currency,
-        order.status || 'Bekliyor'
+        order.status || 'Bekliyor',
       ]),
       headStyles: {
         fillColor: [59, 130, 246], // Blue
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center' as const,
-        fontSize: 10
+        fontSize: 10,
       },
       bodyStyles: {
         fontSize: 9,
-        textColor: [50, 50, 50]
+        textColor: [50, 50, 50],
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245]
+        fillColor: [245, 245, 245],
       },
       columnStyles: {
         0: { halign: 'left' as const, cellWidth: 25 },
         1: { halign: 'center' as const, cellWidth: 30 },
         2: { halign: 'right' as const, cellWidth: 30 },
         3: { halign: 'center' as const, cellWidth: 25 },
-        4: { halign: 'center' as const, cellWidth: 'auto' as any }
+        4: { halign: 'center' as const, cellWidth: 'auto' as any },
       },
       margin: { left: 15, right: 15 },
-      theme: 'grid' as const
+      theme: 'grid' as const,
     });
 
     yPos = (doc as any).lastAutoTable.finalY + 10;
@@ -293,39 +296,39 @@ export const generatePDFExtract = async (
   yPos += 5;
 
   if (customerBalance.paymentDetails.length > 0) {
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Tarih', 'Tutar', 'Para Birimi', 'Ödeme Yöntemi', 'Durum']],
-      body: customerBalance.paymentDetails.map(payment => [
+      body: customerBalance.paymentDetails.map((payment) => [
         formatDate(payment.date),
         parseFloat(payment.amount.toFixed(2)).toLocaleString('tr-TR', { minimumFractionDigits: 2 }),
         payment.currency,
         payment.method,
-        payment.status
+        payment.status,
       ]),
       headStyles: {
         fillColor: [16, 185, 129], // Green
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center' as const,
-        fontSize: 10
+        fontSize: 10,
       },
       bodyStyles: {
         fontSize: 9,
-        textColor: [50, 50, 50]
+        textColor: [50, 50, 50],
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245]
+        fillColor: [245, 245, 245],
       },
       columnStyles: {
         0: { halign: 'left' as const, cellWidth: 25 },
         1: { halign: 'right' as const, cellWidth: 30 },
         2: { halign: 'center' as const, cellWidth: 25 },
         3: { halign: 'left' as const, cellWidth: 35 },
-        4: { halign: 'center' as const, cellWidth: 'auto' as any }
+        4: { halign: 'center' as const, cellWidth: 'auto' as any },
       },
       margin: { left: 15, right: 15 },
-      theme: 'grid' as const
+      theme: 'grid' as const,
     });
   } else {
     doc.setFontSize(10);
@@ -343,27 +346,13 @@ export const generatePDFExtract = async (
     doc.setTextColor(128, 128, 128);
 
     // Page number (center)
-    doc.text(
-      `Sayfa ${i} / ${pageCount}`,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
+    doc.text(`Sayfa ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
     // Generation date (left)
-    doc.text(
-      `Oluşturulma: ${new Date().toLocaleString('tr-TR')}`,
-      15,
-      pageHeight - 10
-    );
+    doc.text(`Oluşturulma: ${new Date().toLocaleString('tr-TR')}`, 15, pageHeight - 10);
 
     // Company name (right)
-    doc.text(
-      companyInfo.name,
-      pageWidth - 15,
-      pageHeight - 10,
-      { align: 'right' }
-    );
+    doc.text(companyInfo.name, pageWidth - 15, pageHeight - 10, { align: 'right' });
   }
 
   // Generate filename
@@ -395,7 +384,7 @@ export const generateBulkPDFExtracts = async (
       filenames.push(filename);
 
       // Small delay to prevent browser from blocking multiple downloads
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error(`Error generating PDF for ${customerBalance.customer.name}:`, error);
     }
