@@ -77,21 +77,16 @@ export const generatePDFExtract = async (
 ): Promise<string> => {
   // Create a temporary container for the PDF content
   const pdfContainer = document.createElement('div');
-  // Use fixed position with opacity 0 instead of off-screen to ensure rendering
+  // Match the exact style from the working EnhancedDailyReportWithDetails.jsx
   pdfContainer.style.cssText = `
-        position: fixed;
-        left: 0;
+        position: absolute;
+        left: -9999px;
         top: 0;
         width: 794px; /* A4 width in pixels at 96 DPI approx */
-        min-height: 1123px; /* A4 height */
-        background: #ffffff;
+        background: white;
         padding: 40px;
-        font-family: 'Inter', Arial, sans-serif;
+        font-family: Arial, sans-serif;
         color: #1f2937;
-        box-sizing: border-box;
-        z-index: -9999;
-        opacity: 0;
-        pointer-events: none;
     `;
 
   // Helper to safely escape HTML
@@ -271,54 +266,48 @@ export const generatePDFExtract = async (
   document.body.appendChild(pdfContainer);
 
   try {
-    // Wait for DOM paint and image loading
+    // Wait for fonts and styles to apply (matches the working report logic implicitly via async nature, but adding explicit delay is safer for dynamic content)
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Create a promise that rejects after 10 seconds
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('PDF oluşturma zaman aşımına uğradı.')), 10000);
+    // Convert DOM to Canvas
+    const canvas = await html2canvas(pdfContainer, {
+      scale: 2, // High resolution
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: 794, // Ensure window width matches container
+      windowHeight: pdfContainer.scrollHeight,
     });
-
-    // Race between html2canvas and timeout
-    const canvas = (await Promise.race([
-      html2canvas(pdfContainer, {
-        scale: 2, // High resolution
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        allowTaint: true,
-        // Force dimensions to match container
-        width: 794,
-        windowWidth: 794,
-      }),
-      timeoutPromise,
-    ])) as HTMLCanvasElement;
 
     // Generate PDF
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'mm',
+      unit: 'px', // Working code uses 'px'
       format: 'a4',
+      hotfixes: ['px_scaling'], // Working code uses this
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+
+    // Scale image to fit PDF width
     const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
     let heightLeft = imgHeight;
     let position = 0;
 
     // First page
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
     heightLeft -= pageHeight;
 
-    // Extra pages if content is long
+    // Extra pages
     while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, -pageHeight + (heightLeft % pageHeight), imgWidth, imgHeight); // Simplified overflow logic
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
     }
 
     const filename = `cari-ekstre-${customerBalance.customer.name.replace(/[^a-z0-9]/gi, '_')}-${
