@@ -75,9 +75,40 @@ export const generatePDFExtract = async (
   customerBalance: CustomerBalanceData,
   companyInfo: CompanyInfo = DEFAULT_COMPANY_INFO
 ): Promise<string> => {
+  // 1. MERGE AND SORT TRANSACTIONS
+  const allTransactions = [
+    ...customerBalance.orderDetails.map((order) => ({
+      date: order.date,
+      type: 'order',
+      description: `Sipariş #${order.orderNumber || '-'}`,
+      debt: order.amount, // Borç (Müşteri borçlanır)
+      credit: 0, // Alacak
+      originalCurrency: order.currency,
+    })),
+    ...customerBalance.paymentDetails.map((payment) => ({
+      date: payment.date,
+      type: 'payment',
+      description: `Ödeme (${payment.method})`,
+      debt: 0,
+      credit: payment.amount, // Alacak (Müşteri ödeme yapar, alacaklanır)
+      originalCurrency: payment.currency,
+    })),
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // 2. CALCULATE RUNNING BALANCE
+  let runningBalance = 0;
+  const transactionsWithBalance = allTransactions.map((t) => {
+    // Borç artırır (+), Alacak azaltır (-) (Müşteri bakiyesi perspektifinden: Pozitif bakiye = Borçlu)
+    // Ancak genellikle Cari Ekstrelerde:
+    // Borç (Debt) = Mal/Hizmet Satışı
+    // Alacak (Credit) = Ödeme/Tahsilat
+    // Bakiye = Borç - Alacak
+    runningBalance += t.debt - t.credit;
+    return { ...t, balance: runningBalance };
+  });
+
   // Create a temporary container for the PDF content
   const pdfContainer = document.createElement('div');
-  // Match the exact style from the working EnhancedDailyReportWithDetails.jsx
   pdfContainer.style.cssText = `
         position: absolute;
         left: -9999px;
@@ -158,67 +189,60 @@ export const generatePDFExtract = async (
                 <div style="background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
                     <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: bold; color: #1e40af; border-bottom: 1px solid #93c5fd; padding-bottom: 8px;">BAKİYE ÖZETİ</h3>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 13px; color: #1e3a8a;">Toplam Sipariş:</span>
+                        <span style="font-size: 13px; color: #1e3a8a;">Toplam Borç (Sipariş):</span>
                         <span style="font-size: 13px; font-weight: bold; color: #1e3a8a;">${formatCurrency(customerBalance.totalOrders, 'TRY')}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 13px; color: #1e3a8a;">Sipariş Sayısı:</span>
-                        <span style="font-size: 13px; font-weight: bold; color: #1e3a8a;">${customerBalance.orderDetails.length}</span>
+                        <span style="font-size: 13px; color: #1e3a8a;">İşlem Sayısı:</span>
+                        <span style="font-size: 13px; font-weight: bold; color: #1e3a8a;">${transactionsWithBalance.length}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="font-size: 13px; color: #065f46;">Toplam Ödeme:</span>
+                        <span style="font-size: 13px; color: #065f46;">Toplam Alacak (Ödeme):</span>
                         <span style="font-size: 13px; font-weight: bold; color: #065f46;">${formatCurrency(customerBalance.totalPayments, 'TRY')}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="font-size: 13px; color: #065f46;">Ödeme Sayısı:</span>
-                        <span style="font-size: 13px; font-weight: bold; color: #065f46;">${customerBalance.paymentDetails.length}</span>
-                    </div>
                     <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; border: 1px solid ${
-                      customerBalance.balance >= 0 ? '#bbf7d0' : '#fecaca'
+                      customerBalance.balance > 0 ? '#fecaca' : '#bbf7d0'
                     };">
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">NET BAKİYE</div>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">GENEL BAKİYE</div>
                         <div style="font-size: 24px; font-weight: bold; color: ${
-                          customerBalance.balance >= 0 ? '#16a34a' : '#dc2626'
+                          customerBalance.balance > 0 ? '#dc2626' : '#16a34a'
                         };">
-                            ${customerBalance.balance >= 0 ? '+' : ''}${formatCurrency(customerBalance.balance, 'TRY')}
-                        </div>
-                        <div style="font-size: 12px; font-weight: bold; margin-top: 4px; color: ${
-                          customerBalance.balance >= 0 ? '#16a34a' : '#dc2626'
-                        };">
-                            ${customerBalance.statusText.toUpperCase()}
+                            ${customerBalance.balance > 0 ? '(Borçlu) ' : '(Alacaklı) '}${formatCurrency(Math.abs(customerBalance.balance), 'TRY')}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Orders Table -->
+            <!-- Consolidated Transactions Table -->
             <h3 style="color: #1f2937; font-size: 16px; margin: 0 0 12px 0; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                 <span style="background: #3b82f6; width: 4px; height: 20px; display: block; border-radius: 2px;"></span>
-                SİPARİŞ GEÇMİŞİ
+                HESAP HAREKETLERİ
             </h3>
             ${
-              customerBalance.orderDetails.length > 0
+              transactionsWithBalance.length > 0
                 ? `
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px;">
                 <thead>
-                    <tr style="background: #f3f4f6; color: #374151;">
-                        <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Tarih</th>
-                        <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Sipariş No</th>
-                        <th style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">Durum</th>
-                        <th style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">Para Birimi</th>
-                        <th style="padding: 10px; text-align: right; border: 1px solid #e5e7eb;">Tutar</th>
+                    <tr style="background: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600; width: 15%;">Tarih</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600; width: 35%;">Açıklama</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600; width: 15%; color: #dc2626;">Borç</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600; width: 15%; color: #16a34a;">Alacak</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600; width: 20%;">Bakiye</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${customerBalance.orderDetails
+                    ${transactionsWithBalance
                       .map(
-                        (order, idx) => `
-                        <tr style="background: ${idx % 2 === 0 ? 'white' : '#f9fafb'};">
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">${formatDate(order.date)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">${safe(order.orderNumber)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: center;">${safe(order.status)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: center;">${order.currency}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right; font-weight: bold;">${parseFloat(order.amount.toFixed(2)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                        (t, idx) => `
+                        <tr style="background: ${idx % 2 === 0 ? 'white' : '#f9fafb'}; border-bottom: 1px solid #e5e7eb;">
+                            <td style="padding: 10px 12px; color: #4b5563;">${formatDate(t.date)}</td>
+                            <td style="padding: 10px 12px; color: #1f2937; font-weight: 500;">${t.description}</td>
+                            <td style="padding: 10px 12px; text-align: right; color: #dc2626;">${t.debt > 0 ? formatCurrency(t.debt) : '-'}</td>
+                            <td style="padding: 10px 12px; text-align: right; color: #16a34a;">${t.credit > 0 ? formatCurrency(t.credit) : '-'}</td>
+                            <td style="padding: 10px 12px; text-align: right; font-weight: bold; color: ${t.balance > 0 ? '#dc2626' : '#16a34a'};">
+                                ${formatCurrency(Math.abs(t.balance))} ${t.balance > 0 ? '(B)' : t.balance < 0 ? '(A)' : ''}
+                            </td>
                         </tr>
                     `
                       )
@@ -226,49 +250,21 @@ export const generatePDFExtract = async (
                 </tbody>
             </table>
             `
-                : '<p style="font-style: italic; color: #6b7280; margin-bottom: 30px;">Kayıtlı sipariş bulunmamaktadır.</p>'
+                : '<p style="font-style: italic; color: #6b7280; margin-bottom: 30px; padding: 20px; text-align: center; background: #f9fafb; border-radius: 8px;">Bu dönem için kayıtlı hesap hareketi bulunmamaktadır.</p>'
             }
 
-            <!-- Payments Table -->
-            <h3 style="color: #1f2937; font-size: 16px; margin: 0 0 12px 0; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                <span style="background: #10b981; width: 4px; height: 20px; display: block; border-radius: 2px;"></span>
-                ÖDEME GEÇMİŞİ
-            </h3>
-            ${
-              customerBalance.paymentDetails.length > 0
-                ? `
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px;">
-                <thead>
-                    <tr style="background: #f3f4f6; color: #374151;">
-                        <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Tarih</th>
-                        <th style="padding: 10px; text-align: left; border: 1px solid #e5e7eb;">Ödeme Yöntemi</th>
-                        <th style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">Durum</th>
-                        <th style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">Para Birimi</th>
-                        <th style="padding: 10px; text-align: right; border: 1px solid #e5e7eb;">Tutar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${customerBalance.paymentDetails
-                      .map(
-                        (payment, idx) => `
-                        <tr style="background: ${idx % 2 === 0 ? 'white' : '#f9fafb'};">
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">${formatDate(payment.date)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb;">${safe(payment.method)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: center;">${safe(payment.status)}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: center;">${payment.currency}</td>
-                            <td style="padding: 8px 10px; border: 1px solid #e5e7eb; text-align: right; font-weight: bold; color: #059669;">${parseFloat(payment.amount.toFixed(2)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                    `
-                      )
-                      .join('')}
-                </tbody>
-            </table>
-            `
-                : '<p style="font-style: italic; color: #6b7280; margin-bottom: 30px;">Kayıtlı ödeme bulunmamaktadır.</p>'
-            }
+            <!-- Bank Details Placeholder -->
+            <div style="margin-top: 40px; padding: 20px; border: 1px dashed #d1d5db; border-radius: 8px; background: #fff;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #374151;">Ödeme Bilgileri</h4>
+                <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                    Lütfen ödemelerinizde cari hesap adını belirtiniz.<br>
+                    <strong>IBAN:</strong> TRXX 0000 0000 0000 0000 0000 00<br>
+                    <strong>Banka:</strong> X Bankası
+                </p>
+            </div>
 
             <!-- Footer -->
-            <div style="margin-top: 50px; text-align: center; color: #9ca3af; font-size: 11px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <div style="margin-top: 40px; text-align: center; color: #9ca3af; font-size: 11px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
                 <p>Bu belge elektronik ortamda oluşturulmuştur. Islak imza gerektirmez.</p>
                 <p>${companyInfo.name} | ${new Date().getFullYear()}</p>
             </div>
@@ -336,31 +332,4 @@ export const generatePDFExtract = async (
       document.body.removeChild(pdfContainer);
     }
   }
-};
-
-/**
- * Generate bulk PDF extracts for multiple customers
- * @param customerBalances Array of customer balance data
- * @param companyInfo Company information
- * @returns Array of generated filenames
- */
-export const generateBulkPDFExtracts = async (
-  customerBalances: CustomerBalanceData[],
-  companyInfo: CompanyInfo = DEFAULT_COMPANY_INFO
-): Promise<string[]> => {
-  const filenames: string[] = [];
-
-  for (const customerBalance of customerBalances) {
-    try {
-      const filename = await generatePDFExtract(customerBalance, companyInfo);
-      filenames.push(filename);
-
-      // Small delay to prevent browser from blocking multiple downloads
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error(`Error generating PDF for ${customerBalance.customer.name}:`, error);
-    }
-  }
-
-  return filenames;
 };
