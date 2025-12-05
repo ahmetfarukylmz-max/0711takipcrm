@@ -161,9 +161,17 @@ export const generatePDFExtract = async (
                         <span style="font-size: 13px; color: #1e3a8a;">Toplam Sipariş:</span>
                         <span style="font-size: 13px; font-weight: bold; color: #1e3a8a;">${formatCurrency(customerBalance.totalOrders, 'TRY')}</span>
                     </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 13px; color: #1e3a8a;">Sipariş Sayısı:</span>
+                        <span style="font-size: 13px; font-weight: bold; color: #1e3a8a;">${customerBalance.orderDetails.length}</span>
+                    </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                         <span style="font-size: 13px; color: #065f46;">Toplam Ödeme:</span>
                         <span style="font-size: 13px; font-weight: bold; color: #065f46;">${formatCurrency(customerBalance.totalPayments, 'TRY')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span style="font-size: 13px; color: #065f46;">Ödeme Sayısı:</span>
+                        <span style="font-size: 13px; font-weight: bold; color: #065f46;">${customerBalance.paymentDetails.length}</span>
                     </div>
                     <div style="background: white; padding: 12px; border-radius: 6px; text-align: center; border: 1px solid ${
                       customerBalance.balance >= 0 ? '#bbf7d0' : '#fecaca'
