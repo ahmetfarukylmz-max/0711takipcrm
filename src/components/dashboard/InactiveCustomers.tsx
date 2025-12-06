@@ -1,12 +1,12 @@
 import React, { memo, useMemo } from 'react';
 import { WhatsAppIcon } from '../icons';
 import { formatDate, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
-import type { Customer, Meeting, Order, Quote } from '../../types';
+import type { Customer, Meeting, Order, Quote, Shipment } from '../../types';
 
 interface InactiveCustomer {
   customer: Customer;
   lastInteractionDate: string | null;
-  lastInteractionType: 'meeting' | 'order' | 'quote' | null;
+  lastInteractionType: 'meeting' | 'order' | 'quote' | 'shipment' | null;
   daysSinceContact: number;
 }
 
@@ -15,6 +15,7 @@ interface InactiveCustomersProps {
   meetings: Meeting[];
   orders: Order[];
   quotes: Quote[];
+  shipments: Shipment[];
   setActivePage: (page: string) => void;
   onScheduleMeeting?: (customerId: string) => void;
 }
@@ -23,7 +24,7 @@ interface InactiveCustomersProps {
  * InactiveCustomers component - Shows customers not contacted in 2 weeks
  */
 const InactiveCustomers = memo<InactiveCustomersProps>(
-  ({ customers, meetings, orders, quotes, setActivePage, onScheduleMeeting }) => {
+  ({ customers, meetings, orders, quotes, shipments, setActivePage, onScheduleMeeting }) => {
     const inactiveCustomersList = useMemo<InactiveCustomer[]>(() => {
       const today = new Date();
       const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -52,8 +53,18 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
               return new Date(dateB).getTime() - new Date(dateA).getTime();
             })[0];
 
+          // Get last shipment
+          const lastShipment = shipments
+            .filter((s) => s.customerId === customer.id && !s.isDeleted)
+            .sort(
+              (a, b) => new Date(b.shipmentDate).getTime() - new Date(a.shipmentDate).getTime()
+            )[0];
+
           // Find the most recent interaction
-          const interactions: Array<{ date: string; type: 'meeting' | 'order' | 'quote' }> = [];
+          const interactions: Array<{
+            date: string;
+            type: 'meeting' | 'order' | 'quote' | 'shipment';
+          }> = [];
 
           if (lastMeeting) interactions.push({ date: lastMeeting.meeting_date, type: 'meeting' });
           if (lastOrder) interactions.push({ date: lastOrder.order_date, type: 'order' });
@@ -61,6 +72,8 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
             const quoteDate = lastQuote.quote_date || lastQuote.teklif_tarihi;
             if (quoteDate) interactions.push({ date: quoteDate, type: 'quote' });
           }
+          if (lastShipment)
+            interactions.push({ date: lastShipment.shipmentDate, type: 'shipment' });
 
           if (interactions.length === 0) {
             return {
@@ -90,7 +103,7 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
           (item) => !item.lastInteractionDate || new Date(item.lastInteractionDate) < twoWeeksAgo
         )
         .sort((a, b) => b.daysSinceContact - a.daysSinceContact);
-    }, [customers, meetings, orders, quotes]);
+    }, [customers, meetings, orders, quotes, shipments]);
 
     if (inactiveCustomersList.length === 0) {
       return (
@@ -124,7 +137,7 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
                 Toplam {inactiveCustomersList.length} müşteriyle etkileşim yok
               </p>
               <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
-                Son 2 haftada hiç görüşme, sipariş veya teklif kaydı bulunmuyor
+                Son 2 haftada hiç görüşme, sipariş, teklif veya sevkiyat kaydı bulunmuyor
               </p>
             </div>
             <button
@@ -142,7 +155,9 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
             const urgencyColor = getUrgencyColor(item.daysSinceContact);
 
             // Get interaction type icon and label
-            const getInteractionInfo = (type: 'meeting' | 'order' | 'quote' | null) => {
+            const getInteractionInfo = (
+              type: 'meeting' | 'order' | 'quote' | 'shipment' | null
+            ) => {
               switch (type) {
                 case 'meeting':
                   return { icon: '📞', label: 'Görüşme' };
@@ -150,6 +165,8 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
                   return { icon: '🛒', label: 'Sipariş' };
                 case 'quote':
                   return { icon: '📄', label: 'Teklif' };
+                case 'shipment':
+                  return { icon: '🚚', label: 'Sevkiyat' };
                 default:
                   return { icon: '❌', label: 'Etkileşim yok' };
               }

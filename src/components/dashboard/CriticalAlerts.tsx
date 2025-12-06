@@ -74,13 +74,25 @@ const CriticalAlerts = memo<CriticalAlertsProps>(
       // Get last quote
       const lastQuote = quotes
         .filter((q) => q.customerId === c.id && !q.isDeleted)
-        .sort((a, b) => new Date(b.quote_date).getTime() - new Date(a.quote_date).getTime())[0];
+        .sort((a, b) => {
+          const dateA = a.quote_date || a.teklif_tarihi || '';
+          const dateB = b.quote_date || b.teklif_tarihi || '';
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        })[0];
+
+      // Get last shipment
+      const lastShipment = shipments
+        .filter((s) => s.customerId === c.id && !s.isDeleted)
+        .sort((a, b) => new Date(b.shipmentDate).getTime() - new Date(a.shipmentDate).getTime())[0];
 
       // Find the most recent interaction
+      const quoteDate = lastQuote ? lastQuote.quote_date || lastQuote.teklif_tarihi : null;
+
       const interactions = [
         lastMeeting?.meeting_date,
         lastOrder?.order_date,
-        lastQuote?.quote_date,
+        quoteDate,
+        lastShipment?.shipmentDate,
       ].filter(Boolean);
 
       if (interactions.length === 0) return true; // Never contacted
