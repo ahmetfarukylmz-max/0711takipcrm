@@ -32,14 +32,6 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
       return customers
         .filter((c) => !c.isDeleted)
         .map((customer) => {
-          // DEBUG: Check shipments for this customer
-          const customerShipments = shipments.filter(
-            (s) => s.customerId === customer.id && !s.isDeleted
-          );
-          if (customerShipments.length > 0) {
-            console.log(`DEBUG: Shipments for ${customer.name}:`, customerShipments);
-          }
-
           // Get last meeting
           const lastMeeting = meetings
             .filter((m) => m.customerId === customer.id && !m.isDeleted)
@@ -64,9 +56,11 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
           // Get last shipment
           const lastShipment = shipments
             .filter((s) => s.customerId === customer.id && !s.isDeleted)
-            .sort(
-              (a, b) => new Date(b.shipmentDate).getTime() - new Date(a.shipmentDate).getTime()
-            )[0];
+            .sort((a, b) => {
+              const dateA = a.shipmentDate || a.shipment_date || a.delivery_date || '';
+              const dateB = b.shipmentDate || b.shipment_date || b.delivery_date || '';
+              return new Date(dateB).getTime() - new Date(dateA).getTime();
+            })[0];
 
           // Find the most recent interaction
           const interactions: Array<{
@@ -80,8 +74,11 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
             const quoteDate = lastQuote.quote_date || lastQuote.teklif_tarihi;
             if (quoteDate) interactions.push({ date: quoteDate, type: 'quote' });
           }
-          if (lastShipment)
-            interactions.push({ date: lastShipment.shipmentDate, type: 'shipment' });
+          if (lastShipment) {
+            const shipmentDate =
+              lastShipment.shipmentDate || lastShipment.shipment_date || lastShipment.delivery_date;
+            if (shipmentDate) interactions.push({ date: shipmentDate, type: 'shipment' });
+          }
 
           if (interactions.length === 0) {
             return {

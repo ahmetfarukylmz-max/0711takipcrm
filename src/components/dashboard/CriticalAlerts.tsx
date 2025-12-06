@@ -83,16 +83,23 @@ const CriticalAlerts = memo<CriticalAlertsProps>(
       // Get last shipment
       const lastShipment = shipments
         .filter((s) => s.customerId === c.id && !s.isDeleted)
-        .sort((a, b) => new Date(b.shipmentDate).getTime() - new Date(a.shipmentDate).getTime())[0];
+        .sort((a, b) => {
+          const dateA = a.shipmentDate || a.shipment_date || a.delivery_date || '';
+          const dateB = b.shipmentDate || b.shipment_date || b.delivery_date || '';
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        })[0];
 
       // Find the most recent interaction
       const quoteDate = lastQuote ? lastQuote.quote_date || lastQuote.teklif_tarihi : null;
+      const shipmentDate = lastShipment
+        ? lastShipment.shipmentDate || lastShipment.shipment_date || lastShipment.delivery_date
+        : null;
 
       const interactions = [
         lastMeeting?.meeting_date,
         lastOrder?.order_date,
         quoteDate,
-        lastShipment?.shipmentDate,
+        shipmentDate,
       ].filter(Boolean);
 
       if (interactions.length === 0) return true; // Never contacted
