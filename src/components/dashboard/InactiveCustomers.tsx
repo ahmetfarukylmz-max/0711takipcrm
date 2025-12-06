@@ -31,15 +31,6 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
       return customers
         .filter((c) => !c.isDeleted)
         .map((customer) => {
-          // DEBUG: Check quotes for this customer
-          const customerQuotes = quotes.filter((q) => q.customerId === customer.id && !q.isDeleted);
-          if (customerQuotes.length > 0) {
-            console.log(
-              `DEBUG: Found quotes for customer ${customer.name} (${customer.id}):`,
-              customerQuotes
-            );
-          }
-
           // Get last meeting
           const lastMeeting = meetings
             .filter((m) => m.customerId === customer.id && !m.isDeleted)
@@ -55,13 +46,21 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
           // Get last quote
           const lastQuote = quotes
             .filter((q) => q.customerId === customer.id && !q.isDeleted)
-            .sort((a, b) => new Date(b.quote_date).getTime() - new Date(a.quote_date).getTime())[0];
+            .sort((a, b) => {
+              const dateA = a.quote_date || a.teklif_tarihi || '';
+              const dateB = b.quote_date || b.teklif_tarihi || '';
+              return new Date(dateB).getTime() - new Date(dateA).getTime();
+            })[0];
 
           // Find the most recent interaction
           const interactions: Array<{ date: string; type: 'meeting' | 'order' | 'quote' }> = [];
+
           if (lastMeeting) interactions.push({ date: lastMeeting.meeting_date, type: 'meeting' });
           if (lastOrder) interactions.push({ date: lastOrder.order_date, type: 'order' });
-          if (lastQuote) interactions.push({ date: lastQuote.quote_date, type: 'quote' });
+          if (lastQuote) {
+            const quoteDate = lastQuote.quote_date || lastQuote.teklif_tarihi;
+            if (quoteDate) interactions.push({ date: quoteDate, type: 'quote' });
+          }
 
           if (interactions.length === 0) {
             return {
