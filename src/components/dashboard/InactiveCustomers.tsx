@@ -32,6 +32,14 @@ const InactiveCustomers = memo<InactiveCustomersProps>(
       return customers
         .filter((c) => !c.isDeleted)
         .map((customer) => {
+          // DEBUG: Check shipments for this customer
+          const customerShipments = shipments.filter(
+            (s) => s.customerId === customer.id && !s.isDeleted
+          );
+          if (customerShipments.length > 0) {
+            console.log(`DEBUG: Shipments for ${customer.name}:`, customerShipments);
+          }
+
           // Get last meeting
           const lastMeeting = meetings
             .filter((m) => m.customerId === customer.id && !m.isDeleted)
