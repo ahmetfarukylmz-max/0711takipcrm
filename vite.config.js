@@ -126,8 +126,12 @@ export default defineConfig({
       output: {
         // Optimized manual chunks for better code splitting
         manualChunks: (id) => {
-          // Core React libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          // Core React libraries and heavy React dependencies
+          if (
+            id.includes('node_modules/react') ||
+            id.includes('node_modules/react-dom') ||
+            id.includes('@dnd-kit')
+          ) {
             return 'react-vendor';
           }
 
