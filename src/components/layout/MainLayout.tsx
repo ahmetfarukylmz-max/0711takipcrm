@@ -5,7 +5,7 @@ import BottomNav from '../common/BottomNav';
 import FAB from '../common/FAB';
 import PullToRefresh from '../common/PullToRefresh';
 import Modal from '../common/Modal';
-import UserGuide from '../common/UserGuide';
+import UserGuide from '../guide/UserGuide';
 import { Toaster } from 'react-hot-toast';
 import useStore from '../../store/useStore';
 import { Customer } from '../../types';

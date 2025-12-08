@@ -16,6 +16,7 @@ import type {
   Currency,
 } from '../../types';
 import { logger } from '../../utils/logger';
+import { sanitizeText } from '../../utils/sanitize';
 
 interface QuoteFormData {
   customerId: string;
@@ -248,7 +249,9 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
             label="Reddedilme Nedeni"
             name="rejection_reason"
             value={formData.rejection_reason}
-            onChange={(e) => setFormData({ ...formData, rejection_reason: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, rejection_reason: sanitizeText(e.target.value) })
+            }
             placeholder="Teklifin neden reddedildiğini açıklayın..."
             rows={3}
           />
@@ -304,7 +307,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
         label="Özel Notlar"
         name="notes"
         value={formData.notes}
-        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        onChange={(e) => setFormData({ ...formData, notes: sanitizeText(e.target.value) })}
         placeholder="Teklif ile ilgili özel notlar ekleyebilirsiniz..."
         rows={3}
       />

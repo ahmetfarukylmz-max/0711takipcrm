@@ -7,6 +7,7 @@ import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
 import type { Order, Customer, Product, OrderItem, VATRate, Currency } from '../../types';
 import { logger } from '../../utils/logger';
+import { sanitizeText } from '../../utils/sanitize';
 
 interface OrderFormData {
   customerId: string;
@@ -264,7 +265,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
               type="text"
               placeholder="Örn: İş Bankası, Garanti"
               value={formData.checkBank || ''}
-              onChange={(e) => setFormData({ ...formData, checkBank: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, checkBank: sanitizeText(e.target.value) })
+              }
             />
             <FormInput
               label="Çek Numarası"
@@ -272,7 +275,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
               type="text"
               placeholder="Örn: 123456"
               value={formData.checkNumber || ''}
-              onChange={(e) => setFormData({ ...formData, checkNumber: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, checkNumber: sanitizeText(e.target.value) })
+              }
             />
             <FormInput
               label="Çek Vadesi"
@@ -296,7 +301,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
         label="Özel Notlar"
         name="notes"
         value={formData.notes}
-        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        onChange={(e) => setFormData({ ...formData, notes: sanitizeText(e.target.value) })}
         placeholder="Sipariş ile ilgili özel notlar ekleyebilirsiniz..."
         rows={3}
       />

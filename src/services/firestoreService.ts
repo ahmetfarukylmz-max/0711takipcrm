@@ -12,6 +12,7 @@ import {
 import { db } from './firebase';
 import { getNextOrderNumber, getNextQuoteNumber } from './counterService';
 import { logger } from '../utils/logger';
+import { FirebaseError, ValidationError } from '../utils/errors';
 
 // Import store for optimistic updates (will be used by saveDocumentOptimistic)
 let storeInstance = null;
@@ -53,36 +54,45 @@ export const logActivity = async (userId, action, details) => {
  * @returns {Promise<string>} Document ID
  */
 export const saveDocument = async (userId, collectionName, data) => {
-  if (!userId) return null;
-
-  const { id, ...dataToSave } = data;
-
-  // Special handling for products
-  if (collectionName === 'products') {
-    dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
-    dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
-  }
-
-  const collectionPath = `users/${userId}/${collectionName}`;
-
-  if (id) {
-    // Update existing document
-    try {
-      await updateDoc(doc(db, collectionPath, id), dataToSave);
-      return id;
-    } catch (error) {
-      // If document doesn't exist, create it instead
-      if (error.code === 'not-found') {
-        logger.warn(`Document ${id} not found, creating new document instead`);
-        const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
-        return newDocRef.id;
-      }
-      throw error; // Re-throw other errors
+  try {
+    if (!userId) {
+      throw new ValidationError('Kullanıcı kimliği gerekli', 'userId');
     }
-  } else {
-    // Create new document
-    const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
-    return newDocRef.id;
+
+    const { id, ...dataToSave } = data;
+
+    // Special handling for products
+    if (collectionName === 'products') {
+      dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
+      dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
+    }
+
+    const collectionPath = `users/${userId}/${collectionName}`;
+
+    if (id) {
+      // Update existing document
+      try {
+        await updateDoc(doc(db, collectionPath, id), dataToSave);
+        return id;
+      } catch (error) {
+        // If document doesn't exist, create it instead
+        if (error.code === 'not-found') {
+          logger.warn(`Document ${id} not found, creating new document instead`);
+          const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+          return newDocRef.id;
+        }
+        throw error; // Re-throw other errors
+      }
+    } else {
+      // Create new document
+      const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+      return newDocRef.id;
+    }
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      throw error;
+    }
+    throw new FirebaseError(error);
   }
 };
 
