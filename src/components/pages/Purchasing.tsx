@@ -111,6 +111,14 @@ const PurchaseCard = ({
         {request.productName}
       </h4>
 
+      {/* Customer Info */}
+      {request.customerName && (
+        <div className="mb-2 flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded w-fit">
+          <span>🏢</span>
+          <span className="truncate max-w-[150px] font-medium">{request.customerName}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-3">
         <div className="text-xs font-medium text-gray-600 dark:text-gray-400">
           {request.quantity} {request.unit}
@@ -203,6 +211,7 @@ const NewRequestModal = ({
 }) => {
   const { collections } = useStore();
   const products = collections.products || [];
+  const customers = collections.customers || []; // Get customers
   const [formData, setFormData] = useState<Partial<PurchaseRequest>>({
     priority: 'Orta',
     quantity: 1,
@@ -235,6 +244,34 @@ const NewRequestModal = ({
         </div>
 
         <div className="p-6 space-y-4">
+          {/* Müşteri Seçimi (Opsiyonel) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              İlgili Müşteri (Opsiyonel)
+            </label>
+            <input
+              list="customers-list"
+              type="text"
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+              placeholder="Müşteri ara..."
+              value={formData.customerName || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                const existingCustomer = customers.find((c) => c.name === val);
+                setFormData({
+                  ...formData,
+                  customerName: val,
+                  customerId: existingCustomer?.id,
+                });
+              }}
+            />
+            <datalist id="customers-list">
+              {customers.map((c) => (
+                <option key={c.id} value={c.name} />
+              ))}
+            </datalist>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Ürün / Hizmet

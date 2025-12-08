@@ -92,6 +92,12 @@ export interface PurchaseRequest {
   department?: string; // Departman (opsiyonel)
   priority: 'Düşük' | 'Orta' | 'Yüksek' | 'Acil';
 
+  // Relations (CRM Integration)
+  customerId?: string; // Hangi müşteri için?
+  customerName?: string; // Denormalized müşteri adı
+  meetingId?: string; // Hangi görüşmeden doğdu?
+  salesRepId?: string; // İlgili satış temsilcisi
+
   // Status & Workflow
   status: PurchaseStatus;
 
