@@ -17,7 +17,14 @@ export default defineConfig({
         './node_modules/use-sync-external-store/shim/with-selector'
       ),
     },
-    dedupe: ['react', 'react-dom', 'use-sync-external-store'],
+    dedupe: [
+      'react',
+      'react-dom',
+      'use-sync-external-store',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
+    ],
   },
   plugins: [
     react({ jsxRuntime: 'automatic' }),
