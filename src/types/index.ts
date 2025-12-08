@@ -52,7 +52,6 @@ export type CancellationReason =
 export type PurchaseStatus =
   | 'Talep Edildi'
   | 'Araştırılıyor'
-  | 'Teklif Bekleniyor'
   | 'Sipariş Verildi'
   | 'Depoya Girdi'
   | 'İptal Edildi';

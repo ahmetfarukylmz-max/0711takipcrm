@@ -413,7 +413,7 @@ const RequestDetailModal = ({
       supplierName: approvedOffer?.supplierName,
       unitPrice: approvedOffer?.price,
       currency: approvedOffer?.currency,
-      status: 'Teklif Bekleniyor' === request.status ? 'Sipariş Verildi' : request.status, // Auto advance if needed? Maybe just set Supplier
+      status: 'Araştırılıyor' === request.status ? 'Sipariş Verildi' : request.status, // Auto advance
     });
     toast.success('Teklif onaylandı/seçildi');
   };
