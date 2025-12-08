@@ -47,6 +47,70 @@ export type CancellationReason =
   | 'Ödeme Sorunu'
   | 'Diğer';
 
+// Purchasing Module Types
+
+export type PurchaseStatus =
+  | 'Talep Edildi'
+  | 'Araştırılıyor'
+  | 'Teklif Bekleniyor'
+  | 'Sipariş Verildi'
+  | 'Depoya Girdi'
+  | 'İptal Edildi';
+
+export interface Supplier {
+  id: string;
+  name: string;
+  createdAt: Timestamp;
+}
+
+export interface PurchaseRequest {
+  id: string;
+  purchaseNumber: string; // SAT-2024-001
+
+  // Product Info
+  productId: string;
+  productName: string; // Denormalized
+  quantity: number;
+  unit: string;
+  targetPrice?: number; // Hedef fiyat
+  currency: Currency;
+
+  // Request Info
+  requestDate: string; // YYYY-MM-DD
+  requestedBy: string; // User ID
+  requestedByEmail: string; // Email
+  department?: string; // Departman (opsiyonel)
+  priority: 'Düşük' | 'Orta' | 'Yüksek' | 'Acil';
+
+  // Status & Workflow
+  status: PurchaseStatus;
+
+  // Supplier Info (Optional until ordering)
+  supplierId?: string;
+  supplierName?: string; // Denormalized "Ahmet Ticaret"
+
+  // Order Info (When ordered)
+  orderDate?: string;
+  expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+
+  // Financials
+  unitPrice?: number; // Final agreed price
+  totalAmount?: number;
+
+  // Notes
+  description?: string; // Talep açıklaması
+  notes?: string; // Süreç notları
+
+  // Metadata
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+  isDeleted?: boolean;
+  deletedAt?: Timestamp;
+}
+
 // User Interface
 export interface User {
   uid: string;
