@@ -184,7 +184,16 @@ export default defineConfig({
   },
   // Optimize dependencies pre-bundling
   optimizeDeps: {
-    include: ['react', 'react-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
+    include: [
+      'react',
+      'react-dom',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
+    ],
     exclude: [
       // Don't pre-bundle these heavy libraries
       'jspdf',

@@ -45,8 +45,6 @@ jobs:
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v11
         with:
-          urls: |
-            https://ahmetfarukylmz-max.github.io/0711takipcrm/
           budgetPath: ./.lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
