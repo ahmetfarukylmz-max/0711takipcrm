@@ -26,6 +26,7 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
     stock_movements: [],
     suppliers: [],
     purchaseOrders: [],
+    purchase_requests: [],
   },
 
   // ============================================================================

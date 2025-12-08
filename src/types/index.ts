@@ -57,6 +57,17 @@ export type PurchaseStatus =
   | 'Depoya Girdi'
   | 'İptal Edildi';
 
+export interface SupplierOffer {
+  id: string;
+  supplierName: string;
+  price: number;
+  currency: Currency;
+  deliveryTime?: string; // Termin süresi (örn: 3 gün)
+  isApproved: boolean;
+  notes?: string;
+  createdAt: Timestamp;
+}
+
 export interface Supplier {
   id: string;
   name: string;
@@ -88,6 +99,7 @@ export interface PurchaseRequest {
   // Supplier Info (Optional until ordering)
   supplierId?: string;
   supplierName?: string; // Denormalized "Ahmet Ticaret"
+  offers?: SupplierOffer[]; // Toplanan teklifler
 
   // Order Info (When ordered)
   orderDate?: string;

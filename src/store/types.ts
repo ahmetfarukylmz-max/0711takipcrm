@@ -8,6 +8,7 @@ import {
   CustomTask,
   Payment,
   StockMovement,
+  PurchaseRequest,
 } from '../types';
 
 // Collection Keys (Veri koleksiyonlarının isimleri)
@@ -22,7 +23,8 @@ export type CollectionKey =
   | 'payments'
   | 'stock_movements'
   | 'suppliers' // Gelecek modül için hazırlık
-  | 'purchaseOrders'; // Gelecek modül için hazırlık
+  | 'purchaseOrders' // Gelecek modül için hazırlık
+  | 'purchase_requests';
 
 // Ana Veri Koleksiyonları
 export interface Collections {
@@ -37,6 +39,7 @@ export interface Collections {
   stock_movements: StockMovement[];
   suppliers: any[]; // Tip tanımlanınca güncellenecek
   purchaseOrders: any[]; // Tip tanımlanınca güncellenecek
+  purchase_requests: PurchaseRequest[];
 }
 
 // UI Slice: Arayüz durumu ve aksiyonları
