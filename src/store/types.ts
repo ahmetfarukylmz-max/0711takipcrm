@@ -55,11 +55,14 @@ export interface UISlice {
   dataLoading: boolean;
   connectionStatus: 'connected' | 'disconnected' | 'connecting';
   user: any | null; // Authentication user object
+  sidebarOpen: boolean; // Sidebar visibility state
 
   // Actions
   setActivePage: (page: string) => void;
   setEditingDocument: (doc: any | null) => void;
   setUser: (user: any | null) => void;
+  setSidebarOpen: (isOpen: boolean) => void;
+  toggleSidebar: () => void;
   setShowGuide: (show: boolean) => void;
   toggleGuide: () => void;
   setOverdueItems: (items: any[]) => void;

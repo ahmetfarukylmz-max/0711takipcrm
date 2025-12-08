@@ -13,6 +13,7 @@ export const createUISlice: StateCreator<StoreState, [], [], UISlice> = (set, ge
   dataLoading: false,
   connectionStatus: 'connected',
   user: null,
+  sidebarOpen: true,
 
   // Actions
   setActivePage: (page) => set({ activePage: page }),
@@ -20,6 +21,10 @@ export const createUISlice: StateCreator<StoreState, [], [], UISlice> = (set, ge
   setEditingDocument: (doc) => set({ editingDocument: doc }),
 
   setUser: (user) => set({ user: user }),
+
+  setSidebarOpen: (isOpen) => set({ sidebarOpen: isOpen }),
+
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
   setShowGuide: (show) => set({ showGuide: show }),
 

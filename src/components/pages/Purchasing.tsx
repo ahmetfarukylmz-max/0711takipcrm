@@ -685,6 +685,13 @@ const Purchasing: React.FC = () => {
   useFirestoreCollections(['purchase_requests', 'products']); // Sync collections
   const { collections } = useStore();
   const requests = collections.purchase_requests || [];
+  const setSidebarOpen = useStore((state) => state.setSidebarOpen);
+
+  // Auto-collapse sidebar for better view
+  React.useEffect(() => {
+    setSidebarOpen(false);
+    return () => setSidebarOpen(true);
+  }, [setSidebarOpen]);
 
   const [activeDragItem, setActiveDragItem] = useState<PurchaseRequest | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);

@@ -59,6 +59,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const showGuide = useStore((state) => state.showGuide);
   const toggleGuide = useStore((state) => state.toggleGuide);
   const overdueItems = useStore((state) => state.overdueItems);
+  const sidebarOpen = useStore((state) => state.sidebarOpen);
+  const setSidebarOpen = useStore((state) => state.setSidebarOpen);
 
   // Handle Toggle Guide wrapper
   const handleToggleGuide = () => {
@@ -66,23 +68,52 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-sans">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-sans relative">
       <Toaster position="top-right" />
 
-      {/* Sidebar - Sadece Desktop'ta Görünür */}
-      <div className="hidden md:block">
+      {/* Sidebar - Desktop */}
+      <div
+        className={`hidden md:block transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden'
+        }`}
+      >
         <Sidebar
           activePage={activePage}
           setActivePage={setActivePage}
           connectionStatus={connectionStatus}
           onToggleGuide={handleToggleGuide}
           overdueItems={overdueItems}
-          isOpen={true}
-          onClose={() => {}}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
       </div>
 
-      <main className="flex-1 h-full p-4 sm:p-6 lg:p-8 overflow-y-auto md:ml-0 pb-20 md:pb-4">
+      {/* Content Area */}
+      <main className="flex-1 h-full p-4 sm:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-4 relative">
+        {/* Desktop Sidebar Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`hidden md:flex absolute top-4 left-4 z-40 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 transition-all ${
+            sidebarOpen ? 'md:hidden' : 'block'
+          }`}
+          title="Menüyü Aç/Kapat"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+
         <PullToRefresh onRefresh={onRefresh}>
           <Suspense fallback={<LoadingScreen />}>
             <Outlet />
