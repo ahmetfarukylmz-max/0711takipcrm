@@ -19,7 +19,6 @@ import {
   verticalListSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { PurchaseRequest, PurchaseStatus } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -106,7 +105,7 @@ const PurchaseCard = ({
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
   };
 
