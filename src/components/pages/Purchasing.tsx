@@ -33,12 +33,6 @@ const COLUMNS: { id: PurchaseStatus; title: string; color: string; icon: string 
   { id: 'Talep Edildi', title: 'Talep Edildi', color: 'bg-gray-100 border-gray-200', icon: '📋' },
   { id: 'Araştırılıyor', title: 'Araştırılıyor', color: 'bg-blue-50 border-blue-200', icon: '🔍' },
   {
-    id: 'Teklif Bekleniyor',
-    title: 'Teklif Bekleniyor',
-    color: 'bg-yellow-50 border-yellow-200',
-    icon: '⏳',
-  },
-  {
     id: 'Sipariş Verildi',
     title: 'Sipariş Verildi',
     color: 'bg-purple-50 border-purple-200',
