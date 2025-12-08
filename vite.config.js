@@ -12,6 +12,7 @@ export default defineConfig({
       '@': path.resolve('./src'), // Add @ alias for cleaner imports
       react: path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve('./node_modules/react/jsx-runtime'),
       'use-sync-external-store/shim': path.resolve('./node_modules/use-sync-external-store/shim'),
       'use-sync-external-store/shim/with-selector': path.resolve(
         './node_modules/use-sync-external-store/shim/with-selector'
