@@ -616,6 +616,11 @@ export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote, navig
   };
 
   setPrefilledQuote(newQuote);
-  navigateToPage('Teklifler');
+
+  // Use timeout to ensure state update creates the prefilled quote before navigation
+  setTimeout(() => {
+    navigateToPage('Teklifler');
+  }, 100);
+
   toast.success('Satınalma verileriyle teklif taslağı oluşturuluyor...');
 };
