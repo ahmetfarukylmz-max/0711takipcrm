@@ -105,7 +105,7 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
-  base: '/0711takipcrm/',
+  base: './',
   build: {
     // Optimize build output
     target: 'es2015',
