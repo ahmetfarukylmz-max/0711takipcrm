@@ -85,13 +85,58 @@ export const saveMeetingHandler = async (user, meetingData, customers, logUserAc
   const details = {
     message: `${customerName} ile görüşme ${meetingData.id ? 'güncellendi' : 'oluşturuldu'}`,
   };
+
   if (!meetingData.id) {
     meetingData.createdBy = user.uid;
     meetingData.createdByEmail = user.email;
   }
-  await saveDocument(user.uid, 'gorusmeler', meetingData);
+
+  // 1. Save Meeting
+  const meetingId = await saveDocument(user.uid, 'gorusmeler', meetingData);
+
+  // 2. Process Auto-Purchase Requests
+  let purchaseRequestsCreated = 0;
+  if (meetingData.inquiredProducts && meetingData.inquiredProducts.length > 0) {
+    const requestsToCreate = meetingData.inquiredProducts.filter(
+      (p) => p.createPurchaseRequest === true
+    );
+
+    if (requestsToCreate.length > 0) {
+      const purchasePromises = requestsToCreate.map((product) => {
+        const purchaseRequest = {
+          productId: product.productId,
+          productName: product.productName, // Denormalized name
+          quantity: product.quantity || 1,
+          unit: product.unit || 'Adet',
+          customerId: meetingData.customerId, // Link to customer
+          customerName: customerName,
+          meetingId: meetingId, // Link to this meeting
+          requestDate: new Date().toISOString().slice(0, 10),
+          requestedBy: user.uid,
+          requestedByEmail: user.email,
+          priority: product.priority === 'Yüksek' ? 'Yüksek' : 'Orta',
+          status: 'Talep Edildi',
+          description: `Görüşme notu: ${product.notes || 'Otomatik oluşturuldu'}`,
+          createdBy: user.uid,
+          createdByEmail: user.email,
+          createdAt: new Date().toISOString(),
+          purchaseNumber: `SAT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        };
+        return saveDocument(user.uid, 'purchase_requests', purchaseRequest);
+      });
+
+      await Promise.all(purchasePromises);
+      purchaseRequestsCreated = requestsToCreate.length;
+    }
+  }
+
   logUserActivity(action, details);
-  toast.success(`Görüşme başarıyla ${meetingData.id ? 'güncellendi' : 'kaydedildi'}!`);
+
+  if (purchaseRequestsCreated > 0) {
+    toast.success(`Görüşme ve ${purchaseRequestsCreated} adet satınalma talebi oluşturuldu!`);
+  } else {
+    toast.success(`Görüşme başarıyla ${meetingData.id ? 'güncellendi' : 'kaydedildi'}!`);
+  }
 };
 
 export const saveCustomTaskHandler = async (user, customTaskData, logUserActivity) => {

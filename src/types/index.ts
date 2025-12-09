@@ -328,6 +328,7 @@ export interface InquiredProduct {
   priority?: 'Düşük' | 'Orta' | 'Yüksek'; // Interest level (optional)
   notes?: string; // Specific notes about this product inquiry
   priceQuoted?: number; // If a verbal price was given
+  createPurchaseRequest?: boolean; // Create a purchase request for this item automatically
 }
 
 // Meeting Interface
