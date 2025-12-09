@@ -418,8 +418,17 @@ const RequestDetailModal = ({
   if (!isOpen || !request) return null;
 
   const handleCreateQuote = () => {
-    createQuoteFromPurchaseHandler(request, setPrefilledQuote, navigate);
-    onClose(); // Close modal after navigation
+    // 1. Prepare data (set Zustand state)
+    const success = createQuoteFromPurchaseHandler(request, setPrefilledQuote);
+
+    // 2. Navigate (UI Logic)
+    if (success) {
+      onClose(); // Close modal immediately
+      // Small delay to ensure modal close animation doesn't block navigation
+      setTimeout(() => {
+        setActivePage('Teklifler');
+      }, 50);
+    }
   };
 
   const handleAddOffer = () => {

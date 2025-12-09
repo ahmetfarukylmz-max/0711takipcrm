@@ -575,10 +575,10 @@ export const createQuoteFromMeetingHandler = (
   toast.success(`${quoteItems.length} ürünle teklif oluşturuluyor...`);
 };
 
-export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote, navigateToPage) => {
+export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote) => {
   if (!request.customerId) {
     toast.error('Bu talep bir müşteriye bağlı değil.');
-    return;
+    return false;
   }
 
   // Determine unit price (use approved offer price or manual unit price, fallback to 0)
@@ -616,11 +616,6 @@ export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote, navig
   };
 
   setPrefilledQuote(newQuote);
-
-  // Use timeout to ensure state update creates the prefilled quote before navigation
-  setTimeout(() => {
-    navigateToPage('Teklifler');
-  }, 100);
-
   toast.success('Satınalma verileriyle teklif taslağı oluşturuluyor...');
+  return true;
 };
