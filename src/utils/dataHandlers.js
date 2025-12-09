@@ -574,3 +574,48 @@ export const createQuoteFromMeetingHandler = (
   navigateToPage('Teklifler');
   toast.success(`${quoteItems.length} ürünle teklif oluşturuluyor...`);
 };
+
+export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote, navigateToPage) => {
+  if (!request.customerId) {
+    toast.error('Bu talep bir müşteriye bağlı değil.');
+    return;
+  }
+
+  // Determine unit price (use approved offer price or manual unit price, fallback to 0)
+  // Add a default markup (e.g., 20%) if cost is known
+  const costPrice = request.unitPrice || 0;
+  const markupRate = 1.2; // 20% markup default
+  const salesPrice = costPrice * markupRate;
+
+  const quoteItem = {
+    productId: request.productId,
+    productName: request.productName,
+    quantity: request.quantity || 1,
+    unit: request.unit || 'Adet',
+    unitPrice: salesPrice, // Suggested sales price
+    totalPrice: (request.quantity || 1) * salesPrice,
+    costPrice: costPrice, // Track cost for margin analysis later
+  };
+
+  const vatRate = 20;
+  const vatAmount = (quoteItem.totalPrice * vatRate) / 100;
+  const total_amount = quoteItem.totalPrice + vatAmount;
+
+  const newQuote = {
+    customerId: request.customerId,
+    items: [quoteItem],
+    subtotal: quoteItem.totalPrice,
+    vatRate,
+    vatAmount,
+    total_amount,
+    quote_date: new Date().toISOString().slice(0, 10),
+    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    status: 'Hazırlandı',
+    currency: request.currency || 'TRY',
+    notes: `Satınalma Talebi Referansı: #${request.purchaseNumber || request.id.slice(0, 4)}`,
+  };
+
+  setPrefilledQuote(newQuote);
+  navigateToPage('Teklifler');
+  toast.success('Satınalma verileriyle teklif taslağı oluşturuluyor...');
+};

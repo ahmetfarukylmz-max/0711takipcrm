@@ -22,6 +22,7 @@ import {
 import { PurchaseRequest, PurchaseStatus, SupplierOffer, Product } from '../../types';
 import { useFirestoreCollections } from '../../hooks/useFirestore';
 import { saveDocument, deleteDocument } from '../../services/firestoreService';
+import { createQuoteFromPurchaseHandler } from '../../utils/dataHandlers';
 import useStore from '../../store/useStore';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
@@ -409,7 +410,17 @@ const RequestDetailModal = ({
     isApproved: false,
   });
 
+  // Store access for quote creation
+  const setPrefilledQuote = useStore((state) => state.setPrefilledQuote);
+  const setActivePage = useStore((state) => state.setActivePage);
+  const navigate = React.useMemo(() => (page: string) => setActivePage(page), [setActivePage]);
+
   if (!isOpen || !request) return null;
+
+  const handleCreateQuote = () => {
+    createQuoteFromPurchaseHandler(request, setPrefilledQuote, navigate);
+    onClose(); // Close modal after navigation
+  };
 
   const handleAddOffer = () => {
     if (!newOffer.supplierName || !newOffer.price) return;
@@ -686,17 +697,27 @@ const RequestDetailModal = ({
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between bg-white dark:bg-gray-800">
-          <button
-            onClick={() => {
-              if (confirm('Bu talebi silmek istediğinize emin misiniz?')) {
-                onDelete(request.id);
-                onClose();
-              }
-            }}
-            className="text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            🗑️ Talebi Sil
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (confirm('Bu talebi silmek istediğinize emin misiniz?')) {
+                  onDelete(request.id);
+                  onClose();
+                }
+              }}
+              className="text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium"
+            >
+              🗑️ Talebi Sil
+            </button>
+            {request.customerId && (
+              <button
+                onClick={handleCreateQuote}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2"
+              >
+                <span>📄</span> Teklif Oluştur
+              </button>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-6 py-2 rounded-lg text-sm font-medium"
