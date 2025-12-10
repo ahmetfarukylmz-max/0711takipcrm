@@ -970,6 +970,7 @@ const Orders = memo<OrdersProps>(
             customer={customers.find((c) => c.id === currentOrder?.customerId)}
             products={products}
             payments={payments}
+            shipments={shipments}
           />
         </Modal>
 
