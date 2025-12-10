@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
   closestCorners,
@@ -412,8 +413,7 @@ const RequestDetailModal = ({
 
   // Store access for quote creation
   const setPrefilledQuote = useStore((state) => state.setPrefilledQuote);
-  const setActivePage = useStore((state) => state.setActivePage);
-  const navigate = React.useMemo(() => (page: string) => setActivePage(page), [setActivePage]);
+  const navigate = useNavigate();
 
   if (!isOpen || !request) return null;
 
@@ -421,12 +421,11 @@ const RequestDetailModal = ({
     // 1. Prepare data (set Zustand state)
     const success = createQuoteFromPurchaseHandler(request, setPrefilledQuote);
 
-    // 2. Navigate (UI Logic)
+    // 2. Navigate (UI Logic) - Using direct router navigation
     if (success) {
       onClose(); // Close modal immediately
-      // Small delay to ensure modal close animation doesn't block navigation
       setTimeout(() => {
-        setActivePage('Teklifler');
+        navigate('/quotes');
       }, 50);
     }
   };
