@@ -234,6 +234,14 @@ const Orders = memo<OrdersProps>(
       // Format order number
       const orderNumber = formatOrderNumber(order);
 
+      // Related Shipments
+      const relatedShipments = shipments.filter((s) => s.orderId === order.id && !s.isDeleted);
+
+      // Related Payments
+      const relatedPayments = payments.filter(
+        (p) => p.orderId === order.id && !p.isDeleted && p.status !== 'İptal'
+      );
+
       // Şirket bilgileri
       const companyInfo = {
         name: 'AKÇELİK METAL SANAYİ',
@@ -251,13 +259,79 @@ const Orders = memo<OrdersProps>(
                 <tr class="border-b border-gray-200 ${isEven ? 'bg-gray-50' : 'bg-white'}">
                     <td class="py-2 px-3 text-center text-gray-500 text-xs">${index + 1}</td>
                     <td class="py-2 px-3 text-sm text-gray-900">${product?.name || 'Bilinmeyen Ürün'}</td>
-                    <td class="py-2 px-3 text-center text-sm text-gray-700">${item.quantity || 0} Kg</td>
+                    <td class="py-2 px-3 text-center text-sm text-gray-700">${item.quantity || 0} ${item.unit || 'Kg'}</td>
                     <td class="py-2 px-3 text-right text-sm text-gray-700">${formatCurrency(item.unit_price || 0, order.currency || 'TRY')}</td>
                     <td class="py-2 px-3 text-right text-sm font-semibold text-gray-900">${formatCurrency((item.quantity || 0) * (item.unit_price || 0), order.currency || 'TRY')}</td>
                 </tr>
             `;
         })
         .join('');
+
+      // Shipments HTML
+      const shipmentsHtml =
+        relatedShipments.length > 0
+          ? `
+            <section class="mt-6">
+                <h3 class="text-xs font-semibold text-gray-900 mb-2 uppercase border-b pb-1">Sevkiyat Geçmişi</h3>
+                <table class="w-full border-collapse border border-gray-300 text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="py-1 px-2 border border-gray-300 text-left">Tarih</th>
+                            <th class="py-1 px-2 border border-gray-300 text-left">Durum</th>
+                            <th class="py-1 px-2 border border-gray-300 text-left">İçerik</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${relatedShipments
+                          .map(
+                            (s) => `
+                            <tr>
+                                <td class="py-1 px-2 border border-gray-300">${formatDate(s.shipment_date)}</td>
+                                <td class="py-1 px-2 border border-gray-300">${s.status} ${s.isInvoiced ? '(Faturalı)' : ''}</td>
+                                <td class="py-1 px-2 border border-gray-300">
+                                    ${s.items?.map((i) => `${i.quantity} ${i.unit} ${i.productName}`).join(', ')}
+                                </td>
+                            </tr>
+                        `
+                          )
+                          .join('')}
+                    </tbody>
+                </table>
+            </section>
+        `
+          : '';
+
+      // Payments HTML
+      const paymentsHtml =
+        relatedPayments.length > 0
+          ? `
+            <section class="mt-6">
+                <h3 class="text-xs font-semibold text-gray-900 mb-2 uppercase border-b pb-1">Ödeme Geçmişi</h3>
+                <table class="w-full border-collapse border border-gray-300 text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="py-1 px-2 border border-gray-300 text-left">Tarih</th>
+                            <th class="py-1 px-2 border border-gray-300 text-left">Yöntem</th>
+                            <th class="py-1 px-2 border border-gray-300 text-right">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${relatedPayments
+                          .map(
+                            (p) => `
+                            <tr>
+                                <td class="py-1 px-2 border border-gray-300">${formatDate(p.paidDate || p.dueDate)}</td>
+                                <td class="py-1 px-2 border border-gray-300">${p.paymentMethod}</td>
+                                <td class="py-1 px-2 border border-gray-300 text-right">${formatCurrency(p.amount, p.currency)}</td>
+                            </tr>
+                        `
+                          )
+                          .join('')}
+                    </tbody>
+                </table>
+            </section>
+        `
+          : '';
 
       const printContent = `
             <html>
@@ -291,6 +365,7 @@ const Orders = memo<OrdersProps>(
                                 <p><span class="font-semibold">No:</span> ${orderNumber}</p>
                                 <p><span class="font-semibold">Sipariş Tarihi:</span> ${formatDate(order.order_date)}</p>
                                 <p><span class="font-semibold">Teslim Tarihi:</span> ${formatDate(order.delivery_date)}</p>
+                                <p><span class="font-semibold">Durum:</span> ${order.status}</p>
                             </div>
                         </div>
                     </header>
@@ -306,6 +381,7 @@ const Orders = memo<OrdersProps>(
                     </section>
 
                     <section class="mt-6">
+                        <h3 class="text-xs font-semibold text-gray-900 mb-2 uppercase border-b pb-1">Ürünler</h3>
                         <table class="w-full border-collapse border border-gray-300">
                             <thead>
                                 <tr class="bg-gray-900 text-white">
@@ -338,6 +414,9 @@ const Orders = memo<OrdersProps>(
                             </div>
                         </div>
                     </section>
+
+                    ${shipmentsHtml}
+                    ${paymentsHtml}
 
                     <section class="mt-6 border border-gray-300 p-3">
                         <h3 class="text-xs font-semibold text-gray-900 mb-2 uppercase">Ödeme Koşulları</h3>
