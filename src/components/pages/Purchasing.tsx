@@ -22,8 +22,11 @@ import {
 } from '@dnd-kit/sortable';
 import { PurchaseRequest, PurchaseStatus, SupplierOffer, Product } from '../../types';
 import { useFirestoreCollections } from '../../hooks/useFirestore';
-import { saveDocument, deleteDocument } from '../../services/firestoreService';
-import { createQuoteFromPurchaseHandler } from '../../utils/dataHandlers';
+import { saveDocument, deleteDocument, logActivity } from '../../services/firestoreService';
+import {
+  createQuoteFromPurchaseHandler,
+  handlePurchaseToStockHandler,
+} from '../../utils/dataHandlers';
 import useStore from '../../store/useStore';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
@@ -842,8 +845,25 @@ const Purchasing: React.FC = () => {
     if (newStatus) {
       const request = requests.find((r) => r.id === activeId);
       if (request && request.status !== newStatus) {
-        // Optimistic UI update could go here, but we just save
-        handleUpdateRequest(activeId, { status: newStatus });
+        // --- Special Logic for 'Depoya Girdi' ---
+        if (newStatus === 'Depoya Girdi') {
+          const confirmStock = window.confirm(
+            `"${request.productName}" ürününü stoklara eklemek istiyor musunuz?\n\nMiktar: ${request.quantity} ${request.unit}\n\nOnaylarsanız stok miktarı artırılacak.`
+          );
+
+          if (confirmStock) {
+            // Use handler to update stock and status
+            await handlePurchaseToStockHandler(user, request, (action, details) =>
+              logActivity(user.uid, action, details)
+            );
+          } else {
+            // If cancelled, just update status without stock change
+            handleUpdateRequest(activeId, { status: newStatus });
+          }
+        } else {
+          // Normal status update
+          handleUpdateRequest(activeId, { status: newStatus });
+        }
       }
     }
   };

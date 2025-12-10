@@ -10,7 +10,53 @@ import {
   cancelOrder,
   markShipmentDelivered,
   convertQuoteToOrder,
+  updateProductStock, // Import this
 } from '../services/firestoreService';
+
+// ... (existing imports)
+
+export const handlePurchaseToStockHandler = async (user, request, logUserActivity) => {
+  if (!request.productId) return false;
+
+  try {
+    // 1. Update Product Stock
+    const success = await updateProductStock(user.uid, request.productId, request.quantity, {
+      type: 'Satınalma', // This type might need to be added to StockMovementType if strict typing is enforced
+      relatedId: request.id,
+      relatedType: 'purchase_request',
+      relatedReference: request.purchaseNumber,
+      notes: `Satınalma talebi tamamlandı: ${request.purchaseNumber}`,
+      createdBy: user.uid,
+      createdByEmail: user.email,
+    });
+
+    if (success) {
+      // 2. Update Request Status
+      await saveDocument(user.uid, 'purchase_requests', {
+        id: request.id,
+        status: 'Depoya Girdi',
+        actualDeliveryDate: new Date().toISOString().slice(0, 10),
+      });
+
+      logUserActivity('PURCHASE_TO_STOCK', {
+        message: `Satınalma talebi depoya girdi ve stok güncellendi: ${request.productName}`,
+        amount: request.quantity,
+      });
+
+      toast.success(
+        `"${request.productName}" stoklara eklendi (+${request.quantity} ${request.unit})`
+      );
+      return true;
+    } else {
+      toast.error('Stok güncellenemedi (Stok takibi kapalı olabilir)');
+      return false;
+    }
+  } catch (error) {
+    console.error('Purchase to stock error:', error);
+    toast.error('İşlem sırasında bir hata oluştu');
+    return false;
+  }
+};
 import toast from 'react-hot-toast';
 import { logger } from '../utils/logger';
 import { showSmartConfirm, showUndoableDelete } from '../utils/toastUtils';
