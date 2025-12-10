@@ -949,7 +949,13 @@ const Orders = memo<OrdersProps>(
             onCancel={() => setIsModalOpen(false)}
             customers={customers}
             products={products}
-            priceOnlyMode={!!(currentOrder && shipments.some((s) => s.orderId === currentOrder.id))}
+            shipments={
+              currentOrder
+                ? shipments.filter((s) => s.orderId === currentOrder.id && !s.isDeleted)
+                : []
+            }
+            // priceOnlyMode is now handled smarter inside OrderForm via shipments prop
+            priceOnlyMode={false}
           />
         </Modal>
 

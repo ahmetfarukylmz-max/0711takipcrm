@@ -5,23 +5,12 @@ import FormTextarea from '../common/FormTextarea';
 import ItemEditor from './ItemEditor';
 import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
-import type { Order, Customer, Product, OrderItem, VATRate, Currency } from '../../types';
+import type { Order, Customer, Product, OrderItem, VATRate, Currency, Shipment } from '../../types';
 import { logger } from '../../utils/logger';
 import { sanitizeText } from '../../utils/sanitize';
 
 interface OrderFormData {
-  customerId: string;
-  items: OrderItem[];
-  order_date: string;
-  delivery_date: string;
-  vatRate: VATRate;
-  paymentType: string;
-  paymentTerm: string | number;
-  checkBank?: string;
-  checkNumber?: string;
-  checkDate?: string;
-  currency: Currency;
-  notes: string;
+  // ...
 }
 
 interface OrderFormProps {
@@ -35,6 +24,8 @@ interface OrderFormProps {
   customers: Customer[];
   /** List of products */
   products: Product[];
+  /** List of shipments for this order (to calculate shipped quantities) */
+  shipments?: Shipment[];
   /** If true, only allow editing prices (for shipped orders) */
   priceOnlyMode?: boolean;
 }
@@ -48,8 +39,24 @@ const OrderForm: React.FC<OrderFormProps> = ({
   onCancel,
   customers,
   products,
+  shipments = [],
   priceOnlyMode = false,
 }) => {
+  // Calculate total shipped quantities per product
+  const shippedQuantities = React.useMemo(() => {
+    const quantities: Record<string, number> = {};
+    shipments.forEach((shipment) => {
+      if (!shipment.isDeleted && shipment.items) {
+        shipment.items.forEach((item) => {
+          if (item.productId) {
+            quantities[item.productId] = (quantities[item.productId] || 0) + (item.quantity || 0);
+          }
+        });
+      }
+    });
+    return quantities;
+  }, [shipments]);
+
   const [formData, setFormData] = useState<OrderFormData>({
     customerId: order?.customerId || customers[0]?.id || '',
     items: order?.items || [],
@@ -64,6 +71,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
     currency: order?.currency || DEFAULT_CURRENCY,
     notes: order?.notes || '',
   });
+
   const [items, setItems] = useState<OrderItem[]>(
     (order?.items || []).map((item) => {
       const product = products.find((p) => p.id === item.productId);
@@ -295,6 +303,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
         setItems={setItems}
         products={products}
         priceOnlyMode={priceOnlyMode}
+        shippedQuantities={shippedQuantities}
       />
 
       <FormTextarea
