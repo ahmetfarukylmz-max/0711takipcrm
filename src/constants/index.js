@@ -6,6 +6,9 @@ export const turkeyVATRates = [
   { rate: 0, description: "KDV'den istisna" },
 ];
 
+// Product Unit Options
+export const PRODUCT_UNITS = ['Adet', 'Kg', 'Mt', 'Litre', 'Koli', 'Set'];
+
 // Currency Options
 export const currencies = [
   { code: 'TRY', symbol: '₺', name: 'Türk Lirası' },

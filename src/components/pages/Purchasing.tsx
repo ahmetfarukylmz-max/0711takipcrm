@@ -30,6 +30,7 @@ import {
 import useStore from '../../store/useStore';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
+import { PRODUCT_UNITS } from '../../constants';
 import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid'; // We might need this for local IDs if not using firestore auto ID immediately
 
@@ -327,12 +328,11 @@ const NewRequestModal = ({
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
               >
-                <option>Adet</option>
-                <option>Kg</option>
-                <option>Metre</option>
-                <option>Litre</option>
-                <option>Koli</option>
-                <option>Set</option>
+                {PRODUCT_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

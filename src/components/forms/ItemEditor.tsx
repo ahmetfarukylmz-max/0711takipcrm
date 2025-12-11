@@ -4,6 +4,7 @@ import FormSelect from '../common/FormSelect';
 import ProductSelector from './ProductSelector';
 import { TrashIcon } from '../icons';
 import { formatCurrency } from '../../utils/formatters';
+import { PRODUCT_UNITS } from '../../constants';
 import LotSelectionDialog from '../costing/LotSelectionDialog';
 import { getLotsByProduct } from '../../services/lotService';
 import { calculateFIFOConsumption, calculateLIFOConsumption } from '../../services/fifoLifoService';
@@ -287,10 +288,26 @@ const ItemEditor: React.FC<ItemEditorProps> = ({
                   disabled={priceOnlyMode}
                 />
               </div>
-              <div className="w-12 sm:w-16 flex items-end sm:items-center justify-center pb-2 sm:pb-0">
-                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {item.unit || 'Kg'}
-                </span>
+              <div className="w-20 sm:w-24">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 sm:hidden">
+                  Birim
+                </label>
+                <FormSelect
+                  value={item.unit || 'Kg'}
+                  onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                  disabled={priceOnlyMode}
+                  className="!text-xs !py-1"
+                >
+                  {PRODUCT_UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                  {/* Preserve legacy units not in the list */}
+                  {item.unit && !PRODUCT_UNITS.includes(item.unit) && (
+                    <option value={item.unit}>{item.unit}</option>
+                  )}
+                </FormSelect>
               </div>
               <div className="flex-1 sm:w-28">
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 sm:hidden">
