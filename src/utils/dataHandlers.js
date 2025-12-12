@@ -669,3 +669,4 @@ export const createQuoteFromPurchaseHandler = (request, setPrefilledQuote) => {
   toast.success('Satınalma verileriyle teklif taslağı oluşturuluyor...');
   return true;
 };
+// force update for git
