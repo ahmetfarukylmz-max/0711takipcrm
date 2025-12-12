@@ -113,10 +113,17 @@ export const getProductLots = async (userId: string, productId: string): Promise
   if (!userId || !productId) return [];
 
   const lotsRef = collection(db, `users/${userId}/stock_lots`);
-  const q = query(lotsRef, where('productId', '==', productId), orderBy('purchaseDate', 'desc'));
+  const q = query(lotsRef, where('productId', '==', productId));
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => doc.data() as StockLot);
+  const lots = snapshot.docs.map((doc) => doc.data() as StockLot);
+
+  // Sort by purchaseDate desc
+  return lots.sort((a, b) => {
+    const dateA = new Date(a.purchaseDate).getTime();
+    const dateB = new Date(b.purchaseDate).getTime();
+    return dateB - dateA;
+  });
 };
 
 /**
