@@ -14,7 +14,7 @@ import {
   saveMeetingHandler,
   saveCustomTaskHandler,
   saveShipmentHandler,
-  updateShipmentHandler,
+  updateShipmentHandlerV2,
   savePaymentHandler,
   deleteCustomerHandler,
   deleteProductHandler,
@@ -344,7 +344,7 @@ const CrmApp = () => {
   };
 
   const handleShipmentUpdate = async (shipmentData) => {
-    await updateShipmentHandler(user, shipmentData, orders, customers, logUserActivity);
+    await updateShipmentHandlerV2(user, shipmentData, orders, customers, logUserActivity);
   };
 
   const handlePaymentSave = async (data) => {

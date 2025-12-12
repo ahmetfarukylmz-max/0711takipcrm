@@ -219,7 +219,7 @@ export const saveCustomTaskHandler = async (user, customTaskData, logUserActivit
   toast.success(customTaskData.id ? 'Görev güncellendi!' : 'Görev eklendi!');
 };
 
-export const saveShipmentHandler = async (
+export const updateShipmentHandlerV2 = async (
   user,
   shipmentData,
   orders,
