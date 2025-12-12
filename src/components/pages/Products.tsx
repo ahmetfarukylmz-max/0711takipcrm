@@ -1242,13 +1242,6 @@ const Products = memo<ProductsProps>(
                                 </span>
                               )}
                           </div>
-                          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                            Değer:{' '}
-                            {formatCurrency(
-                              (product.stock_quantity || 0) * (product.cost_price || 0),
-                              product.currency || 'TRY'
-                            )}
-                          </span>
                         </div>
                       ) : (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 whitespace-nowrap">
