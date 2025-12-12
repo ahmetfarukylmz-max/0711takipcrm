@@ -149,10 +149,17 @@ export const getReconciliationsByPeriod = async (userId, period) => {
   if (!userId || !period) return [];
 
   const reconciliationsRef = collection(db, `users/${userId}/lot_reconciliations`);
-  const q = query(reconciliationsRef, where('period', '==', period), orderBy('createdAt', 'desc'));
+  const q = query(reconciliationsRef, where('period', '==', period));
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => doc.data());
+  const data = snapshot.docs.map((doc) => doc.data());
+
+  // Sort by createdAt desc in memory to avoid index requirement
+  return data.sort((a, b) => {
+    const timeA = a.createdAt?.seconds || 0;
+    const timeB = b.createdAt?.seconds || 0;
+    return timeB - timeA;
+  });
 };
 
 /**

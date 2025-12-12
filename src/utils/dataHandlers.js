@@ -4,6 +4,7 @@ import {
   saveDocument,
   saveOrder,
   saveQuote,
+  saveShipment, // Import new function
   deleteDocument,
   undoDelete,
   deleteShipment,
@@ -207,30 +208,26 @@ export const saveShipmentHandler = async (
 ) => {
   try {
     const { updatedOrder, ...cleanShipmentData } = shipmentData;
+
+    // Use the specialized service function that handles saving + stock deduction
+    await saveShipment(user.uid, shipmentData);
+
+    const order = orders.find((o) => o.id === cleanShipmentData.orderId);
+    const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
+
+    // Log extra activity if order was updated
     if (updatedOrder) {
-      await saveDocument(user.uid, 'orders', {
-        id: cleanShipmentData.orderId,
-        ...updatedOrder,
-      });
-      const order = orders.find((o) => o.id === cleanShipmentData.orderId);
-      const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
       logUserActivity('UPDATE_ORDER', {
         message: `${customerName} siparişi sevkiyat sırasında otomatik güncellendi (Miktar Artışı)`,
         orderId: cleanShipmentData.orderId,
       });
       toast.success('Sipariş miktarı güncellendi.');
     }
-    if (!cleanShipmentData.id) {
-      cleanShipmentData.createdBy = user.uid;
-      cleanShipmentData.createdByEmail = user.email;
-    }
-    await saveDocument(user.uid, 'shipments', cleanShipmentData);
-    const order = orders.find((o) => o.id === cleanShipmentData.orderId);
-    const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
+
     logUserActivity('CREATE_SHIPMENT', {
-      message: `${customerName} müşterisinin siparişi için sevkiyat oluşturuldu`,
+      message: `${customerName} müşterisinin siparişi için sevkiyat oluşturuldu ve stoktan düşüldü`,
     });
-    toast.success('Sevkiyat başarıyla kaydedildi!');
+    toast.success('Sevkiyat kaydedildi ve stok güncellendi!');
   } catch (error) {
     logger.error('Sevkiyat kaydedilemedi:', error);
     toast.error('Sevkiyat kaydedilemedi!');

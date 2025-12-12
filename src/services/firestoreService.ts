@@ -265,6 +265,49 @@ export const updateProductStock = async (userId, productId, quantityChange, move
 };
 
 /**
+ * Save shipment and update product stock (decrease stock)
+ * @param {string} userId - User ID
+ * @param {Object} shipmentData - Shipment data
+ * @returns {Promise<string>} Shipment ID
+ */
+export const saveShipment = async (userId, shipmentData) => {
+  if (!userId) throw new Error('User ID required');
+
+  const { updatedOrder, ...cleanShipmentData } = shipmentData;
+  const isNewShipment = !cleanShipmentData.id;
+
+  // 1. Save shipment document
+  const shipmentId = await saveDocument(userId, 'shipments', cleanShipmentData);
+
+  // 2. If updatedOrder exists, update the order
+  if (updatedOrder && cleanShipmentData.orderId) {
+    await updateDoc(doc(db, `users/${userId}/orders`, cleanShipmentData.orderId), updatedOrder);
+  }
+
+  // 3. Update Product Stock (ONLY for new shipments)
+  // Logic: When shipment is created, we assume goods left the warehouse -> Decrease Stock
+  // For updates, logic is complex (revert old, apply new), so we skip stock update for edit mode to avoid errors.
+  // Users should delete and recreate shipment if quantities are wrong.
+  if (isNewShipment && cleanShipmentData.items && Array.isArray(cleanShipmentData.items)) {
+    for (const item of cleanShipmentData.items) {
+      if (item.productId && item.quantity > 0) {
+        await updateProductStock(userId, item.productId, -item.quantity, {
+          type: 'Sevkiyat',
+          relatedId: shipmentId,
+          relatedType: 'shipment',
+          relatedReference: cleanShipmentData.orderId, // We don't have order number easily here, using ID
+          notes: `Sevkiyat çıkışı: ${cleanShipmentData.transporter || 'Kargo'}`,
+          createdBy: userId,
+          createdByEmail: cleanShipmentData.createdByEmail || 'system',
+        });
+      }
+    }
+  }
+
+  return shipmentId;
+};
+
+/**
  * Mark shipment as delivered and update product stock
  * @param {string} userId - User ID
  * @param {string} shipmentId - Shipment ID
