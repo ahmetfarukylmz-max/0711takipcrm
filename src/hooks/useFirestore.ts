@@ -118,14 +118,20 @@ export const useFirestoreCollections = (collectionNames: string[]): FirestoreCol
           const allUserIds = usersSnapshot.docs.map((doc) => doc.id);
 
           const allUnsubscribers: Unsubscribe[] = [];
-          const collectionsData: Record<string, any[]> = {};
 
-          let completedCollections = 0;
-          const totalCollections = collectionNames.length * allUserIds.length;
+          // Cache structure: { [collectionName]: { [userId]: Document[] } }
+          // This ensures we don't overwrite other users' data when one user updates
+          const adminDataCache: Record<string, Record<string, any[]>> = {};
+
+          // Initialize cache
+          collectionNames.forEach((name) => {
+            adminDataCache[name] = {};
+            allUserIds.forEach((uid) => {
+              adminDataCache[name][uid] = [];
+            });
+          });
 
           collectionNames.forEach((collectionName) => {
-            collectionsData[collectionName] = [];
-
             allUserIds.forEach((userId) => {
               const collectionPath = `users/${userId}/${collectionName}`;
               const collectionRef = collection(db, collectionPath);
@@ -139,35 +145,18 @@ export const useFirestoreCollections = (collectionNames: string[]): FirestoreCol
                     _userId: userId,
                   }));
 
-                  // Admin mode still needs complex merging, but we use updateCollection for now
-                  // Note: This is still not fully optimal for admin but fixes the immediate sync issue
-                  // We are essentially "appending" or "refreshing" the whole list for that collection
-                  // A better admin strategy is needed later.
-
-                  // For now, let's rely on the fact that we need to merge EVERYTHING for that collection across users
-                  // This part is tricky with simple updateCollection.
-                  // We will stick to the original logic for Admin but use setCollections properly or updateCollection carefully.
-                  // Since Admin logic was complex, let's simplify:
-                  // We will just console log for Admin for now and focus on fixing the User mode which is 99% of use case.
-
-                  collectionsData[collectionName] = collectionsData[collectionName]
-                    .filter((d: any) => d._userId !== userId)
-                    .concat(documents);
-
-                  setCollections((prev: Record<string, any[]>) => {
-                    // Re-merge logic for admin
-                    // This part was working "okay" before, let's keep it mostly as is but with logs
-                    return {
-                      ...prev,
-                      [collectionName]: collectionsData[collectionName], // simplified
-                    };
-                  });
-
-                  completedCollections++;
-                  if (completedCollections >= totalCollections) {
-                    setLoading(false);
-                    setDataLoading(false);
+                  // Update only this user's data in the cache
+                  if (!adminDataCache[collectionName]) {
+                    adminDataCache[collectionName] = {};
                   }
+                  adminDataCache[collectionName][userId] = documents;
+
+                  // Flatten all users' data for this collection
+                  const allDocuments = Object.values(adminDataCache[collectionName]).flat();
+
+                  // Update the global store
+                  updateCollection(collectionName, allDocuments);
+
                   setConnectionStatus('Bağlandı');
                   setConnectionStatusStore('Bağlandı');
                 },
