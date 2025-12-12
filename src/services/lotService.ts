@@ -81,15 +81,14 @@ export const getAvailableLots = async (
   if (!userId || !productId) return [];
 
   const lotsRef = collection(db, `users/${userId}/stock_lots`);
-  const q = query(
-    lotsRef,
-    where('productId', '==', productId),
-    where('status', '==', 'active'),
-    where('remainingQuantity', '>', 0)
-  );
+  // Simplify query to avoid composite index requirement
+  // We fetch all lots for the product and filter in memory
+  const q = query(lotsRef, where('productId', '==', productId));
 
   const snapshot = await getDocs(q);
-  const lots = snapshot.docs.map((doc) => doc.data() as StockLot);
+  let lots = snapshot.docs
+    .map((doc) => doc.data() as StockLot)
+    .filter((lot) => lot.status === 'active' && lot.remainingQuantity > 0);
 
   // Sort by purchase date
   if (sortMethod === 'fifo') {
