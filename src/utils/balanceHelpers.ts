@@ -89,13 +89,16 @@ export const calculateAllCustomerBalances = (
 
   return activeCustomers.map((customer) => {
     const customerOrders = orders.filter((o) => o.customerId === customer.id && !o.isDeleted);
+
+    // All visible payments (not deleted, not cancelled)
     const customerPayments = payments.filter(
       (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
     );
 
-    // Only payments with status 'Tahsil Edildi' should reduce the debt
+    // Payments that actually reduce debt (Tahsil Edildi)
     const effectivePayments = customerPayments.filter((p) => p.status === 'Tahsil Edildi');
 
+    // Payments that are pending (not collected, not cancelled) - for overdue check
     const customerPendingPayments = payments.filter(
       (p) =>
         p.customerId === customer.id &&
@@ -122,13 +125,26 @@ export const calculateAllCustomerBalances = (
       status: p.status,
     }));
 
-    // ... (due date info calculation stays same)
+    // Calculate due date info
+    const overduePayments = customerPendingPayments.filter((p) => {
+      if (!p.dueDate) return false;
+      const dueDate = new Date(p.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    });
+
+    const upcomingPayments = customerPendingPayments.filter((p) => {
+      if (!p.dueDate) return false;
+      const dueDate = new Date(p.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate >= today && dueDate <= sevenDaysLater;
+    });
 
     const totalOrdersInTRY = customerOrders.reduce((sum, order) => {
       return sum + convertToTRY(order.total_amount || 0, order.currency || 'TRY');
     }, 0);
 
-    // Use effectivePayments for balance calculation
+    // Calculate total payments using only EFFECTIVE (collected) payments
     const totalPaymentsInTRY = effectivePayments.reduce((sum, payment) => {
       return sum + convertToTRY(payment.amount || 0, payment.currency || 'TRY');
     }, 0);
