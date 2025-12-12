@@ -65,6 +65,7 @@ import { showSmartConfirm, showUndoableDelete } from '../utils/toastUtils';
 // --- Save Handlers ---
 
 export const saveCustomer = async (user, customerData, customers, logUserActivity) => {
+  const targetUserId = customerData._userId || user.uid;
   const action = customerData.id ? 'UPDATE_CUSTOMER' : 'CREATE_CUSTOMER';
   const details = {
     message: `Müşteri ${customerData.id ? 'güncellendi' : 'oluşturuldu'}: ${customerData.name}`,
@@ -74,12 +75,15 @@ export const saveCustomer = async (user, customerData, customers, logUserActivit
     customerData.createdBy = user.uid;
     customerData.createdByEmail = user.email;
   }
-  await saveDocument(user.uid, 'customers', customerData);
+  const cleanData = { ...customerData };
+  delete cleanData._userId;
+  await saveDocument(targetUserId, 'customers', cleanData);
   logUserActivity(action, details);
   toast.success(`Müşteri başarıyla ${customerData.id ? 'güncellendi' : 'kaydedildi'}!`);
 };
 
 export const saveProduct = async (user, productData, logUserActivity) => {
+  const targetUserId = productData._userId || user.uid;
   const action = productData.id ? 'UPDATE_PRODUCT' : 'CREATE_PRODUCT';
   const details = {
     message: `Ürün ${productData.id ? 'güncellendi' : 'oluşturuldu'}: ${productData.name}`,
@@ -88,12 +92,15 @@ export const saveProduct = async (user, productData, logUserActivity) => {
     productData.createdBy = user.uid;
     productData.createdByEmail = user.email;
   }
-  await saveDocument(user.uid, 'products', productData);
+  const cleanData = { ...productData };
+  delete cleanData._userId;
+  await saveDocument(targetUserId, 'products', cleanData);
   logUserActivity(action, details);
   toast.success(`Ürün başarıyla ${productData.id ? 'güncellendi' : 'kaydedildi'}!`);
 };
 
 export const saveOrderHandler = async (user, orderData, customers, logUserActivity) => {
+  const targetUserId = orderData._userId || user.uid;
   const customerName = customers.find((c) => c.id === orderData.customerId)?.name || '';
   const action = orderData.id ? 'UPDATE_ORDER' : 'CREATE_ORDER';
   const details = {
@@ -105,12 +112,15 @@ export const saveOrderHandler = async (user, orderData, customers, logUserActivi
     orderData.createdBy = user.uid;
     orderData.createdByEmail = user.email;
   }
-  await saveOrder(user.uid, orderData);
+  const cleanData = { ...orderData };
+  delete cleanData._userId;
+  await saveOrder(targetUserId, cleanData);
   logUserActivity(action, details);
   toast.success(`Sipariş başarıyla ${orderData.id ? 'güncellendi' : 'kaydedildi'}!`);
 };
 
 export const saveQuoteHandler = async (user, quoteData, customers, logUserActivity) => {
+  const targetUserId = quoteData._userId || user.uid;
   const customerName = customers.find((c) => c.id === quoteData.customerId)?.name || '';
   const action = quoteData.id ? 'UPDATE_QUOTE' : 'CREATE_QUOTE';
   const details = {
@@ -121,12 +131,15 @@ export const saveQuoteHandler = async (user, quoteData, customers, logUserActivi
     quoteData.createdBy = user.uid;
     quoteData.createdByEmail = user.email;
   }
-  await saveQuote(user.uid, quoteData);
+  const cleanData = { ...quoteData };
+  delete cleanData._userId;
+  await saveQuote(targetUserId, cleanData);
   logUserActivity(action, details);
   toast.success(`Teklif başarıyla ${quoteData.id ? 'güncellendi' : 'kaydedildi'}!`);
 };
 
 export const saveMeetingHandler = async (user, meetingData, customers, logUserActivity) => {
+  const targetUserId = meetingData._userId || user.uid;
   const customerName = customers.find((c) => c.id === meetingData.customerId)?.name || '';
   const action = meetingData.id ? 'UPDATE_MEETING' : 'CREATE_MEETING';
   const details = {
@@ -138,8 +151,11 @@ export const saveMeetingHandler = async (user, meetingData, customers, logUserAc
     meetingData.createdByEmail = user.email;
   }
 
+  const cleanData = { ...meetingData };
+  delete cleanData._userId;
+
   // 1. Save Meeting
-  const meetingId = await saveDocument(user.uid, 'gorusmeler', meetingData);
+  const meetingId = await saveDocument(targetUserId, 'gorusmeler', cleanData);
 
   // 2. Process Auto-Purchase Requests
   let purchaseRequestsCreated = 0;
@@ -169,7 +185,8 @@ export const saveMeetingHandler = async (user, meetingData, customers, logUserAc
           createdAt: new Date().toISOString(),
           purchaseNumber: `SAT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         };
-        return saveDocument(user.uid, 'purchase_requests', purchaseRequest);
+        // Save purchase request to target user as well
+        return saveDocument(targetUserId, 'purchase_requests', purchaseRequest);
       });
 
       await Promise.all(purchasePromises);
@@ -187,6 +204,7 @@ export const saveMeetingHandler = async (user, meetingData, customers, logUserAc
 };
 
 export const saveCustomTaskHandler = async (user, customTaskData, logUserActivity) => {
+  const targetUserId = customTaskData._userId || user.uid;
   const action = customTaskData.id ? 'UPDATE_CUSTOM_TASK' : 'CREATE_CUSTOM_TASK';
   const details = {
     message: `Görev ${customTaskData.id ? 'güncellendi' : 'oluşturuldu'}: ${customTaskData.title}`,
@@ -194,7 +212,9 @@ export const saveCustomTaskHandler = async (user, customTaskData, logUserActivit
   if (!customTaskData.id) {
     customTaskData.createdByEmail = user.email;
   }
-  await saveDocument(user.uid, 'customTasks', customTaskData);
+  const cleanData = { ...customTaskData };
+  delete cleanData._userId;
+  await saveDocument(targetUserId, 'customTasks', cleanData);
   logUserActivity(action, details);
   toast.success(customTaskData.id ? 'Görev güncellendi!' : 'Görev eklendi!');
 };
@@ -207,10 +227,15 @@ export const saveShipmentHandler = async (
   logUserActivity
 ) => {
   try {
-    const { updatedOrder, ...cleanShipmentData } = shipmentData;
+    const targetUserId = shipmentData._userId || user.uid;
+    const cleanShipmentData = { ...shipmentData };
+    delete cleanShipmentData._userId;
+    delete cleanShipmentData.updatedOrder;
+
+    const { updatedOrder } = shipmentData;
 
     // Use the specialized service function that handles saving + stock deduction
-    await saveShipment(user.uid, shipmentData);
+    await saveShipment(targetUserId, { ...cleanShipmentData, updatedOrder });
 
     const order = orders.find((o) => o.id === cleanShipmentData.orderId);
     const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
@@ -234,28 +259,8 @@ export const saveShipmentHandler = async (
   }
 };
 
-export const updateShipmentHandler = async (
-  user,
-  shipmentData,
-  orders,
-  customers,
-  logUserActivity
-) => {
-  try {
-    await saveDocument(user.uid, 'shipments', shipmentData);
-    const order = orders.find((o) => o.id === shipmentData.orderId);
-    const customerName = customers.find((c) => c.id === order?.customerId)?.name || '';
-    logUserActivity('UPDATE_SHIPMENT', {
-      message: `${customerName} müşterisinin sevkiyatı güncellendi`,
-    });
-    toast.success('Sevkiyat başarıyla güncellendi!');
-  } catch (error) {
-    logger.error('Sevkiyat güncellenemedi:', error);
-    toast.error('Sevkiyat güncellenemedi!');
-  }
-};
-
 export const savePaymentHandler = async (user, paymentData, customers, logUserActivity) => {
+  const targetUserId = paymentData._userId || user.uid;
   const action = paymentData.id ? 'UPDATE_PAYMENT' : 'CREATE_PAYMENT';
   const customerName = customers.find((c) => c.id === paymentData.customerId)?.name || '';
   const details = {
@@ -269,7 +274,9 @@ export const savePaymentHandler = async (user, paymentData, customers, logUserAc
     paymentData.createdBy = user.uid;
     paymentData.createdByEmail = user.email;
   }
-  await saveDocument(user.uid, 'payments', paymentData);
+  const cleanData = { ...paymentData };
+  delete cleanData._userId;
+  await saveDocument(targetUserId, 'payments', cleanData);
   logUserActivity(action, details);
   toast.success(`Ödeme başarıyla ${paymentData.id ? 'güncellendi' : 'kaydedildi'}!`);
 };
