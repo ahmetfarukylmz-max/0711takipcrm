@@ -6,6 +6,7 @@ import FAB from '../common/FAB';
 import PullToRefresh from '../common/PullToRefresh';
 import Modal from '../common/Modal';
 import UserGuide from '../guide/UserGuide';
+import CommandPalette from '../common/CommandPalette'; // NEW IMPORT
 import { Toaster } from 'react-hot-toast';
 import useStore from '../../store/useStore';
 import { Customer } from '../../types';
@@ -70,7 +71,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-sans relative">
       <Toaster position="top-right" />
-
+      <CommandPalette /> {/* GLOBAL COMMAND MENU */}
       {/* Sidebar - Desktop */}
       <div
         className={`hidden md:block transition-all duration-300 ease-in-out ${
@@ -87,7 +88,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           onClose={() => setSidebarOpen(false)}
         />
       </div>
-
       {/* Content Area */}
       <main className="flex-1 h-full p-4 sm:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-4 relative">
         {/* Desktop Sidebar Toggle Button */}
@@ -120,7 +120,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </Suspense>
         </PullToRefresh>
       </main>
-
       {/* Mobile Navigation Components */}
       <BottomNav
         activePage={activePage}
@@ -128,7 +127,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         onToggleGuide={handleToggleGuide}
       />
       <FAB activePage={activePage} onAction={onFABAction} customers={customers} />
-
       {showGuide && (
         <Modal
           show={showGuide}
