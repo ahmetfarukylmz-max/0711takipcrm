@@ -21,6 +21,7 @@ import { sanitizeText } from '../../utils/sanitize';
 interface QuoteFormData {
   customerId: string;
   items: OrderItem[];
+  teklif_tarihi: string; // Added field
   gecerlilik_tarihi: string;
   status: string;
   vatRate: VATRate;
@@ -67,18 +68,33 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
   shipments = [],
 }) => {
   const [formData, setFormData] = useState<QuoteFormData>(
-    quote || {
-      customerId: customers[0]?.id || '',
-      items: [],
-      gecerlilik_tarihi: '',
-      status: 'Hazırlandı',
-      vatRate: 20,
-      paymentType: 'Peşin',
-      paymentTerm: '',
-      currency: DEFAULT_CURRENCY,
-      notes: '',
-      rejection_reason: '',
-    }
+    quote
+      ? {
+          customerId: quote.customerId || '',
+          items: [],
+          teklif_tarihi: quote.teklif_tarihi || new Date().toISOString().slice(0, 10),
+          gecerlilik_tarihi: quote.gecerlilik_tarihi || '',
+          status: quote.status || 'Hazırlandı',
+          vatRate: quote.vatRate || 20,
+          paymentType: quote.paymentType || 'Peşin',
+          paymentTerm: quote.paymentTerm || '',
+          currency: quote.currency || DEFAULT_CURRENCY,
+          notes: quote.notes || '',
+          rejection_reason: quote.rejection_reason || '',
+        }
+      : {
+          customerId: customers[0]?.id || '',
+          items: [],
+          teklif_tarihi: new Date().toISOString().slice(0, 10),
+          gecerlilik_tarihi: '',
+          status: 'Hazırlandı',
+          vatRate: 20,
+          paymentType: 'Peşin',
+          paymentTerm: '',
+          currency: DEFAULT_CURRENCY,
+          notes: '',
+          rejection_reason: '',
+        }
   );
   const [items, setItems] = useState<OrderItem[]>(
     (quote?.items || []).map((item) => {
@@ -134,6 +150,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
     const cleanData: any = {
       customerId: formData.customerId,
       items: cleanItems,
+      teklif_tarihi: formData.teklif_tarihi, // Include date
       status: status, // Use passed status
       vatRate: formData.vatRate,
       paymentType: formData.paymentType,
@@ -207,7 +224,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
 
   return (
     <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormSelect
           label="Müşteri"
           name="customerId"
@@ -222,6 +239,14 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
             </option>
           ))}
         </FormSelect>
+        <FormInput
+          label="Teklif Tarihi"
+          name="teklif_tarihi"
+          type="date"
+          value={formData.teklif_tarihi}
+          onChange={(e) => setFormData({ ...formData, teklif_tarihi: e.target.value })}
+          required
+        />
         <FormInput
           label="Geçerlilik Tarihi"
           name="gecerlilik_tarihi"
