@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Command } from 'cmdk';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import useStore from '../../store/useStore';
@@ -7,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   HomeIcon,
   UsersIcon,
-  BoxIcon as CubeIcon, // Re-map BoxIcon to CubeIcon for semantic clarity
+  BoxIcon as CubeIcon,
   DocumentTextIcon,
   TruckIcon,
   CreditCardIcon,
@@ -15,7 +14,7 @@ import {
   PlusIcon,
 } from '../icons';
 
-// Missing icons defined locally for now to fix build error
+// Missing icons defined locally
 const PhoneIcon = (props: any) => (
   <svg
     {...props}
@@ -67,9 +66,7 @@ const MagnifyingGlassIcon = (props: any) => (
   </svg>
 );
 
-// --- TYPES ---
-
-type CommandGroup = 'Sayfalar' | 'İşlemler' | 'Müşteriler' | 'Ürünler' | 'Siparişler';
+type CommandGroup = 'Sayfalar' | 'İşlemler' | 'Müşteriler' | 'Ürünler';
 
 interface CommandItem {
   id: string;
@@ -78,23 +75,22 @@ interface CommandItem {
   group: CommandGroup;
   icon?: React.ReactNode;
   action: () => void;
-  keywords?: string[]; // For better search matching (aliases)
+  keywords?: string[];
 }
-
-// --- ICONS ---
-// (We reuse existing icons or simple SVGs for the palette)
 
 const CommandPalette: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Store Data
   const customers = useStore((state) => state.collections.customers) || [];
   const products = useStore((state) => state.collections.products) || [];
-  const orders = useStore((state) => state.collections.orders) || [];
-  const quotes = useStore((state) => state.collections.teklifler) || [];
 
   // Toggle Logic
   useEffect(() => {
@@ -103,14 +99,25 @@ const CommandPalette: React.FC = () => {
         e.preventDefault();
         setOpen((open) => !open);
       }
+      if (e.key === 'Escape') {
+        setOpen(false);
+      }
     };
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // --- COMMAND GENERATION ---
+  // Focus input when opened
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+      setSearch('');
+      setSelectedIndex(0);
+    }
+  }, [open]);
 
+  // --- COMMAND GENERATION ---
   const allCommands = useMemo<CommandItem[]>(() => {
     const items: CommandItem[] = [];
 
@@ -192,7 +199,7 @@ const CommandPalette: React.FC = () => {
         id: 'nav-purchasing',
         title: 'Satınalma Yönetimi',
         group: 'Sayfalar',
-        icon: <ShoppingCartIcon className="w-5 h-5" />, // Using shopping cart for purchasing too
+        icon: <ShoppingCartIcon className="w-5 h-5" />,
         action: () => navigate('/purchasing'),
         keywords: ['tedarik', 'talep', 'giriş'],
       },
@@ -206,10 +213,7 @@ const CommandPalette: React.FC = () => {
       }
     );
 
-    // 2. Global Actions (Shortcuts)
-    // We navigate to the page and use state/query params to trigger the modal
-    // Note: For this to work perfectly, pages need to listen to location state.
-    // As a simple v1, we just navigate to the page.
+    // 2. Global Actions
     items.push(
       {
         id: 'act-new-customer',
@@ -218,7 +222,6 @@ const CommandPalette: React.FC = () => {
         icon: <PlusIcon className="w-5 h-5" />,
         action: () => {
           navigate('/customers');
-          // In a real app, we would dispatch an event or use context to open the modal
           setTimeout(() => document.querySelector('[data-action="add-customer"]')?.click(), 100);
         },
         keywords: ['oluştur', 'kayıt'],
@@ -247,7 +250,7 @@ const CommandPalette: React.FC = () => {
       }
     );
 
-    // 3. Data: Customers
+    // 3. Customers
     customers.forEach((c) => {
       items.push({
         id: `cust-${c.id}`,
@@ -255,16 +258,12 @@ const CommandPalette: React.FC = () => {
         subtitle: c.phone || c.email || 'İletişim bilgisi yok',
         group: 'Müşteriler',
         icon: <UsersIcon className="w-4 h-4 text-gray-500" />,
-        action: () => {
-          // Navigate to customers page - ideally would filter or open detail
-          navigate('/customers');
-          // We can improve this later to open specific customer detail
-        },
+        action: () => navigate('/customers'),
         keywords: [c.contact_person || '', c.email || '', c.phone || ''],
       });
     });
 
-    // 4. Data: Products
+    // 4. Products
     products.forEach((p) => {
       items.push({
         id: `prod-${p.id}`,
@@ -280,115 +279,166 @@ const CommandPalette: React.FC = () => {
     return items;
   }, [navigate, customers, products]);
 
-  // --- FUZZY SEARCH LOGIC ---
-
+  // --- FILTERING ---
   const filteredItems = useMemo(() => {
-    if (!search) return allCommands;
+    if (!search) return allCommands.slice(0, 20); // Show recent/default items
 
     const fuse = new Fuse(allCommands, {
       keys: ['title', 'keywords', 'subtitle'],
-      threshold: 0.3, // 0.0 = perfect match, 1.0 = match anything. 0.3 is good for fuzzy.
+      threshold: 0.3,
       distance: 100,
     });
 
-    return fuse.search(search).map((result) => result.item);
+    return fuse
+      .search(search)
+      .map((result) => result.item)
+      .slice(0, 50);
   }, [search, allCommands]);
 
-  // Group items for display
-  const groupedItems = useMemo(() => {
-    const groups: Record<string, CommandItem[]> = {
-      Sayfalar: [],
-      İşlemler: [],
-      Müşteriler: [],
-      Ürünler: [],
-      Siparişler: [],
+  // Handle Keyboard Navigation
+  useEffect(() => {
+    const handleNavigation = (e: KeyboardEvent) => {
+      if (!open) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredItems.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredItems[selectedIndex]) {
+          filteredItems[selectedIndex].action();
+          setOpen(false);
+        }
+      }
     };
 
-    filteredItems.forEach((item) => {
-      if (groups[item.group]) {
-        groups[item.group].push(item);
+    window.addEventListener('keydown', handleNavigation);
+    return () => window.removeEventListener('keydown', handleNavigation);
+  }, [open, filteredItems, selectedIndex]);
+
+  // Reset selected index when search changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [search]);
+
+  // Scroll to selected item
+  useEffect(() => {
+    if (listRef.current) {
+      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
-    });
+    }
+  }, [selectedIndex]);
 
-    return groups;
-  }, [filteredItems]);
-
-  const handleSelect = (item: CommandItem) => {
-    item.action();
-    setOpen(false);
-    setSearch('');
-  };
+  if (!open) return null;
 
   return (
-    <Command.Dialog
-      open={open}
-      onOpenChange={setOpen}
-      label="Global Command Menu"
-      className={isDarkMode ? 'dark' : ''}
-    >
-      <div className="flex items-center border-b border-gray-100 dark:border-gray-700 px-3">
-        <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
-        <Command.Input
-          value={search}
-          onValueChange={setSearch}
-          placeholder="Ne yapmak istiyorsunuz? (Sayfa, Müşteri, Ürün...)"
-        />
-        <div className="flex items-center gap-1">
-          <kbd className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 rounded border border-gray-200 dark:border-gray-700">
-            <span className="text-xs">ESC</span>
-          </kbd>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-hidden p-4 sm:p-20">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 transition-opacity bg-gray-900/40 backdrop-blur-sm"
+        onClick={() => setOpen(false)}
+      />
+
+      {/* Dialog */}
+      <div className="relative mx-auto max-w-xl transform divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl ring-1 ring-black ring-opacity-5 transition-all">
+        {/* Search Input */}
+        <div className="relative">
+          <MagnifyingGlassIcon className="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400" />
+          <input
+            ref={inputRef}
+            type="text"
+            className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-0 sm:text-sm outline-none"
+            placeholder="Ne yapmak istiyorsunuz? (Sayfa, Müşteri, Ürün...)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-      </div>
 
-      <Command.List>
-        <Command.Empty>Sonuç bulunamadı.</Command.Empty>
-
-        {/* Render Groups */}
-        {Object.entries(groupedItems).map(([groupName, items]) => {
-          if (items.length === 0) return null;
-
-          return (
-            <Command.Group key={groupName} heading={groupName}>
-              {items.slice(0, 5).map(
-                (
-                  item // Limit to 5 items per group to avoid clutter
-                ) => (
-                  <Command.Item
-                    key={item.id}
-                    onSelect={() => handleSelect(item)}
-                    value={item.title + ' ' + (item.keywords?.join(' ') || '')} // Value used for internal filtering if we didn't use Fuse
+        {/* Results List */}
+        <div ref={listRef} className="max-h-[60vh] scroll-py-3 overflow-y-auto p-3">
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item, index) => (
+              <div
+                key={item.id}
+                onClick={() => {
+                  item.action();
+                  setOpen(false);
+                }}
+                className={`
+                  group flex cursor-default select-none rounded-xl p-3 items-center gap-3
+                  ${
+                    index === selectedIndex
+                      ? 'bg-blue-50 dark:bg-blue-900/30'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  }
+                `}
+              >
+                <div
+                  className={`
+                  flex h-10 w-10 flex-none items-center justify-center rounded-lg
+                  ${
+                    index === selectedIndex
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                  }
+                `}
+                >
+                  {item.icon}
+                </div>
+                <div className="flex-auto truncate">
+                  <p
+                    className={`truncate text-sm font-medium ${index === selectedIndex ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}
                   >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className="flex-shrink-0 text-gray-500 dark:text-gray-400">
-                        {item.icon}
-                      </div>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-medium truncate text-gray-900 dark:text-gray-100">
-                          {item.title}
-                        </span>
-                        {item.subtitle && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {item.subtitle}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Command.Item>
-                )
-              )}
-            </Command.Group>
-          );
-        })}
-      </Command.List>
+                    {item.title}
+                  </p>
+                  {item.subtitle && (
+                    <p
+                      className={`truncate text-xs ${index === selectedIndex ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
+                    >
+                      {item.subtitle}
+                    </p>
+                  )}
+                </div>
+                {index === selectedIndex && (
+                  <span className="text-xs text-blue-600 dark:text-blue-300 font-medium px-2">
+                    Giriş ↵
+                  </span>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="py-14 text-center text-sm sm:px-14">
+              <CubeIcon className="mx-auto h-6 w-6 text-gray-400" />
+              <p className="mt-4 font-semibold text-gray-900 dark:text-white">Sonuç bulunamadı</p>
+              <p className="mt-2 text-gray-500 dark:text-gray-400">
+                Farklı bir arama terimi deneyin.
+              </p>
+            </div>
+          )}
+        </div>
 
-      <div className="border-t border-gray-100 dark:border-gray-700 p-2 flex justify-between items-center text-xs text-gray-400 px-4 bg-gray-50 dark:bg-gray-800/50">
-        <span>Takip CRM</span>
-        <div className="flex gap-2">
-          <span>Seçmek için ↵</span>
-          <span>Gezinmek için ↑↓</span>
+        {/* Footer */}
+        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
+          <span>Takip CRM</span>
+          <div className="flex gap-2">
+            <span className="flex items-center gap-1">
+              <kbd className="font-sans text-gray-400 dark:text-gray-500">↑↓</kbd> Seç
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="font-sans text-gray-400 dark:text-gray-500">↵</kbd> Git
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="font-sans text-gray-400 dark:text-gray-500">ESC</kbd> Kapat
+            </span>
+          </div>
         </div>
       </div>
-    </Command.Dialog>
+    </div>
   );
 };
 
