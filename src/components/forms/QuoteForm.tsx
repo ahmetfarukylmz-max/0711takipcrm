@@ -160,6 +160,11 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
       total_amount: total,
     };
 
+    // Preserve ID if editing
+    if (quote?.id) {
+      cleanData.id = quote.id;
+    }
+
     // Add optional fields only if they have values
     if (formData.gecerlilik_tarihi) cleanData.gecerlilik_tarihi = formData.gecerlilik_tarihi;
     if (formData.notes) cleanData.notes = formData.notes;
