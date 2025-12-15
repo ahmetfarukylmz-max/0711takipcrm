@@ -3,67 +3,59 @@ import React from 'react';
 const QuoteSection: React.FC = () => {
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">📄 Teklif Hazırlama</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        📄 Teklif Hazırlama (Smart Quote)
+      </h2>
 
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-lg">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          📝 Teklif Oluşturma Adımları
-        </h3>
-
-        <div className="space-y-3">
-          {[
-            {
-              step: 1,
-              title: 'Teklif Başlat',
-              desc: 'Quick Actions → "📄 Yeni Teklif" → Müşteri seçin',
-            },
-            {
-              step: 2,
-              title: 'Ürünleri Ekle',
-              desc: 'Birden fazla ürün ekleyebilir, her birine indirim tanımlayabilirsiniz',
-            },
-            {
-              step: 3,
-              title: 'Notlar Ekle',
-              desc: 'Teslimat koşulları, ödeme şartları, özel koşullar',
-            },
-            {
-              step: 4,
-              title: 'PDF İndir',
-              desc: 'Teklifi PDF olarak kaydedin ve müşteriye gönderin',
-            },
-          ].map((item) => (
-            <div
-              key={item.step}
-              className="flex gap-4 bg-white dark:bg-gray-700 p-4 rounded-lg shadow"
-            >
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
-                {item.step}
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">{item.title}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Teklif Süreci</h3>
+        <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3 space-y-6">
+          <li className="mb-10 ml-6">
+            <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-3 ring-8 ring-white dark:ring-gray-800 dark:bg-blue-900">
+              1
+            </span>
+            <h4 className="font-bold text-gray-900 dark:text-white">Teklif Oluştur</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Görüşme sonucunda müşteriye özel fiyatlarla teklif hazırlayın. Geçerlilik tarihi ve
+              ödeme şartlarını belirtin.
+            </p>
+          </li>
+          <li className="mb-10 ml-6">
+            <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-3 ring-8 ring-white dark:ring-gray-800 dark:bg-blue-900">
+              2
+            </span>
+            <h4 className="font-bold text-gray-900 dark:text-white">PDF Paylaşımı</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Teklifi profesyonel PDF formatında indirin ve WhatsApp veya E-posta ile gönderin.
+            </p>
+          </li>
+          <li className="ml-6">
+            <span className="absolute flex items-center justify-center w-6 h-6 bg-green-100 rounded-full -left-3 ring-8 ring-white dark:ring-gray-800 dark:bg-green-900">
+              3
+            </span>
+            <h4 className="font-bold text-gray-900 dark:text-white">Siparişe Dönüştür</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Onaylanan teklifi tek tıkla "Siparişe Dönüştür" diyerek siparişleştirin. Veri tekrarı
+              yapmanıza gerek kalmaz.
+            </p>
+          </li>
+        </ol>
       </div>
 
-      <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          🔄 Teklifi Siparişe Dönüştürme
+      <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-xl border border-red-100 dark:border-red-800">
+        <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-3">
+          🚫 Teklif Reddedilirse (Önemli!)
         </h3>
-
-        <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded">
-          <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-            <li>Onaylanan teklifi açın</li>
-            <li>
-              <strong>"Siparişe Dönüştür"</strong> butonuna tıklayın
-            </li>
-            <li>Bilgiler otomatik aktarılır</li>
-            <li>Gerekli düzenlemeleri yapın</li>
-            <li>Siparişi kaydedin</li>
-          </ol>
+        <p className="text-sm text-red-800 dark:text-red-200 mb-4">
+          Müşteri teklifi reddederse, durumu mutlaka "Reddedildi" yapın. Sistem size nedenini
+          soracaktır:
+        </p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-red-200 dark:border-red-700 text-sm">
+          <strong>Neden Kaydediyoruz?</strong>
+          <br />
+          Eğer "Fiyat Yüksek" seçeneğini işaretlerseniz, müşterinin hedef fiyatını ve varsa rakip
+          firma ismini girebilirsiniz. Bu veri, <strong>Kayıp Analizi</strong> raporlarında "Fiyat
+          yüzünden X TL kaybettik" şeklinde karşınıza çıkar ve strateji geliştirmenizi sağlar.
         </div>
       </div>
     </div>
