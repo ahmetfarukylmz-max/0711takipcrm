@@ -190,8 +190,9 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
     const orders = state.collections.orders.filter(
       (o) => o.customerId === customerId && !o.isDeleted && o.status !== 'Taslak'
     );
+    // Modified: Include all payments except Cancelled/Deleted ones (e.g. Pending Checks count as payment received)
     const payments = state.collections.payments.filter(
-      (p) => p.customerId === customerId && !p.isDeleted && p.status === 'Tahsil Edildi'
+      (p) => p.customerId === customerId && !p.isDeleted && p.status !== 'İptal'
     );
 
     const totalOrders = orders.reduce(
