@@ -34,21 +34,6 @@ const OrderDetail = memo<OrderDetailProps>(
       return shipments.filter((s) => s.orderId === order.id && !s.isDeleted);
     }, [shipments, order.id]);
 
-    // Calculate expected payment date
-    const calculatePaymentDate = () => {
-      if (!order.paymentType) return null;
-
-      const baseDate = new Date(order.delivery_date || order.order_date);
-
-      if (order.paymentType === 'Vadeli' && order.paymentTerm) {
-        baseDate.setDate(baseDate.getDate() + parseInt(order.paymentTerm.toString()));
-      }
-
-      return baseDate.toISOString().split('T')[0];
-    };
-
-    const expectedPaymentDate = calculatePaymentDate();
-
     return (
       <div className="p-6 bg-white dark:bg-gray-800 rounded-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
@@ -227,67 +212,7 @@ const OrderDetail = memo<OrderDetailProps>(
           </div>
         </div>
 
-        {/* Payment Plan Card */}
-        <div className="mt-6">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
-            💳 Ödeme Planı
-          </h3>
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border-2 border-blue-200 dark:border-blue-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Ödeme Tipi</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {order.paymentType || 'Belirtilmemiş'}
-                </p>
-              </div>
-              {order.paymentTerm && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Vade Süresi</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {order.paymentTerm} gün
-                  </p>
-                </div>
-              )}
-              {expectedPaymentDate && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Beklenen Ödeme Tarihi</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {formatDate(expectedPaymentDate)}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Beklenen Tutar</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {formatCurrency(order.total_amount, order.currency)}
-                </p>
-              </div>
-            </div>
-
-            {order.checkBank && (
-              <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Çek/Senet Bilgisi</p>
-                <div className="text-sm text-gray-900 dark:text-gray-100 space-y-1">
-                  {order.checkBank && (
-                    <p>
-                      <span className="font-medium">Banka:</span> {order.checkBank}
-                    </p>
-                  )}
-                  {order.checkNumber && (
-                    <p>
-                      <span className="font-medium">Çek No:</span> {order.checkNumber}
-                    </p>
-                  )}
-                  {order.checkDate && (
-                    <p>
-                      <span className="font-medium">Çek Vadesi:</span> {formatDate(order.checkDate)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Payment Plan Card REMOVED */}
 
         {/* Shipment History Card */}
         <div className="mt-6">
