@@ -755,14 +755,34 @@ const Orders = memo<OrdersProps>(
                     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
 
                   if (orderShipments.length > 0) {
-                    const allInvoiced = orderShipments.every((s) => s.isInvoiced);
-                    const someInvoiced = orderShipments.some((s) => s.isInvoiced);
+                    // Calculate total quantity shipped for each item in the order
+                    const shippedQuantities: { [productId: string]: number } = {};
+                    orderShipments.forEach((s) => {
+                      s.items?.forEach((si) => {
+                        const originalOrderItem = order.items[si.orderItemIndex];
+                        if (originalOrderItem) {
+                          // Use the original item's product ID for consistent tracking
+                          shippedQuantities[originalOrderItem.productId] =
+                            (shippedQuantities[originalOrderItem.productId] || 0) + si.quantity;
+                        }
+                      });
+                    });
 
-                    if (allInvoiced) {
+                    // Check if all items in the order are fully shipped
+                    const allItemsFullyShipped = order.items.every((item) => {
+                      const totalOrdered = item.quantity;
+                      const totalShipped = shippedQuantities[item.productId] || 0;
+                      return totalShipped >= totalOrdered; // Using >= to account for potential over-shipment approval
+                    });
+
+                    const allShipmentsInvoiced = orderShipments.every((s) => s.isInvoiced);
+                    const someShipmentsInvoiced = orderShipments.some((s) => s.isInvoiced);
+
+                    if (allItemsFullyShipped && allShipmentsInvoiced) {
                       invoiceStatusLabel = 'Faturalandı';
                       invoiceStatusClass =
                         'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-                    } else if (someInvoiced) {
+                    } else if (someShipmentsInvoiced) {
                       invoiceStatusLabel = 'Kısmi Fatura';
                       invoiceStatusClass =
                         'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
