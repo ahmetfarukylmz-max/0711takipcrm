@@ -34,35 +34,6 @@ const OrderDetail = memo<OrderDetailProps>(
       return shipments.filter((s) => s.orderId === order.id && !s.isDeleted);
     }, [shipments, order.id]);
 
-    // Find payments related to this order
-    // Include all payments except cancelled ones (Bekliyor status payments like checks are counted)
-    const relatedPayments = useMemo(() => {
-      return payments.filter((p) => p.orderId === order.id && !p.isDeleted && p.status !== 'İptal');
-    }, [payments, order.id]);
-
-    // Calculate total paid amount
-    const totalPaid = useMemo(() => {
-      return relatedPayments.reduce((sum, p) => {
-        const amount = p.amount || 0;
-        // Convert to TRY for consistency
-        const inTRY =
-          p.currency === 'USD' ? amount * 35 : p.currency === 'EUR' ? amount * 38 : amount;
-        return sum + inTRY;
-      }, 0);
-    }, [relatedPayments]);
-
-    // Calculate order total in TRY
-    const orderTotalInTRY = useMemo(() => {
-      const amount = order.total_amount || 0;
-      return order.currency === 'USD'
-        ? amount * 35
-        : order.currency === 'EUR'
-          ? amount * 38
-          : amount;
-    }, [order.total_amount, order.currency]);
-
-    const remainingAmount = orderTotalInTRY - totalPaid;
-
     // Calculate expected payment date
     const calculatePaymentDate = () => {
       if (!order.paymentType) return null;
@@ -385,75 +356,7 @@ const OrderDetail = memo<OrderDetailProps>(
           )}
         </div>
 
-        {/* Related Payments Card */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-              💰 Alınan Ödemeler
-            </h3>
-            {remainingAmount > 0 && (
-              <span className="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                Kalan: {formatCurrency(remainingAmount, 'TRY')}
-              </span>
-            )}
-            {remainingAmount <= 0 && totalPaid > 0 && (
-              <span className="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                ✅ Tamamlandı
-              </span>
-            )}
-          </div>
-
-          {relatedPayments.length > 0 ? (
-            <div className="space-y-2">
-              {relatedPayments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-green-700 dark:text-green-400">
-                          {formatCurrency(payment.amount, payment.currency)}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                          ✅ Tahsil Edildi
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {formatDate(payment.paidDate || payment.dueDate)} • {payment.paymentMethod}
-                      </div>
-                      {payment.notes && (
-                        <div className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                          {payment.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    Toplam Tahsil Edilen:
-                  </span>
-                  <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
-                    {formatCurrency(totalPaid, 'TRY')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
-              <p className="text-gray-600 dark:text-gray-400">
-                ⚠️ Bu sipariş için henüz ödeme alınmamış.
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                Ödeme alındığında "Ödemeler" sayfasından kayıt oluşturun.
-              </p>
-            </div>
-          )}
-        </div>
+        {/* Related Payments Card REMOVED */}
 
         {order.notes && (
           <div className="mt-6">
