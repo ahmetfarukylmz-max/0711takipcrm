@@ -170,6 +170,26 @@ const Quotes = memo<QuotesProps>(
       }
     };
 
+    // Duplicate handler
+    const handleDuplicate = (quote: Quote) => {
+      const duplicatedQuote: Partial<Quote> = {
+        ...quote,
+        id: undefined, // Will be generated on save
+        teklif_tarihi: new Date().toISOString().split('T')[0], // Reset date to today
+        status: 'Hazırlandı', // Reset status
+        orderId: undefined, // Remove order link
+        quoteNumber: undefined, // Will be generated
+        createdAt: undefined,
+        updatedAt: undefined,
+        createdBy: undefined,
+        notes: quote.notes ? `${quote.notes} (Kopya)` : '',
+      };
+
+      setCurrentQuote(duplicatedQuote as Quote);
+      setIsModalOpen(true);
+      toast.success('Teklif kopyalandı, düzenleyebilirsiniz.');
+    };
+
     const handleDelete = (item: Quote) => {
       setDeleteConfirm({ isOpen: true, item });
     };
@@ -557,6 +577,7 @@ const Quotes = memo<QuotesProps>(
                 filteredQuotes.map((quote) => {
                   const quoteActions = [
                     { label: 'Detay', onClick: () => handleOpenModal(quote) },
+                    { label: 'Kopyala', onClick: () => handleDuplicate(quote) }, // NEW
                     { label: 'PDF', onClick: () => handlePrint(quote) },
                     { label: 'Özelleştir', onClick: () => onGeneratePdf(quote) },
                   ];
@@ -687,6 +708,14 @@ const Quotes = memo<QuotesProps>(
 
               // Mobile actions setup
               const mobileActions = [
+                {
+                  label: 'Kopyala',
+                  onClick: (e: any) => {
+                    e?.stopPropagation();
+                    handleDuplicate(quote);
+                  },
+                  variant: 'secondary',
+                },
                 {
                   label: 'PDF',
                   onClick: (e: any) => {
