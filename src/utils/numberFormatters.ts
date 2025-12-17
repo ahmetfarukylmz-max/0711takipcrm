@@ -6,17 +6,6 @@ import { Order, Quote } from '../types';
  */
 
 /**
- * Round a number to 2 decimal places safely
- * Solves floating point math issues (e.g. 0.1 + 0.2 = 0.300000004)
- * @param {number} value - The number to round
- * @returns {number} Rounded number (e.g. 10.23)
- */
-export const roundNumber = (value: number | undefined | null): number => {
-  if (!value) return 0;
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-};
-
-/**
  * Format order number for display
  * Handles both new format (SIP-2025-1001) and legacy format (Firebase ID)
  * @param {Order | null | undefined} order - Order object
