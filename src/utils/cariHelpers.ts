@@ -1,4 +1,5 @@
 import type { Order, Payment } from '../types';
+import { EXCHANGE_RATES } from '../constants';
 
 /**
  * Cari Hesap Yardımcı Fonksiyonları
@@ -60,7 +61,11 @@ export const calculateCariBalance = (
     const amount = order.total_amount || 0;
     // Eğer dövizse basit bir dönüşüm yap (gerçek uygulamada kurları kullan)
     const inTRY =
-      order.currency === 'USD' ? amount * 35 : order.currency === 'EUR' ? amount * 38 : amount;
+      order.currency === 'USD'
+        ? amount * EXCHANGE_RATES.USD
+        : order.currency === 'EUR'
+          ? amount * EXCHANGE_RATES.EUR
+          : amount;
     return sum + inTRY;
   }, 0);
 
@@ -80,7 +85,11 @@ export const calculateCariBalance = (
     const amount = payment.amount || 0;
     // Döviz dönüşümü
     const inTRY =
-      payment.currency === 'USD' ? amount * 35 : payment.currency === 'EUR' ? amount * 38 : amount;
+      payment.currency === 'USD'
+        ? amount * EXCHANGE_RATES.USD
+        : payment.currency === 'EUR'
+          ? amount * EXCHANGE_RATES.EUR
+          : amount;
     return sum + inTRY;
   }, 0);
 
@@ -99,7 +108,11 @@ export const calculateCariBalance = (
 
     const amount = payment.amount || 0;
     const inTRY =
-      payment.currency === 'USD' ? amount * 35 : payment.currency === 'EUR' ? amount * 38 : amount;
+      payment.currency === 'USD'
+        ? amount * EXCHANGE_RATES.USD
+        : payment.currency === 'EUR'
+          ? amount * EXCHANGE_RATES.EUR
+          : amount;
     return sum + inTRY;
   }, 0);
 
@@ -174,7 +187,11 @@ export const getAvailableAdvance = (customerId: string, payments: Payment[]): nu
 
     const amount = payment.amount || 0;
     const inTRY =
-      payment.currency === 'USD' ? amount * 35 : payment.currency === 'EUR' ? amount * 38 : amount;
+      payment.currency === 'USD'
+        ? amount * EXCHANGE_RATES.USD
+        : payment.currency === 'EUR'
+          ? amount * EXCHANGE_RATES.EUR
+          : amount;
     return sum + inTRY;
   }, 0);
 };

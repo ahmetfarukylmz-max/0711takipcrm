@@ -4,7 +4,7 @@ import FormSelect from '../common/FormSelect';
 import FormTextarea from '../common/FormTextarea';
 import ItemEditor from './ItemEditor';
 import { turkeyVATRates, currencies, DEFAULT_CURRENCY } from '../../constants';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { formatCurrency, formatDate, roundNumber } from '../../utils/formatters';
 import type {
   Quote,
   Customer,
@@ -107,12 +107,11 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
     })
   );
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + (item.quantity || 0) * (item.unit_price || 0),
-    0
+  const subtotal = roundNumber(
+    items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unit_price || 0), 0)
   );
-  const vatAmount = subtotal * (formData.vatRate / 100);
-  const total = subtotal + vatAmount;
+  const vatAmount = roundNumber(subtotal * (formData.vatRate / 100));
+  const total = roundNumber(subtotal + vatAmount);
 
   const handleFormSubmit = (e: React.MouseEvent<HTMLButtonElement>, status: string) => {
     e.preventDefault();

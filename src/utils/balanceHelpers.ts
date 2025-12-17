@@ -1,4 +1,5 @@
 import { Customer, Order, Payment } from '../types';
+import { EXCHANGE_RATES } from '../constants';
 
 // Define types for Balances logic
 export type BalanceStatus = 'alacak' | 'borc' | 'dengede';
@@ -63,13 +64,10 @@ export interface BalancesSummary {
   lowRiskCount: number;
 }
 
-// Currency Conversion Rates (hardcoded for now, ideally fetched from an API)
-const USD_TO_TRY_RATE = 35;
-const EUR_TO_TRY_RATE = 38;
-
+// Currency Conversion Rates
 const convertToTRY = (amount: number, currency: string) => {
-  if (currency === 'USD') return amount * USD_TO_TRY_RATE;
-  if (currency === 'EUR') return amount * EUR_TO_TRY_RATE;
+  if (currency === 'USD') return amount * EXCHANGE_RATES.USD;
+  if (currency === 'EUR') return amount * EXCHANGE_RATES.EUR;
   return amount;
 };
 

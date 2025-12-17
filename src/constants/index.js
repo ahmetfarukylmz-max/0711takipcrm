@@ -16,6 +16,13 @@ export const currencies = [
 ];
 
 // Default currency
+// Sabit Döviz Kurları (İleride API'den çekilebilir)
+export const EXCHANGE_RATES = {
+  USD: 36.5,
+  EUR: 38.2,
+  TRY: 1.0,
+};
+
 export const DEFAULT_CURRENCY = 'TRY';
 
 // Standard Rejection Reasons

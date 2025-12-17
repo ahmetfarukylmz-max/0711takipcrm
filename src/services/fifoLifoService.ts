@@ -109,6 +109,7 @@ export const calculateLIFOConsumption = (
 
 /**
  * Calculate weighted average cost consumption
+ * Uses weighted average for COST, but FIFO logic for PHYSICAL CONSUMPTION
  * @param {StockLot[]} availableLots - Array of available stock lots
  * @param {number} quantityNeeded - Total quantity needed
  * @returns {Partial<LotConsumption>[]} Array of LotConsumption objects
@@ -117,7 +118,7 @@ export const calculateAverageCostConsumption = (
   availableLots: StockLot[],
   quantityNeeded: number
 ): Partial<LotConsumption>[] => {
-  // Calculate weighted average cost
+  // 1. Calculate weighted average cost for ALL available lots
   const totalQuantity = availableLots.reduce(
     (sum, lot) => sum + (lot.remainingQuantity ?? (lot as any).quantity),
     0
@@ -128,26 +129,38 @@ export const calculateAverageCostConsumption = (
   );
   const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
+  // 2. Consume lots physically using FIFO (Oldest first)
+  // This is more realistic for warehouse operations than proportional consumption
   const consumptions: Partial<LotConsumption>[] = [];
   let remainingQuantity = quantityNeeded;
 
-  // Consume proportionally from all lots
-  for (const lot of availableLots) {
+  // Sort by purchase date (oldest first) - same as FIFO
+  const sortedLots = [...availableLots].sort((a, b) => {
+    const dateA = a.purchaseDate
+      ? new Date(a.purchaseDate)
+      : a.createdAt
+        ? new Date(a.createdAt)
+        : new Date();
+    const dateB = b.purchaseDate
+      ? new Date(b.purchaseDate)
+      : b.createdAt
+        ? new Date(b.createdAt)
+        : new Date();
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  for (const lot of sortedLots) {
     if (remainingQuantity <= 0) break;
 
     const lotQuantity = lot.remainingQuantity ?? (lot as any).quantity;
-    const proportion = lotQuantity / totalQuantity;
-    const quantityFromThisLot = Math.min(
-      lotQuantity,
-      Math.min(remainingQuantity, quantityNeeded * proportion)
-    );
+    const quantityFromThisLot = Math.min(lotQuantity, remainingQuantity);
 
     if (quantityFromThisLot > 0) {
       consumptions.push({
         lotId: lot.id,
         lotNumber: lot.lotNumber,
         quantityUsed: quantityFromThisLot,
-        unitCost: averageCost, // Use average cost
+        unitCost: averageCost, // KEY DIFFERENCE: Use AVERAGE cost, not lot cost
         totalCost: quantityFromThisLot * averageCost,
       });
 
