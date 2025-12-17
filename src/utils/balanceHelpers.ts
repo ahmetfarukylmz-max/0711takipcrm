@@ -95,8 +95,13 @@ export const calculateAllCustomerBalances = (
       (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
     );
 
-    // Payments that actually reduce debt (Tahsil Edildi)
-    const effectivePayments = customerPayments.filter((p) => p.status === 'Tahsil Edildi');
+    // Payments that actually reduce debt (Tahsil Edildi OR Check/Promissory Note)
+    const effectivePayments = customerPayments.filter((p) => {
+      if (p.status === 'İptal') return false;
+      if (p.status === 'Tahsil Edildi') return true;
+      // Çek ve Senetler alındığı anda bakiyeden düşer
+      return p.paymentMethod === 'Çek' || p.paymentMethod === 'Senet';
+    });
 
     // Payments that are pending (not collected, not cancelled) - for overdue check
     const customerPendingPayments = payments.filter(
