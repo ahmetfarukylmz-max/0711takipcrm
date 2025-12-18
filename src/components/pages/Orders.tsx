@@ -778,7 +778,10 @@ const Orders = memo<OrdersProps>(
                     const allShipmentsInvoiced = orderShipments.every((s) => s.isInvoiced);
                     const someShipmentsInvoiced = orderShipments.some((s) => s.isInvoiced);
 
-                    if (allItemsFullyShipped && allShipmentsInvoiced) {
+                    if (
+                      (allItemsFullyShipped || order.status === 'Tamamlandı') &&
+                      allShipmentsInvoiced
+                    ) {
                       invoiceStatusLabel = 'Faturalandı';
                       invoiceStatusClass =
                         'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
