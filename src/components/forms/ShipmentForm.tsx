@@ -299,7 +299,6 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({
                         type="number"
                         inputMode="numeric"
                         min="0"
-                        max={item.orderedQty - item.shippedQty}
                         value={item.toShipQty}
                         onChange={(e) => handleItemQtyChange(index, e.target.value)}
                         className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
@@ -354,7 +353,6 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({
                     type="number"
                     inputMode="numeric"
                     min="0"
-                    max={item.orderedQty - item.shippedQty}
                     value={item.toShipQty}
                     onChange={(e) => handleItemQtyChange(index, e.target.value)}
                     className="flex-1 px-3 py-2 min-h-[44px] text-center border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
