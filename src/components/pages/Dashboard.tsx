@@ -8,25 +8,29 @@ import {
   WhatsAppIcon,
   BellIcon,
 } from '../icons';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import {
+  formatDate,
+  formatCurrency,
+  getStatusClass,
+  formatPhoneNumberForWhatsApp,
+} from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
 import InactiveCustomers from '../dashboard/InactiveCustomers';
 import UpcomingActionsModal from '../dashboard/UpcomingActionsModal';
 import OpenOrdersModal from '../dashboard/OpenOrdersModal';
 import PendingQuotesModal from '../dashboard/PendingQuotesModal';
+import QuickActionBar from '../dashboard/QuickActionBar';
+import DailyOperationsTimeline from '../dashboard/DailyOperationsTimeline';
+import OperationalTabbedContent from '../dashboard/OperationalTabbedContent';
 import Modal from '../common/Modal';
 import MobileStat from '../common/MobileStat';
+import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
 import useStore from '../../store/useStore';
 import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
 import { logger } from '../../utils/logger';
-
-// New Components
-import DailyOperationsTimeline from '../dashboard/DailyOperationsTimeline';
-import OperationalTabbedContent from '../dashboard/OperationalTabbedContent';
-import QuickActionBar from '../dashboard/QuickActionBar';
 
 interface BestSellingProduct {
   id: string;
@@ -164,8 +168,6 @@ const Dashboard = memo<DashboardProps>(
       customTasks
         .filter((t) => !t.isDeleted && t.date === today)
         .forEach((task) => {
-          const priorityIcon =
-            task.priority === 'high' ? '🔴' : task.priority === 'low' ? '🟢' : '🟡';
           tasks.push({
             id: `custom-${task.id}`,
             type: 'custom',
@@ -199,12 +201,11 @@ const Dashboard = memo<DashboardProps>(
             p.stock_quantity <= p.minimum_stock
         )
         .sort((a, b) => {
-          // Sort by how critical the stock level is (lower percentage = more critical)
           const aPercentage = a.minimum_stock ? a.stock_quantity! / a.minimum_stock : 1;
           const bPercentage = b.minimum_stock ? b.stock_quantity! / b.minimum_stock : 1;
           return aPercentage - bPercentage;
         })
-        .slice(0, 5); // Show top 5 low stock items
+        .slice(0, 5);
     }, [products]);
 
     const toggleTask = async (task: TodayTask) => {
@@ -223,7 +224,6 @@ const Dashboard = memo<DashboardProps>(
         } else if (task.sourceType === 'order') {
           const order = orders.find((o) => o.id === task.sourceId);
           if (order) {
-            // Order status update will be handled by App.jsx handleOrderSave
             toast.info('Teslimat durumu siparişler sayfasından güncellenebilir');
           }
         } else if (task.sourceType === 'customTask') {
@@ -242,7 +242,6 @@ const Dashboard = memo<DashboardProps>(
       }
     };
 
-    // Calculate best selling products with customer details
     const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
       const productSales: Record<
         string,
@@ -291,7 +290,6 @@ const Dashboard = memo<DashboardProps>(
         .map(([productId, stats]) => {
           const product = products.find((p) => p.id === productId && !p.isDeleted);
 
-          // Convert customer data to array and sort by quantity
           const customersList = Object.entries(stats.customerData)
             .map(([customerId, customerStats]) => {
               const customer = customers.find((c) => c.id === customerId && !c.isDeleted);
@@ -317,7 +315,6 @@ const Dashboard = memo<DashboardProps>(
         .slice(0, 5);
     }, [orders, products, customers]);
 
-    // Calculate upcoming deliveries
     const upcomingDeliveries = useMemo(() => {
       const today = new Date();
       const next7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -334,7 +331,6 @@ const Dashboard = memo<DashboardProps>(
         .slice(0, 5);
     }, [orders]);
 
-    // Show skeleton when loading
     if (loading) {
       return (
         <div>
@@ -344,15 +340,11 @@ const Dashboard = memo<DashboardProps>(
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             İşletmenizin genel durumuna buradan göz atabilirsiniz.
           </p>
-
-          {/* Stats skeleton */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
             {Array.from({ length: 5 }).map((_, index) => (
               <SkeletonStat key={index} />
             ))}
           </div>
-
-          {/* Widgets skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
             {Array.from({ length: 4 }).map((_, index) => (
               <div
@@ -370,7 +362,6 @@ const Dashboard = memo<DashboardProps>(
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header & Date */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Operasyon Merkezi</h1>
@@ -379,34 +370,18 @@ const Dashboard = memo<DashboardProps>(
               {formatDate(new Date().toISOString())}
             </p>
           </div>
-
           <div className="flex items-center gap-3">
             <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm transition-all flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                ></path>
-              </svg>
+              <ClipboardListIcon className="w-4 h-4 mr-2" />
               Rapor Al
             </button>
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-blue-200 transition-all flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 4v16m8-8H4"
-                ></path>
-              </svg>
+              <BellIcon className="w-4 h-4 mr-2" />
               Yeni Ekle
             </button>
           </div>
         </div>
 
-        {/* Critical Alerts */}
         <CriticalAlerts
           customers={customers}
           orders={orders}
@@ -417,7 +392,6 @@ const Dashboard = memo<DashboardProps>(
           onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
         />
 
-        {/* Mobile-optimized stats grid: 2 columns on mobile, 3 on tablet, 5 on desktop */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-8">
           <div className="animate-fadeIn">
             <MobileStat
@@ -476,16 +450,12 @@ const Dashboard = memo<DashboardProps>(
           </div>
         </div>
 
-        {/* MAIN CONTENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT COLUMN: Daily Operations Timeline (5 cols) */}
           <DailyOperationsTimeline
             todayTasks={todayTasks}
             onToggleTask={toggleTask}
             setActivePage={setActivePage}
           />
-
-          {/* RIGHT COLUMN: Tabbed Widget Area (7 cols) */}
           <OperationalTabbedContent
             lowStockProducts={lowStockProducts}
             products={products}
@@ -497,288 +467,275 @@ const Dashboard = memo<DashboardProps>(
           />
         </div>
 
-        {/* Quick Action Bar and Modals Wrapper */}
-        <div>
-          {/* Quick Action Bar */}
-          <QuickActionBar />
+        <QuickActionBar />
 
-          {/* Modals */}
-          <Modal
-            show={isOverdueModalOpen}
-            onClose={() => setIsOverdueModalOpen(false)}
-            title="Gecikmiş Eylemler"
-            maxWidth="max-w-4xl"
-          >
-            <OverdueActions
-              overdueItems={overdueItems}
-              setActivePage={setActivePage}
-              onMeetingUpdate={onMeetingSave}
-            />
-          </Modal>
+        <Modal
+          show={isOverdueModalOpen}
+          onClose={() => setIsOverdueModalOpen(false)}
+          title="Gecikmiş Eylemler"
+          maxWidth="max-w-4xl"
+        >
+          <OverdueActions
+            overdueItems={overdueItems}
+            setActivePage={setActivePage}
+            onMeetingUpdate={onMeetingSave}
+          />
+        </Modal>
 
-          {/* Product Customers Modal */}
-          <Modal
-            show={!!selectedProduct}
-            onClose={() => setSelectedProduct(null)}
-            title={`${selectedProduct?.name || ''} - Alıcı Müşteriler`}
-            maxWidth="max-w-2xl"
-          >
-            {selectedProduct && (
-              <div className="space-y-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Toplam Satış:</span>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {selectedProduct.quantity} Kg
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Toplam Gelir:</span>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(selectedProduct.revenue)}
-                      </p>
-                    </div>
+        <Modal
+          show={!!selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          title={`${selectedProduct?.name || ''} - Alıcı Müşteriler`}
+          maxWidth="max-w-2xl"
+        >
+          {selectedProduct && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Toplam Satış:</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {selectedProduct.quantity} Kg
+                    </p>
                   </div>
-                </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                    Müşteri Listesi ({selectedProduct.customers.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedProduct.customers.map((customer, index) => (
-                      <div
-                        key={customer.customerId}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {customer.customerName}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {customer.quantity} Kg • {formatCurrency(customer.revenue)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            %{((customer.quantity / selectedProduct.quantity) * 100).toFixed(1)}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Pay</div>
-                        </div>
-                      </div>
-                    ))}
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Toplam Gelir:</span>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(selectedProduct.revenue)}
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
-          </Modal>
-
-          {/* Inactive Customers Modal */}
-          <Modal
-            show={isInactiveCustomersModalOpen}
-            onClose={() => setIsInactiveCustomersModalOpen(false)}
-            title="İnaktif Müşteriler - İletişim Gerekli"
-            maxWidth="max-w-4xl"
-          >
-            <InactiveCustomers
-              customers={customers}
-              meetings={gorusmeler}
-              orders={orders}
-              quotes={teklifler}
-              shipments={shipments}
-              setActivePage={setActivePage}
-            />
-          </Modal>
-
-          {/* Upcoming Actions Modal */}
-          <Modal
-            show={showUpcomingModal}
-            onClose={() => setShowUpcomingModal(false)}
-            title="Planlanan Eylemler"
-            maxWidth="max-w-4xl"
-          >
-            <UpcomingActionsModal
-              meetings={upcomingActions}
-              customers={customers}
-              onViewAllMeetings={() => {
-                setShowUpcomingModal(false);
-                setActivePage('Görüşmeler');
-              }}
-            />
-          </Modal>
-
-          {/* Open Orders Modal */}
-          <Modal
-            show={showOpenOrdersModal}
-            onClose={() => setShowOpenOrdersModal(false)}
-            title="Açık Siparişler"
-            maxWidth="max-w-4xl"
-          >
-            <OpenOrdersModal
-              orders={openOrders}
-              customers={customers}
-              shipments={shipments}
-              onViewAllOrders={() => {
-                setShowOpenOrdersModal(false);
-                setActivePage('Siparişler');
-              }}
-            />
-          </Modal>
-
-          {/* Pending Quotes Modal */}
-          <Modal
-            show={showPendingQuotesModal}
-            onClose={() => setShowPendingQuotesModal(false)}
-            title="Bekleyen Teklifler"
-            maxWidth="max-w-4xl"
-          >
-            <PendingQuotesModal
-              quotes={teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı')}
-              customers={customers}
-              onViewAllQuotes={() => {
-                setShowPendingQuotesModal(false);
-                setActivePage('Teklifler');
-              }}
-            />
-          </Modal>
-
-          {/* Cancelled Orders Modal */}
-          <Modal
-            show={showCancelledOrdersModal}
-            onClose={() => setShowCancelledOrdersModal(false)}
-            title="İptal Edilen Siparişler"
-            maxWidth="max-w-5xl"
-          >
-            <div className="space-y-4">
-              {cancelledOrders.length === 0 ? (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  İptal edilen sipariş bulunmamaktadır.
-                </p>
-              ) : (
-                <>
-                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">Toplam İptal:</span>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {cancelledOrders.length}
-                        </p>
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
+                  Müşteri Listesi ({selectedProduct.customers.length})
+                </h4>
+                <div className="space-y-2">
+                  {selectedProduct.customers.map((customer, index) => (
+                    <div
+                      key={customer.customerId}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {customer.customerName}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {customer.quantity} Kg • {formatCurrency(customer.revenue)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">Toplam Tutar:</span>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {formatCurrency(
-                            cancelledOrders.reduce((sum, o) => {
-                              const amount =
-                                typeof o.total_amount === 'number' ? o.total_amount : 0;
-                              return sum + amount;
-                            }, 0)
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">İptal Oranı:</span>
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                          {orders?.filter((o) => !o.isDeleted).length > 0
-                            ? (
-                                (cancelledOrders.length /
-                                  (orders?.filter((o) => !o.isDeleted).length || 1)) *
-                                100
-                              ).toFixed(1)
-                            : 0}
-                          %
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400">Son 30 Gün:</span>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {
-                            cancelledOrders.filter((o) => {
-                              if (!o.cancelledAt) return false;
-                              try {
-                                const cancelDate = new Date(o.cancelledAt);
-                                if (isNaN(cancelDate.getTime())) return false;
-                                const thirtyDaysAgo = new Date();
-                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                return cancelDate >= thirtyDaysAgo;
-                              } catch {
-                                return false;
-                              }
-                            }).length
-                          }
-                        </p>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                          %{((customer.quantity / selectedProduct.quantity) * 100).toFixed(1)}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Pay</div>
                       </div>
                     </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead className="bg-gray-50 dark:bg-gray-700">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Müşteri
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Sipariş Tarihi
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            İptal Tarihi
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            Tutar
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                            İptal Nedeni
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {cancelledOrders.map((order) => {
-                          const customer = customers.find((c) => c.id === order.customerId);
-                          return (
-                            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                                {customer?.name || 'Bilinmeyen'}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                {formatDate(order.order_date)}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">
-                                {order.cancelledAt ? formatDate(order.cancelledAt) : 'N/A'}
-                              </td>
-                              <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {formatCurrency(order.total_amount || 0, order.currency || 'TRY')}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                {order.cancellationReason || 'Belirtilmemiş'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => {
-                        setShowCancelledOrdersModal(false);
-                        setActivePage('Siparişler');
-                      }}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Tüm Siparişleri Görüntüle
-                    </button>
-                  </div>
-                </>
-              )}
+                  ))}
+                </div>
+              </div>
             </div>
-          </Modal>
-        </div>
+          )}
+        </Modal>
+
+        <Modal
+          show={isInactiveCustomersModalOpen}
+          onClose={() => setIsInactiveCustomersModalOpen(false)}
+          title="İnaktif Müşteriler - İletişim Gerekli"
+          maxWidth="max-w-4xl"
+        >
+          <InactiveCustomers
+            customers={customers}
+            meetings={gorusmeler}
+            orders={orders}
+            quotes={teklifler}
+            shipments={shipments}
+            setActivePage={setActivePage}
+          />
+        </Modal>
+
+        <Modal
+          show={showUpcomingModal}
+          onClose={() => setShowUpcomingModal(false)}
+          title="Planlanan Eylemler"
+          maxWidth="max-w-4xl"
+        >
+          <UpcomingActionsModal
+            meetings={upcomingActions}
+            customers={customers}
+            onViewAllMeetings={() => {
+              setShowUpcomingModal(false);
+              setActivePage('Görüşmeler');
+            }}
+          />
+        </Modal>
+
+        <Modal
+          show={showOpenOrdersModal}
+          onClose={() => setShowOpenOrdersModal(false)}
+          title="Açık Siparişler"
+          maxWidth="max-w-4xl"
+        >
+          <OpenOrdersModal
+            orders={openOrders}
+            customers={customers}
+            shipments={shipments}
+            onViewAllOrders={() => {
+              setShowOpenOrdersModal(false);
+              setActivePage('Siparişler');
+            }}
+          />
+        </Modal>
+
+        <Modal
+          show={showPendingQuotesModal}
+          onClose={() => setShowPendingQuotesModal(false)}
+          title="Bekleyen Teklifler"
+          maxWidth="max-w-4xl"
+        >
+          <PendingQuotesModal
+            quotes={teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı')}
+            customers={customers}
+            onViewAllQuotes={() => {
+              setShowPendingQuotesModal(false);
+              setActivePage('Teklifler');
+            }}
+          />
+        </Modal>
+
+        <Modal
+          show={showCancelledOrdersModal}
+          onClose={() => setShowCancelledOrdersModal(false)}
+          title="İptal Edilen Siparişler"
+          maxWidth="max-w-5xl"
+        >
+          <div className="space-y-4">
+            {cancelledOrders.length === 0 ? (
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                İptal edilen sipariş bulunmamaktadır.
+              </p>
+            ) : (
+              <>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Toplam İptal:</span>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {cancelledOrders.length}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Toplam Tutar:</span>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(
+                          cancelledOrders.reduce((sum, o) => {
+                            const amount = typeof o.total_amount === 'number' ? o.total_amount : 0;
+                            return sum + amount;
+                          }, 0)
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">İptal Oranı:</span>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        {orders?.filter((o) => !o.isDeleted).length > 0
+                          ? (
+                              (cancelledOrders.length /
+                                (orders?.filter((o) => !o.isDeleted).length || 1)) *
+                              100
+                            ).toFixed(1)
+                          : 0}
+                        %
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Son 30 Gün:</span>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {
+                          cancelledOrders.filter((o) => {
+                            if (!o.cancelledAt) return false;
+                            try {
+                              const cancelDate = new Date(o.cancelledAt);
+                              if (isNaN(cancelDate.getTime())) return false;
+                              const thirtyDaysAgo = new Date();
+                              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                              return cancelDate >= thirtyDaysAgo;
+                            } catch {
+                              return false;
+                            }
+                          }).length
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                          Müşteri
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                          Sipariş Tarihi
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                          İptal Tarihi
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                          Tutar
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                          İptal Nedeni
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {cancelledOrders.map((order) => {
+                        const customer = customers.find((c) => c.id === order.customerId);
+                        return (
+                          <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                              {customer?.name || 'Bilinmeyen'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                              {formatDate(order.order_date)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                              {order.cancelledAt ? formatDate(order.cancelledAt) : 'N/A'}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {formatCurrency(order.total_amount || 0, order.currency || 'TRY')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                              {order.cancellationReason || 'Belirtilmemiş'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setShowCancelledOrdersModal(false);
+                      setActivePage('Siparişler');
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Tüm Siparişleri Görüntüle
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
       </div>
     );
   }
