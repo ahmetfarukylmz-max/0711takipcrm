@@ -108,6 +108,9 @@ const Dashboard = memo<DashboardProps>(
     setActivePage,
     onMeetingSave,
     onCustomTaskSave,
+    onCustomerSave,
+    onOrderSave,
+    onQuoteSave,
     loading = false,
   }) => {
     // Zustand store actions
