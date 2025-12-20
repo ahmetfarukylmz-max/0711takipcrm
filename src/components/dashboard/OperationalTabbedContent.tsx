@@ -25,9 +25,12 @@ const StockCardsWidget: React.FC<StockCardsWidgetProps> = memo(
                 </p>
               </div>
             </div>
-            <button className="text-xs bg-white border border-red-200 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 font-medium">
-              Satınalma Listesi Oluştur
-            </button>
+            <button
+              onClick={() => setActivePage('Satınalma')}
+              className="text-xs bg-white border border-red-200 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 font-medium"
+            >
+              Satınalma Talebi Oluştur
+            </button>{' '}
           </div>
         )}
 
