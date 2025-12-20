@@ -29,7 +29,16 @@ import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
 import useStore from '../../store/useStore';
-import type { Customer, Order, Quote, Meeting, Product, CustomTask, Shipment } from '../../types';
+import type {
+  Customer,
+  Order,
+  Quote,
+  Meeting,
+  Product,
+  CustomTask,
+  Shipment,
+  TodayTask,
+} from '../../types';
 import { logger } from '../../utils/logger';
 
 interface BestSellingProduct {
@@ -44,18 +53,6 @@ interface BestSellingProduct {
     quantity: number;
     revenue: number;
   }>;
-}
-
-interface TodayTask {
-  id: string;
-  type: 'call' | 'delivery' | 'meeting' | 'custom';
-  title: string;
-  subtitle: string;
-  time?: string;
-  completed: boolean;
-  sourceType: 'meeting' | 'order' | 'customTask';
-  sourceId: string;
-  priority?: 'low' | 'medium' | 'high';
 }
 
 interface DashboardProps {
@@ -113,6 +110,7 @@ const Dashboard = memo<DashboardProps>(
     const [showOpenOrdersModal, setShowOpenOrdersModal] = useState(false);
     const [showPendingQuotesModal, setShowPendingQuotesModal] = useState(false);
     const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
+    const [isNewActionMenuOpen, setIsNewActionMenuOpen] = useState(false);
 
     const openOrders = orders.filter(
       (o) => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status)
@@ -145,6 +143,7 @@ const Dashboard = memo<DashboardProps>(
             completed: meeting.status === 'Tamamlandı',
             sourceType: 'meeting',
             sourceId: meeting.id,
+            customerId: meeting.customerId,
           });
         });
 
@@ -161,6 +160,7 @@ const Dashboard = memo<DashboardProps>(
             completed: order.status === 'Teslim Edildi',
             sourceType: 'order',
             sourceId: order.id,
+            customerId: order.customerId,
           });
         });
 
@@ -375,10 +375,63 @@ const Dashboard = memo<DashboardProps>(
               <ClipboardListIcon className="w-4 h-4 mr-2" />
               Rapor Al
             </button>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-blue-200 transition-all flex items-center">
-              <BellIcon className="w-4 h-4 mr-2" />
-              Yeni Ekle
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsNewActionMenuOpen(!isNewActionMenuOpen)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-blue-200 transition-all flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 4v16m8-8H4"
+                  ></path>
+                </svg>
+                Yeni Ekle
+              </button>
+
+              {isNewActionMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-100">
+                  <button
+                    onClick={() => {
+                      setIsNewActionMenuOpen(false);
+                      setActivePage('Teklifler');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📄 Yeni Teklif
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNewActionMenuOpen(false);
+                      setActivePage('Müşteriler');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    👥 Yeni Müşteri
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNewActionMenuOpen(false);
+                      setActivePage('Siparişler');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📦 Yeni Sipariş
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNewActionMenuOpen(false);
+                      setActivePage('Görüşmeler');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📞 Yeni Görüşme
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -451,10 +504,12 @@ const Dashboard = memo<DashboardProps>(
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT COLUMN: Daily Operations Timeline (5 cols) */}
           <DailyOperationsTimeline
             todayTasks={todayTasks}
             onToggleTask={toggleTask}
             setActivePage={setActivePage}
+            customers={customers}
           />
           <OperationalTabbedContent
             lowStockProducts={lowStockProducts}

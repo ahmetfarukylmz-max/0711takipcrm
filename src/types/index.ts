@@ -775,12 +775,20 @@ export interface LotReconciliation {
 
   // APPROVAL
   approvedBy?: string;
-  approvedByEmail?: string;
-  approvedAt?: string;
-
-  // Metadata
-  createdBy: string;
-  createdByEmail: string;
   createdAt: Timestamp;
   updatedAt?: Timestamp;
+}
+
+// Dashboard Types
+export interface TodayTask {
+  id: string;
+  type: 'call' | 'delivery' | 'meeting' | 'custom';
+  title: string;
+  subtitle: string;
+  time?: string;
+  completed: boolean;
+  sourceType: 'meeting' | 'order' | 'customTask';
+  sourceId: string;
+  customerId?: string; // Added for quick actions
+  priority?: 'low' | 'medium' | 'high';
 }
