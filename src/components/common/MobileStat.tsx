@@ -9,7 +9,7 @@ interface MobileStatProps {
   /** Icon component */
   icon?: ReactNode;
   /** Color theme */
-  color?: 'blue' | 'yellow' | 'green' | 'red' | 'indigo' | 'purple' | 'pink';
+  color?: 'blue' | 'yellow' | 'green' | 'red' | 'indigo' | 'purple' | 'pink' | 'gray';
   /** Click handler */
   onClick?: () => void;
   /** Trend indicator (optional) */
@@ -59,6 +59,11 @@ const colorClasses = {
     bg: 'bg-pink-50 dark:bg-pink-900/30',
     iconBg: 'bg-pink-100 dark:bg-pink-900/50',
   },
+  gray: {
+    text: 'text-gray-600 dark:text-gray-400',
+    bg: 'bg-gray-50 dark:bg-gray-900/30',
+    iconBg: 'bg-gray-100 dark:bg-gray-900/50',
+  },
 };
 
 /**
@@ -75,7 +80,7 @@ const MobileStat: React.FC<MobileStatProps> = ({
   secondaryText, // New prop for additional text under value
   disableAnimation = false,
 }) => {
-  const colors = colorClasses[color];
+  const colors = colorClasses[color] || colorClasses.blue;
 
   // Use counter animation only for numeric values
   const numericValue = typeof value === 'number' ? value : parseInt(String(value), 10);
