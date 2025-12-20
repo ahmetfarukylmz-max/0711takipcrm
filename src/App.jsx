@@ -444,6 +444,9 @@ const CrmApp = () => {
               setActivePage={navigateToPage}
               onMeetingSave={handleMeetingSave}
               onCustomTaskSave={handleCustomTaskSave}
+              onCustomerSave={handleCustomerSave}
+              onOrderSave={handleOrderSave}
+              onQuoteSave={handleQuoteSave}
               onScheduleMeeting={(customerId) => setSelectedCustomerId(customerId)}
               loading={dataLoading}
             />
