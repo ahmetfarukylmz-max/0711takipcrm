@@ -1,4 +1,4 @@
-import { Customer, Order, Payment } from '../types';
+import { Customer, Order, Payment, Shipment } from '../types';
 import { EXCHANGE_RATES } from '../constants';
 
 // Define types for Balances logic
@@ -77,7 +77,8 @@ const convertToTRY = (amount: number, currency: string) => {
 export const calculateAllCustomerBalances = (
   customers: Customer[],
   orders: Order[],
-  payments: Payment[]
+  payments: Payment[],
+  shipments: Shipment[] = []
 ): CustomerBalance[] => {
   const activeCustomers = customers.filter((c) => !c.isDeleted);
   const today = new Date();
@@ -86,7 +87,17 @@ export const calculateAllCustomerBalances = (
   sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
 
   return activeCustomers.map((customer) => {
+    // Orders are kept for reference but balance is calculated from shipments
     const customerOrders = orders.filter((o) => o.customerId === customer.id && !o.isDeleted);
+
+    // Get all delivered shipments for this customer
+    const customerShipments = shipments.filter((s) => {
+      // Find related order to check customerId
+      const order = orders.find((o) => o.id === s.orderId);
+      return (
+        order && order.customerId === customer.id && !s.isDeleted && s.status === 'Teslim Edildi'
+      ); // Only delivered shipments create debt
+    });
 
     // All visible payments (not deleted, not cancelled)
     const customerPayments = payments.filter(
@@ -110,14 +121,56 @@ export const calculateAllCustomerBalances = (
         p.status !== 'İptal'
     );
 
-    const orderDetails = customerOrders.map((o) => ({
-      id: o.id,
-      date: o.order_date,
-      amount: o.total_amount || 0,
-      currency: o.currency || 'TRY',
-      orderNumber: o.orderNumber,
-      status: o.status,
-    }));
+    // Calculate total debt from DELIVERED SHIPMENTS
+    const totalDebtInTRY = customerShipments.reduce((totalDebt, shipment) => {
+      const order = orders.find((o) => o.id === shipment.orderId);
+      if (!order || !shipment.items) return totalDebt;
+
+      const shipmentTotal = shipment.items.reduce((shipmentSum, item) => {
+        // Find corresponding order item to get price
+        // Note: ShipmentItem has orderItemIndex or productId.
+        // We match by productId, but strictly speaking orderItemIndex is safer if multiple same products exist.
+        // For now, matching by productId is the standard in this app.
+        const orderItem = order.items.find((oi) => oi.productId === item.productId);
+        if (!orderItem) return shipmentSum;
+
+        const price = orderItem.unit_price || 0;
+        const quantity = item.quantity || 0;
+        // Add VAT
+        const lineTotal = price * quantity;
+        const lineTotalWithVAT = lineTotal * (1 + (order.vatRate || 0) / 100);
+
+        return shipmentSum + lineTotalWithVAT;
+      }, 0);
+
+      return totalDebt + convertToTRY(shipmentTotal, order.currency || 'TRY');
+    }, 0);
+
+    // Use Shipments as "Order Details" in the balance view (since they are the source of debt)
+    const orderDetails = customerShipments.map((s) => {
+      const order = orders.find((o) => o.id === s.orderId);
+
+      // Calculate specific shipment amount
+      let shipmentAmount = 0;
+      if (order && s.items) {
+        shipmentAmount = s.items.reduce((sum, item) => {
+          const orderItem = order.items.find((oi) => oi.productId === item.productId);
+          if (!orderItem) return sum;
+          const lineTotal = (orderItem.unit_price || 0) * (item.quantity || 0);
+          return sum + lineTotal * (1 + (order.vatRate || 0) / 100);
+        }, 0);
+      }
+
+      return {
+        id: s.id,
+        date: s.shipment_date, // Debt date is shipment date
+        amount: shipmentAmount,
+        currency: order?.currency || 'TRY',
+        orderNumber: s.trackingNumber || order?.orderNumber || 'Bilinmiyor', // Show shipment/tracking no
+        status: s.status,
+        type: 'Sevkiyat', // Mark as shipment
+      };
+    });
 
     const paymentDetails = customerPayments.map((p) => ({
       id: p.id,
@@ -143,16 +196,12 @@ export const calculateAllCustomerBalances = (
       return dueDate >= today && dueDate <= sevenDaysLater;
     });
 
-    const totalOrdersInTRY = customerOrders.reduce((sum, order) => {
-      return sum + convertToTRY(order.total_amount || 0, order.currency || 'TRY');
-    }, 0);
-
     // Calculate total payments using only EFFECTIVE (collected) payments
     const totalPaymentsInTRY = effectivePayments.reduce((sum, payment) => {
       return sum + convertToTRY(payment.amount || 0, payment.currency || 'TRY');
     }, 0);
 
-    const balanceAmount = totalPaymentsInTRY - totalOrdersInTRY;
+    const balanceAmount = totalPaymentsInTRY - totalDebtInTRY;
 
     let status: BalanceStatus;
     let statusText: string;
@@ -198,10 +247,8 @@ export const calculateAllCustomerBalances = (
       return sum + convertToTRY(p.amount || 0, p.currency || 'TRY');
     }, 0);
 
-    const overdueRatio =
-      totalOrdersInTRY > 0 ? (totalOverdueAmountInTRY / totalOrdersInTRY) * 100 : 0;
-    const balanceRatio =
-      totalOrdersInTRY > 0 ? (Math.abs(balanceAmount) / totalOrdersInTRY) * 100 : 0;
+    const overdueRatio = totalDebtInTRY > 0 ? (totalOverdueAmountInTRY / totalDebtInTRY) * 100 : 0;
+    const balanceRatio = totalDebtInTRY > 0 ? (Math.abs(balanceAmount) / totalDebtInTRY) * 100 : 0;
 
     // Calculate risk score (0-100)
     let riskScore = 0;
@@ -242,14 +289,14 @@ export const calculateAllCustomerBalances = (
 
     return {
       customer,
-      totalOrders: totalOrdersInTRY,
+      totalOrders: totalDebtInTRY, // Actually Total Debt from Shipments now
       totalPayments: totalPaymentsInTRY,
       balance: balanceAmount,
       status,
       statusText,
       icon,
       color,
-      orderDetails,
+      orderDetails, // Contains Shipments now
       paymentDetails,
       dueDateInfo: {
         overduePayments,

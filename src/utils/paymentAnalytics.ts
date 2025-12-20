@@ -4,7 +4,7 @@
  * Müşteri bazlı ödeme analizi ve risk skorlama fonksiyonları
  */
 
-import type { Payment, Order, PaymentAnalytics } from '../types';
+import type { Payment, Order, PaymentAnalytics, Shipment } from '../types';
 
 /**
  * Müşteri için detaylı ödeme analizi hesaplar
@@ -12,38 +12,63 @@ import type { Payment, Order, PaymentAnalytics } from '../types';
 export const calculatePaymentAnalytics = (
   customerId: string,
   payments: Payment[],
-  orders: Order[]
+  orders: Order[],
+  shipments: Shipment[] = []
 ): PaymentAnalytics => {
   // Müşteriye ait ödemeler
-  const customerPayments = payments.filter(
-    p => p.customerId === customerId && !p.isDeleted
-  );
+  const customerPayments = payments.filter((p) => p.customerId === customerId && !p.isDeleted);
 
   // Tahsil edilmiş ödemeler
-  const collectedPayments = customerPayments.filter(
-    p => p.status === 'Tahsil Edildi'
-  );
+  const collectedPayments = customerPayments.filter((p) => p.status === 'Tahsil Edildi');
 
   // Bekleyen ödemeler
-  const pendingPayments = customerPayments.filter(
-    p => p.status === 'Bekliyor'
-  );
+  const pendingPayments = customerPayments.filter((p) => p.status === 'Bekliyor');
 
   // Bugünün tarihi
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   // Gecikmiş ödemeler
-  const overduePayments = customerPayments.filter(p => {
+  const overduePayments = customerPayments.filter((p) => {
     if (p.status === 'Tahsil Edildi' || p.status === 'İptal') return false;
     const dueDate = new Date(p.dueDate);
     return dueDate < today;
   });
 
-  // Toplam borç (siparişlerden)
-  const totalDebt = orders
-    .filter(o => o.customerId === customerId && !o.isDeleted)
-    .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+  // Toplam borç (SEVKİYATLARDAN - Sadece 'Teslim Edildi' olanlar)
+  const totalDebt = shipments
+    .filter((s) => {
+      if (s.status !== 'Teslim Edildi' || s.isDeleted) return false;
+      const order = orders.find((o) => o.id === s.orderId);
+      return order && order.customerId === customerId;
+    })
+    .reduce((sum, s) => {
+      const order = orders.find((o) => o.id === s.orderId);
+      if (!order || !s.items) return sum;
+
+      const shipmentTotal = s.items.reduce((itemSum, item) => {
+        const orderItem = order.items.find((oi) => oi.productId === item.productId);
+        if (!orderItem) return itemSum;
+
+        const price = orderItem.unit_price || 0;
+        const quantity = item.quantity || 0;
+        const vatRate = order.vatRate || 0;
+
+        const lineTotal = price * quantity * (1 + vatRate / 100);
+        return itemSum + lineTotal;
+      }, 0);
+
+      // Currency conversion
+      const currency = order.currency || 'TRY';
+      const inTRY =
+        currency === 'USD'
+          ? shipmentTotal * 35
+          : currency === 'EUR'
+            ? shipmentTotal * 38
+            : shipmentTotal;
+
+      return sum + inTRY;
+    }, 0);
 
   // Tutarlar
   const collectedAmount = collectedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -51,30 +76,32 @@ export const calculatePaymentAnalytics = (
   const overdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0);
 
   // Zamanında ödeme oranı
-  const onTimePayments = collectedPayments.filter(p => {
+  const onTimePayments = collectedPayments.filter((p) => {
     if (!p.paidDate) return false;
     const paid = new Date(p.paidDate);
     const due = new Date(p.dueDate);
     return paid <= due;
   });
 
-  const onTimePaymentRate = collectedPayments.length > 0
-    ? Math.round((onTimePayments.length / collectedPayments.length) * 100)
-    : 0;
+  const onTimePaymentRate =
+    collectedPayments.length > 0
+      ? Math.round((onTimePayments.length / collectedPayments.length) * 100)
+      : 0;
 
   // Ortalama gecikme süresi
   const delayDays = collectedPayments
-    .filter(p => p.paidDate)
-    .map(p => {
+    .filter((p) => p.paidDate)
+    .map((p) => {
       const due = new Date(p.dueDate);
       const paid = new Date(p.paidDate!);
       const diff = Math.floor((paid.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
       return Math.max(0, diff);
     });
 
-  const avgDelayDays = delayDays.length > 0
-    ? Math.round(delayDays.reduce((sum, d) => sum + d, 0) / delayDays.length)
-    : 0;
+  const avgDelayDays =
+    delayDays.length > 0
+      ? Math.round(delayDays.reduce((sum, d) => sum + d, 0) / delayDays.length)
+      : 0;
 
   // Risk skoru hesaplama (0-10)
   let riskScore = 10;
@@ -97,12 +124,11 @@ export const calculatePaymentAnalytics = (
 
   // Risk seviyesi
   const riskLevel: 'DÜŞÜK' | 'ORTA' | 'YÜKSEK' =
-    riskScore >= 7 ? 'DÜŞÜK' :
-    riskScore >= 4 ? 'ORTA' : 'YÜKSEK';
+    riskScore >= 7 ? 'DÜŞÜK' : riskScore >= 4 ? 'ORTA' : 'YÜKSEK';
 
   // Ödeme yöntemi dağılımı
   const paymentMethodDistribution: Record<string, number> = {};
-  customerPayments.forEach(p => {
+  customerPayments.forEach((p) => {
     const method = p.paymentMethod || 'Belirtilmemiş';
     paymentMethodDistribution[method] = (paymentMethodDistribution[method] || 0) + p.amount;
   });
@@ -114,9 +140,11 @@ export const calculatePaymentAnalytics = (
   const timeline = customerPayments
     .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
     .slice(0, 20) // Son 20 ödeme
-    .map(p => {
+    .map((p) => {
       const delayDays = p.paidDate
-        ? Math.floor((new Date(p.paidDate).getTime() - new Date(p.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.floor(
+            (new Date(p.paidDate).getTime() - new Date(p.dueDate).getTime()) / (1000 * 60 * 60 * 24)
+          )
         : null;
 
       return {
@@ -124,7 +152,7 @@ export const calculatePaymentAnalytics = (
         amount: p.amount,
         status: p.status,
         delayDays,
-        paymentMethod: p.paymentMethod
+        paymentMethod: p.paymentMethod,
       };
     });
 
@@ -139,7 +167,7 @@ export const calculatePaymentAnalytics = (
     riskLevel,
     paymentMethodDistribution,
     monthlyTrend,
-    timeline
+    timeline,
   };
 };
 
@@ -158,7 +186,7 @@ const calculateMonthlyTrend = (
     const monthStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
     const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
 
-    const monthPayments = payments.filter(p => {
+    const monthPayments = payments.filter((p) => {
       if (p.status !== 'Tahsil Edildi' || !p.paidDate) return false;
       const paidDate = new Date(p.paidDate);
       return paidDate >= monthStart && paidDate <= monthEnd;
@@ -170,7 +198,7 @@ const calculateMonthlyTrend = (
     result.push({
       month: monthName,
       amount,
-      count: monthPayments.length
+      count: monthPayments.length,
     });
   }
 

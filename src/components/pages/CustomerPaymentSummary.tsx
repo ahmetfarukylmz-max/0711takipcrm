@@ -1,12 +1,17 @@
 import React, { useMemo } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { calculatePaymentAnalytics, getRiskColor, getRiskStars } from '../../utils/paymentAnalytics';
-import type { Payment, Order, Customer } from '../../types';
+import {
+  calculatePaymentAnalytics,
+  getRiskColor,
+  getRiskStars,
+} from '../../utils/paymentAnalytics';
+import type { Payment, Order, Customer, Shipment } from '../../types';
 
 interface CustomerPaymentSummaryProps {
   customer: Customer;
   payments: Payment[];
   orders: Order[];
+  shipments?: Shipment[];
   onViewPayment?: (payment: Payment) => void;
 }
 
@@ -14,12 +19,13 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
   customer,
   payments,
   orders,
-  onViewPayment
+  shipments = [],
+  onViewPayment,
 }) => {
   // Analytics hesapla
   const analytics = useMemo(() => {
-    return calculatePaymentAnalytics(customer.id, payments, orders);
-  }, [customer.id, payments, orders]);
+    return calculatePaymentAnalytics(customer.id, payments, orders, shipments);
+  }, [customer.id, payments, orders, shipments]);
 
   const riskColorClass = getRiskColor(analytics.riskLevel);
 
@@ -29,7 +35,9 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Toplam Borç */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Toplam Borç</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">
+            Toplam Borç
+          </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {formatCurrency(analytics.totalDebt, 'TRY')}
           </div>
@@ -38,15 +46,16 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
 
         {/* Tahsil Edilmiş */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
-          <div className="text-sm text-green-700 dark:text-green-400 font-medium mb-1">Tahsil Edilmiş</div>
+          <div className="text-sm text-green-700 dark:text-green-400 font-medium mb-1">
+            Tahsil Edilmiş
+          </div>
           <div className="text-2xl font-bold text-green-900 dark:text-green-300">
             {formatCurrency(analytics.collectedAmount, 'TRY')}
           </div>
           <div className="text-xs text-green-600 dark:text-green-400 mt-1">
             {analytics.totalDebt > 0
               ? `%${Math.round((analytics.collectedAmount / analytics.totalDebt) * 100)} tamamlandı`
-              : 'Henüz sipariş yok'
-            }
+              : 'Henüz sipariş yok'}
           </div>
         </div>
 
@@ -59,8 +68,7 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
           <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
             {analytics.totalDebt > 0
               ? `%${Math.round((analytics.pendingAmount / analytics.totalDebt) * 100)} beklemede`
-              : '-'
-            }
+              : '-'}
           </div>
         </div>
 
@@ -73,8 +81,7 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
           <div className="text-xs text-red-600 dark:text-red-400 mt-1">
             {analytics.totalDebt > 0
               ? `%${Math.round((analytics.overdueAmount / analytics.totalDebt) * 100)} gecikmiş`
-              : '-'
-            }
+              : '-'}
           </div>
         </div>
       </div>
@@ -103,7 +110,9 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-green-500">✅</span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">Zamanında Ödeme Oranı</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Zamanında Ödeme Oranı
+                </span>
               </div>
               <span className="font-bold text-gray-900 dark:text-gray-100">
                 %{analytics.onTimePaymentRate}
@@ -144,9 +153,10 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
             Object.entries(analytics.paymentMethodDistribution)
               .sort((a, b) => b[1] - a[1])
               .map(([method, amount]) => {
-                const percentage = analytics.collectedAmount > 0
-                  ? Math.round((amount / analytics.collectedAmount) * 100)
-                  : 0;
+                const percentage =
+                  analytics.collectedAmount > 0
+                    ? Math.round((amount / analytics.collectedAmount) * 100)
+                    : 0;
 
                 return (
                   <div key={method} className="flex items-center gap-3">
@@ -181,7 +191,7 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
 
         <div className="space-y-2">
           {analytics.monthlyTrend.map((item, index) => {
-            const maxAmount = Math.max(...analytics.monthlyTrend.map(m => m.amount), 1);
+            const maxAmount = Math.max(...analytics.monthlyTrend.map((m) => m.amount), 1);
             const percentage = (item.amount / maxAmount) * 100;
 
             return (
@@ -219,8 +229,8 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
                 key={index}
                 className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
                 onClick={() => {
-                  const payment = payments.find(p =>
-                    p.dueDate === item.date || p.paidDate === item.date
+                  const payment = payments.find(
+                    (p) => p.dueDate === item.date || p.paidDate === item.date
                   );
                   if (payment && onViewPayment) {
                     onViewPayment(payment);
@@ -257,18 +267,32 @@ const CustomerPaymentSummary: React.FC<CustomerPaymentSummaryProps> = ({
                   <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <span>{item.paymentMethod}</span>
                     {item.status === 'Tahsil Edildi' && item.delayDays !== null && (
-                      <span className={item.delayDays === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                        {item.delayDays === 0 ? '✓ Zamanında' : `⏱️ ${item.delayDays} gün gecikmeli`}
+                      <span
+                        className={
+                          item.delayDays === 0
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-orange-600 dark:text-orange-400'
+                        }
+                      >
+                        {item.delayDays === 0
+                          ? '✓ Zamanında'
+                          : `⏱️ ${item.delayDays} gün gecikmeli`}
                       </span>
                     )}
-                    {item.status === 'Bekliyor' && <span className="text-blue-600 dark:text-blue-400">Bekliyor</span>}
-                    {item.status === 'Gecikti' && <span className="text-red-600 dark:text-red-400">Gecikmiş</span>}
+                    {item.status === 'Bekliyor' && (
+                      <span className="text-blue-600 dark:text-blue-400">Bekliyor</span>
+                    )}
+                    {item.status === 'Gecikti' && (
+                      <span className="text-red-600 dark:text-red-400">Gecikmiş</span>
+                    )}
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">Henüz ödeme geçmişi yok</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+              Henüz ödeme geçmişi yok
+            </p>
           )}
         </div>
       </div>

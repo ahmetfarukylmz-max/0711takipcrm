@@ -49,11 +49,12 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
   const customers = useStore((state) => state.collections.customers) || [];
   const orders = useStore((state) => state.collections.orders) || [];
   const payments = useStore((state) => state.collections.payments) || [];
+  const shipments = useStore((state) => state.collections.shipments) || [];
 
   // Memoize calculations using helper functions to prevent re-renders
   const customerBalances = useMemo(() => {
-    return calculateAllCustomerBalances(customers, orders, payments);
-  }, [customers, orders, payments]);
+    return calculateAllCustomerBalances(customers, orders, payments, shipments);
+  }, [customers, orders, payments, shipments]);
 
   const summary = useMemo(() => {
     return calculateBalancesSummary(customerBalances);
