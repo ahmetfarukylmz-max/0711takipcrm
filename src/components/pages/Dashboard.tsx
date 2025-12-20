@@ -20,7 +20,6 @@ import InactiveCustomers from '../dashboard/InactiveCustomers';
 import UpcomingActionsModal from '../dashboard/UpcomingActionsModal';
 import OpenOrdersModal from '../dashboard/OpenOrdersModal';
 import PendingQuotesModal from '../dashboard/PendingQuotesModal';
-import QuickActionBar from '../dashboard/QuickActionBar';
 import DailyOperationsTimeline from '../dashboard/DailyOperationsTimeline';
 import OperationalTabbedContent from '../dashboard/OperationalTabbedContent';
 import Modal from '../common/Modal';
@@ -28,6 +27,11 @@ import MobileStat from '../common/MobileStat';
 import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
+import CustomerForm from '../forms/CustomerForm'; // New Import
+import QuoteForm from '../forms/QuoteForm'; // New Import
+import OrderForm from '../forms/OrderForm'; // New Import
+import MeetingForm from '../forms/MeetingForm'; // New Import
+import CustomTaskForm from '../forms/CustomTaskForm'; // New Import
 import useStore from '../../store/useStore';
 import type {
   Customer,
@@ -78,6 +82,12 @@ interface DashboardProps {
   onMeetingSave: (meeting: Partial<Meeting>) => void;
   /** Callback when custom task is saved */
   onCustomTaskSave: (task: Partial<CustomTask>) => void;
+  /** Callback when customer is saved */
+  onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+  /** Callback when order is saved */
+  onOrderSave: (order: Partial<Order>) => void;
+  /** Callback when quote is saved */
+  onQuoteSave: (quote: Partial<Quote>) => void;
   /** Loading state */
   loading?: boolean;
 }
@@ -110,7 +120,14 @@ const Dashboard = memo<DashboardProps>(
     const [showOpenOrdersModal, setShowOpenOrdersModal] = useState(false);
     const [showPendingQuotesModal, setShowPendingQuotesModal] = useState(false);
     const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
-    const [isNewActionMenuOpen, setIsNewActionMenuOpen] = useState(false);
+    const [isNewActionMenuOpen, setIsNewActionMenuOpen] = useState(false); // For header dropdown
+
+    // New states for form modals
+    const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+    const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
+    const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+    const [isMeetingFormOpen, setIsMeetingFormOpen] = useState(false);
+    const [isCustomTaskFormOpen, setIsCustomTaskFormOpen] = useState(false);
 
     const openOrders = orders.filter(
       (o) => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status)
@@ -396,7 +413,7 @@ const Dashboard = memo<DashboardProps>(
                   <button
                     onClick={() => {
                       setIsNewActionMenuOpen(false);
-                      setActivePage('Teklifler');
+                      setIsQuoteFormOpen(true);
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
@@ -405,7 +422,7 @@ const Dashboard = memo<DashboardProps>(
                   <button
                     onClick={() => {
                       setIsNewActionMenuOpen(false);
-                      setActivePage('Müşteriler');
+                      setIsCustomerFormOpen(true);
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
@@ -414,7 +431,7 @@ const Dashboard = memo<DashboardProps>(
                   <button
                     onClick={() => {
                       setIsNewActionMenuOpen(false);
-                      setActivePage('Siparişler');
+                      setIsOrderFormOpen(true);
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
@@ -423,11 +440,20 @@ const Dashboard = memo<DashboardProps>(
                   <button
                     onClick={() => {
                       setIsNewActionMenuOpen(false);
-                      setActivePage('Görüşmeler');
+                      setIsMeetingFormOpen(true);
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     📞 Yeni Görüşme
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsNewActionMenuOpen(false);
+                      setIsCustomTaskFormOpen(true);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    📋 Yeni Görev
                   </button>
                 </div>
               )}
@@ -522,7 +548,64 @@ const Dashboard = memo<DashboardProps>(
           />
         </div>
 
-        <QuickActionBar />
+        <Modal
+          show={isCustomerFormOpen}
+          onClose={() => setIsCustomerFormOpen(false)}
+          title="Yeni Müşteri Ekle"
+        >
+          <CustomerForm onSave={onCustomerSave} onCancel={() => setIsCustomerFormOpen(false)} />
+        </Modal>
+
+        <Modal
+          show={isQuoteFormOpen}
+          onClose={() => setIsQuoteFormOpen(false)}
+          title="Yeni Teklif Oluştur"
+        >
+          <QuoteForm
+            onSave={onQuoteSave}
+            onCancel={() => setIsQuoteFormOpen(false)}
+            customers={customers}
+            products={products}
+          />
+        </Modal>
+
+        <Modal
+          show={isOrderFormOpen}
+          onClose={() => setIsOrderFormOpen(false)}
+          title="Yeni Sipariş Oluştur"
+        >
+          <OrderForm
+            onSave={onOrderSave}
+            onCancel={() => setIsOrderFormOpen(false)}
+            customers={customers}
+            products={products}
+            shipments={shipments}
+          />
+        </Modal>
+
+        <Modal
+          show={isMeetingFormOpen}
+          onClose={() => setIsMeetingFormOpen(false)}
+          title="Yeni Görüşme Oluştur"
+        >
+          <MeetingForm
+            onSave={onMeetingSave}
+            onCancel={() => setIsMeetingFormOpen(false)}
+            customers={customers}
+            products={products}
+          />
+        </Modal>
+
+        <Modal
+          show={isCustomTaskFormOpen}
+          onClose={() => setIsCustomTaskFormOpen(false)}
+          title="Yeni Görev Ekle"
+        >
+          <CustomTaskForm
+            onSave={onCustomTaskSave}
+            onCancel={() => setIsCustomTaskFormOpen(false)}
+          />
+        </Modal>
 
         <Modal
           show={isOverdueModalOpen}
