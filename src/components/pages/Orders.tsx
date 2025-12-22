@@ -107,6 +107,7 @@ const Orders = memo<OrdersProps>(
     const [orderToShip, setOrderToShip] = useState<Order | null>(null);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [shipmentToReturn, setShipmentToReturn] = useState<Shipment | null>(null);
+    const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
     const { user } = useAuth();
 
     const handleOpenModal = (order: Order | null = null) => {
