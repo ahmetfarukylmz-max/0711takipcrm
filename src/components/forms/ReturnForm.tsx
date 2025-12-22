@@ -43,9 +43,9 @@ const ReturnForm: React.FC<ReturnFormProps> = ({
     }
   }, [initialShipmentId]);
 
-  const calculateTotals = (items: ReturnItem[]) => {
+  const calculateTotals = (items: ReturnItem[], currentVatRate = formData.vatRate) => {
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const vatAmount = (subtotal * (formData.vatRate || 20)) / 100;
+    const vatAmount = (subtotal * (currentVatRate || 20)) / 100;
     const totalAmount = subtotal + vatAmount;
     return { subtotal, vatAmount, totalAmount };
   };
@@ -201,6 +201,28 @@ const ReturnForm: React.FC<ReturnFormProps> = ({
               onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
               placeholder="Müşterinin kestiği fatura no"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              KDV Oranı (%)
+            </label>
+            <select
+              className="input-field w-full"
+              value={formData.vatRate}
+              onChange={(e) => {
+                const newVatRate = Number(e.target.value);
+                setFormData((prev) => ({
+                  ...prev,
+                  vatRate: newVatRate,
+                  ...calculateTotals(prev.items || [], newVatRate),
+                }));
+              }}
+            >
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
