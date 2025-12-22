@@ -54,12 +54,16 @@ const ReturnForm: React.FC<ReturnFormProps> = ({
     const shipment = shipments.find((s) => s.id === shipmentId);
     if (!shipment) return;
 
+    // Find customer name safely
+    const customer = customers.find((c) => c.id === shipment.customerId);
+    const safeCustomerName = shipment.customerName || customer?.name || 'Bilinmeyen Müşteri';
+
     setFormData((prev) => ({
       ...prev,
       shipmentId: shipment.id,
       orderId: shipment.orderId,
       customerId: shipment.customerId,
-      customerName: shipment.customerName,
+      customerName: safeCustomerName,
       // Reset items when shipment changes
       items: [],
       ...calculateTotals([]),
@@ -127,9 +131,17 @@ const ReturnForm: React.FC<ReturnFormProps> = ({
       return;
     }
 
+    // Sanitize data (replace undefined with null or empty string)
+    const safeData = {
+      ...formData,
+      invoiceNumber: formData.invoiceNumber || null,
+      notes: formData.notes || null,
+      customerName: formData.customerName || 'Bilinmiyor', // Fallback just in case
+    };
+
     try {
       await onSave({
-        ...formData,
+        ...safeData,
         createdBy: currentUser.uid,
         createdByEmail: currentUser.email,
         createdAt: new Date().toISOString(),
