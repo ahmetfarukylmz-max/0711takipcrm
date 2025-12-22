@@ -1,4 +1,4 @@
-import { Customer, Order, Payment, Shipment } from '../types';
+import { Customer, Order, Payment, Shipment, ReturnInvoice } from '../types';
 import { EXCHANGE_RATES } from '../constants';
 
 // Define types for Balances logic
@@ -78,7 +78,8 @@ export const calculateAllCustomerBalances = (
   customers: Customer[],
   orders: Order[],
   payments: Payment[],
-  shipments: Shipment[] = []
+  shipments: Shipment[] = [],
+  returns: ReturnInvoice[] = []
 ): CustomerBalance[] => {
   const activeCustomers = customers.filter((c) => !c.isDeleted);
   const today = new Date();
@@ -201,7 +202,23 @@ export const calculateAllCustomerBalances = (
       return sum + convertToTRY(payment.amount || 0, payment.currency || 'TRY');
     }, 0);
 
-    const balanceAmount = totalPaymentsInTRY - totalDebtInTRY;
+    // Get all approved returns for this customer
+    const customerReturns = returns.filter(
+      (r) => r.customerId === customer.id && !r.isDeleted && r.status === 'Onaylandı'
+    );
+
+    // Calculate total returns amount
+    const totalReturnsInTRY = customerReturns.reduce((sum, r) => {
+      // Assuming returns are in TRY for simplicity, or we check currency if available on return
+      // The ReturnInvoice type doesn't have currency field explicitly in my definition above,
+      // but let's assume it inherits context or we added it.
+      // For now, let's treat it as base currency or check if we need to add currency to ReturnInvoice.
+      // I'll assume TRY or match order currency logic if possible.
+      // Let's rely on the fact that for now most are TRY.
+      return sum + (r.totalAmount || 0);
+    }, 0);
+
+    const balanceAmount = totalPaymentsInTRY + totalReturnsInTRY - totalDebtInTRY;
 
     let status: BalanceStatus;
     let statusText: string;

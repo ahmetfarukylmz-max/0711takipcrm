@@ -9,6 +9,7 @@ import {
   Payment,
   StockMovement,
   PurchaseRequest,
+  ReturnInvoice,
 } from '../types';
 
 // Collection Keys (Veri koleksiyonlarının isimleri)
@@ -24,7 +25,8 @@ export type CollectionKey =
   | 'stock_movements'
   | 'suppliers' // Gelecek modül için hazırlık
   | 'purchaseOrders' // Gelecek modül için hazırlık
-  | 'purchase_requests';
+  | 'purchase_requests'
+  | 'returns';
 
 // Ana Veri Koleksiyonları
 export interface Collections {
@@ -40,6 +42,7 @@ export interface Collections {
   suppliers: any[]; // Tip tanımlanınca güncellenecek
   purchaseOrders: any[]; // Tip tanımlanınca güncellenecek
   purchase_requests: PurchaseRequest[];
+  returns: ReturnInvoice[];
 }
 
 // UI Slice: Arayüz durumu ve aksiyonları

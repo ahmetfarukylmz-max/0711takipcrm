@@ -19,7 +19,10 @@ import { exportOrders, exportOrdersDetailed } from '../../utils/excelExport';
 import { canCancelOrder } from '../../utils/orderHelpers';
 import { formatOrderNumber } from '../../utils/numberFormatters';
 import useStore from '../../store/useStore';
-import type { Order, Customer, Product, Shipment, Payment } from '../../types';
+import ReturnForm from '../forms/ReturnForm';
+import { saveReturnInvoice } from '../../services/firestoreService';
+import type { Order, Customer, Product, Shipment, Payment, ReturnInvoice } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { logger } from '../../utils/logger';
 
 interface DeleteConfirmState {
@@ -102,7 +105,9 @@ const Orders = memo<OrdersProps>(
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
     const [orderToShip, setOrderToShip] = useState<Order | null>(null);
-    const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [shipmentToReturn, setShipmentToReturn] = useState<Shipment | null>(null);
+    const { user } = useAuth();
 
     const handleOpenModal = (order: Order | null = null) => {
       setCurrentOrder(order);
@@ -142,6 +147,33 @@ const Orders = memo<OrdersProps>(
 
       onCancel(cancellingOrder.id, cancellationData);
       setCancellingOrder(null);
+    };
+
+    const handleReturnSave = async (returnData: Partial<ReturnInvoice>) => {
+      try {
+        if (!user) return;
+        await saveReturnInvoice(user.uid, returnData);
+        setIsReturnModalOpen(false);
+        setShipmentToReturn(null);
+      } catch (error) {
+        console.error('Error saving return:', error);
+        toast.error('İade işlemi kaydedilemedi');
+      }
+    };
+
+    const handleOpenReturnModal = (order: Order) => {
+      // Find the first delivered shipment for this order to pre-select
+      const deliveredShipment = shipments.find(
+        (s) => s.orderId === order.id && s.status === 'Teslim Edildi' && !s.isDeleted
+      );
+
+      if (!deliveredShipment) {
+        toast.error('Bu sipariş için iade edilebilecek teslim edilmiş bir sevkiyat bulunamadı.');
+        return;
+      }
+
+      setShipmentToReturn(deliveredShipment);
+      setIsReturnModalOpen(true);
     };
 
     // Memoize cancel check results for performance (prevent 27 checks per render)
@@ -746,6 +778,18 @@ const Orders = memo<OrdersProps>(
                     });
                   }
 
+                  // Check if order has delivered shipments for return
+                  const hasDeliveredShipments = shipments.some(
+                    (s) => s.orderId === order.id && s.status === 'Teslim Edildi' && !s.isDeleted
+                  );
+
+                  if (hasDeliveredShipments) {
+                    orderActions.push({
+                      label: '↩️ İade Oluştur',
+                      onClick: () => handleOpenReturnModal(order),
+                    });
+                  }
+
                   // Invoice Status Logic
                   const orderShipments = shipments.filter(
                     (s) => s.orderId === order.id && !s.isDeleted
@@ -1088,6 +1132,25 @@ const Orders = memo<OrdersProps>(
               shipments={shipments}
               onSave={handleShipmentSave}
               onCancel={() => setIsShipmentModalOpen(false)}
+            />
+          )}
+        </Modal>
+
+        <Modal
+          show={isReturnModalOpen}
+          onClose={() => setIsReturnModalOpen(false)}
+          title="Satış İade Faturası Oluştur"
+          maxWidth="max-w-4xl"
+        >
+          {user && (
+            <ReturnForm
+              customers={customers}
+              products={products}
+              shipments={shipments}
+              initialShipmentId={shipmentToReturn?.id}
+              onSave={handleReturnSave}
+              onCancel={() => setIsReturnModalOpen(false)}
+              currentUser={user}
             />
           )}
         </Modal>

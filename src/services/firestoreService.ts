@@ -670,6 +670,50 @@ export const saveDocumentOptimistic = async (
 };
 
 /**
+ * Save return invoice and update product stock (increase stock)
+ * @param {string} userId - User ID
+ * @param {Object} returnData - Return invoice data
+ * @returns {Promise<string>} Return Invoice ID
+ */
+export const saveReturnInvoice = async (userId, returnData) => {
+  if (!userId) throw new Error('User ID required');
+
+  const cleanReturnData = { ...returnData };
+  const isNewReturn = !cleanReturnData.id;
+
+  // 1. Save return document
+  const returnId = await saveDocument(userId, 'returns', cleanReturnData);
+
+  // 2. Update Product Stock (ONLY for new returns)
+  // Logic: When return is created, we assume goods entered the warehouse -> Increase Stock
+  if (isNewReturn && cleanReturnData.items && Array.isArray(cleanReturnData.items)) {
+    for (const item of cleanReturnData.items) {
+      if (item.productId && item.quantity > 0) {
+        await updateProductStock(userId, item.productId, item.quantity, {
+          type: 'Müşteri İadesi',
+          relatedId: returnId,
+          relatedType: 'return',
+          relatedReference: cleanReturnData.invoiceNumber || 'İade',
+          notes: `Müşteri iadesi: ${cleanReturnData.customerName || 'Müşteri'} - ${item.reason || ''}`,
+          createdBy: userId,
+          createdByEmail: cleanReturnData.createdByEmail || 'system',
+        });
+      }
+    }
+  }
+
+  // 3. Log activity
+  await logActivity(userId, 'CREATE_RETURN', {
+    returnId,
+    customerId: cleanReturnData.customerId,
+    amount: cleanReturnData.totalAmount,
+    message: `İade faturası oluşturuldu: ${cleanReturnData.customerName}`,
+  });
+
+  return returnId;
+};
+
+/**
  * Delete document with optimistic UI updates
  *
  * @param {string} userId - User ID

@@ -56,6 +56,39 @@ export type PurchaseStatus =
   | 'Depoya Girdi'
   | 'İptal Edildi';
 
+export interface ReturnItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  reason?: string;
+  condition: 'Sağlam' | 'Hasarlı' | 'Hurda';
+}
+
+export interface ReturnInvoice {
+  id: string;
+  type: 'return';
+  invoiceDate: string;
+  invoiceNumber?: string; // Müşterinin kestiği iade faturası no
+  customerId: string;
+  customerName: string;
+  orderId?: string; // Hangi siparişe istinaden
+  shipmentId?: string; // Hangi sevkiyata istinaden
+  items: ReturnItem[];
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  notes?: string;
+  status: 'Taslak' | 'Onaylandı' | 'İptal';
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: string;
+  isDeleted?: boolean;
+}
+
 export interface SupplierOffer {
   id: string;
   supplierName: string;
