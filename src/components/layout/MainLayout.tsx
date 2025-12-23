@@ -23,7 +23,14 @@ const LoadingScreen = () => (
   </div>
 );
 
-// ... (interfaces)
+interface MainLayoutProps {
+  activePage: string;
+  setActivePage: (page: string) => void;
+  connectionStatus: 'connected' | 'disconnected' | 'connecting';
+  onRefresh: () => Promise<void>;
+  onFABAction: (action: string, customerId?: string) => void;
+  customers: Customer[]; // For FAB
+}
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   activePage,
@@ -33,7 +40,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   onFABAction,
   customers,
 }) => {
-  // ... (store hooks)
+  const showGuide = useStore((state) => state.showGuide);
+  const toggleGuide = useStore((state) => state.toggleGuide);
+  const overdueItems = useStore((state) => state.overdueItems);
+  const sidebarOpen = useStore((state) => state.sidebarOpen);
+  const setSidebarOpen = useStore((state) => state.setSidebarOpen);
+
+  // Handle Toggle Guide wrapper
+  const handleToggleGuide = () => {
+    toggleGuide();
+  };
 
   return (
     <div className="flex h-screen bg-background dark:bg-gray-950 font-sans relative overflow-hidden">
