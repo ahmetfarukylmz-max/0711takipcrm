@@ -112,29 +112,23 @@ const ChevronRightIcon = (props) => (
   </svg>
 );
 
-// Memoized NavLink component for better performance
 const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
   const isActive = activePage === page;
-
   return (
     <button
       onClick={() => onNavigate(page)}
-      aria-label={children}
-      aria-current={isActive ? 'page' : undefined}
-      className={`group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+      className={`group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 min-h-[44px] ${
         isActive
-          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
-          : 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
+          ? 'bg-primary-50 text-primary-600 shadow-sm font-bold'
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
       }`}
-      title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
     >
       <Icon
-        className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}
-        aria-hidden="true"
+        className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
       />
-      <span className="flex-1 text-left font-medium text-sm">{children}</span>
+      <span className="flex-1 text-left text-sm tracking-tight">{children}</span>
       {badge > 0 && (
-        <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
+        <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-[10px] font-black bg-red-500 text-white rounded-full">
           {badge > 99 ? '99+' : badge}
         </span>
       )}
@@ -144,7 +138,6 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
 
 NavLink.displayName = 'NavLink';
 
-// Memoized ParentNavLink component with expand/collapse for submenus
 const ParentNavLink = memo(
   ({
     page,
@@ -158,52 +151,33 @@ const ParentNavLink = memo(
     badge,
   }) => {
     const isActive = activePage === page;
-
     const handleClick = () => {
-      // First navigate to the page
-      if (onNavigate) {
-        onNavigate(page);
-      }
-      // Then toggle the submenu
-      if (onToggleExpand) {
-        onToggleExpand();
-      }
+      if (onNavigate) onNavigate(page);
+      if (onToggleExpand) onToggleExpand();
     };
-
     return (
       <button
         onClick={handleClick}
-        aria-label={children}
-        aria-expanded={isExpanded}
-        aria-current={isActive ? 'page' : undefined}
-        className={`group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+        className={`group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 min-h-[44px] ${
           isActive
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
-            : 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
+            ? 'bg-primary-50 text-primary-600 shadow-sm font-bold'
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
         }`}
-        title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
       >
         <Icon
-          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}
-          aria-hidden="true"
+          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
         />
-        <span className="flex-1 text-left font-medium text-sm">{children}</span>
+        <span className="flex-1 text-left text-sm tracking-tight">{children}</span>
         {badge > 0 && (
-          <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
-            {badge > 99 ? '99+' : badge}
+          <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-[10px] font-black bg-red-500 text-white rounded-full">
+            {badge}
           </span>
         )}
         {hasSubmenu &&
           (isExpanded ? (
-            <ChevronDownIcon
-              className="w-4 h-4 transition-transform duration-200"
-              aria-hidden="true"
-            />
+            <ChevronDownIcon className="w-4 h-4 text-slate-400" />
           ) : (
-            <ChevronRightIcon
-              className="w-4 h-4 transition-transform duration-200"
-              aria-hidden="true"
-            />
+            <ChevronRightIcon className="w-4 h-4 text-slate-400" />
           ))}
       </button>
     );
@@ -212,32 +186,17 @@ const ParentNavLink = memo(
 
 ParentNavLink.displayName = 'ParentNavLink';
 
-// Memoized SubNavLink component for submenu items
-const SubNavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) => {
+const SubNavLink = memo(({ page, children, Icon, activePage, onNavigate }) => {
   const isActive = activePage === page;
-
   return (
     <button
       onClick={() => onNavigate(page)}
-      aria-label={children}
-      aria-current={isActive ? 'page' : undefined}
-      className={`group w-full flex items-center gap-3 pl-12 pr-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 ${
-        isActive
-          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30 scale-[1.02]'
-          : 'text-gray-400 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01]'
+      className={`group w-full flex items-center gap-3 pl-12 pr-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] ${
+        isActive ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
       }`}
-      title={`${children}${isActive ? ' (Şu anda aktif)' : ''}`}
     >
-      <Icon
-        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}
-        aria-hidden="true"
-      />
-      <span className="flex-1 text-left font-medium text-sm">{children}</span>
-      {badge > 0 && (
-        <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-xs font-bold bg-red-500 text-white rounded-full shadow-lg animate-pulse">
-          {badge > 99 ? '99+' : badge}
-        </span>
-      )}
+      <Icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-slate-300'}`} />
+      <span className="flex-1 text-left text-xs">{children}</span>
     </button>
   );
 });
@@ -254,8 +213,6 @@ const Sidebar = ({
   onClose,
 }) => {
   const { user, isAdmin } = useAuth();
-
-  // State for expanded menu items (persisted to localStorage)
   const [expandedMenus, setExpandedMenus] = useState(() => {
     try {
       const saved = localStorage.getItem('sidebarExpandedMenus');
@@ -265,7 +222,6 @@ const Sidebar = ({
     }
   });
 
-  // Save expanded menus to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem('sidebarExpandedMenus', JSON.stringify(expandedMenus));
@@ -274,36 +230,23 @@ const Sidebar = ({
     }
   }, [expandedMenus]);
 
-  // Toggle expanded state for a parent menu
   const handleToggleExpand = useCallback((menuKey) => {
-    setExpandedMenus((prev) => ({
-      ...prev,
-      [menuKey]: !prev[menuKey],
-    }));
+    setExpandedMenus((prev) => ({ ...prev, [menuKey]: !prev[menuKey] }));
   }, []);
 
-  // Memoized logout handler
   const handleLogout = useCallback(async () => {
-    // Log logout activity before signing out
-    if (user) {
-      await logUserActivity(user.uid, user.email, 'logout');
-    }
+    if (user) await logUserActivity(user.uid, user.email, 'logout');
     await signOut(auth);
   }, [user]);
 
-  // Memoized navigation handler
   const handleNavClick = useCallback(
     (page) => {
       setActivePage(page);
-      // Mobilde menüyü kapat
-      if (onClose && window.innerWidth < 768) {
-        onClose();
-      }
+      if (onClose && window.innerWidth < 768) onClose();
     },
     [setActivePage, onClose]
   );
 
-  // Navigation items configuration with badges and hierarchical structure
   const navigationItems = useMemo(() => {
     const items = [
       { page: 'Anasayfa', label: 'Anasayfa', Icon: HomeIcon, badge: 0 },
@@ -315,8 +258,8 @@ const Sidebar = ({
         badge: 0,
         hasSubmenu: true,
         submenu: [
-          { page: 'Lot Yönetimi', label: 'Lot Yönetimi', Icon: CubeIcon, badge: 0 },
-          { page: 'Uzlaştırma', label: 'Uzlaştırma', Icon: AdjustmentsIcon, badge: 0 },
+          { page: 'Lot Yönetimi', label: 'Lot Yönetimi', Icon: CubeIcon },
+          { page: 'Uzlaştırma', label: 'Uzlaştırma', Icon: AdjustmentsIcon },
         ],
       },
       { page: 'Teklifler', label: 'Teklifler', Icon: DocumentTextIcon, badge: 0 },
@@ -333,58 +276,29 @@ const Sidebar = ({
       },
       { page: 'Raporlar', label: 'Raporlar', Icon: ChartBarIcon, badge: 0 },
     ];
-
-    // Add admin panel if user is admin
-    if (isAdmin()) {
-      items.push({ page: 'Admin', label: 'Admin Paneli', Icon: ShieldIcon, badge: 0 });
-    }
-
+    if (isAdmin()) items.push({ page: 'Admin', label: 'Admin Paneli', Icon: ShieldIcon, badge: 0 });
     return items;
   }, [isAdmin, overdueItems]);
 
   return (
     <aside
-      className={`
-            w-64 bg-gradient-to-b from-gray-800 via-gray-800 to-gray-900 text-white flex flex-col
-            fixed md:relative h-full z-50
-            transform transition-transform duration-300 ease-in-out
-            ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            shadow-2xl
-        `}
-      role="navigation"
-      aria-label="Ana menü"
+      className={`w-64 bg-white dark:bg-gray-900 border-r border-slate-100 dark:border-gray-800 flex flex-col fixed md:relative h-full z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
     >
-      <div className="flex flex-col flex-grow">
-        {/* Simple Header */}
-        <div className="mb-4 px-4 pt-4 pb-4 flex justify-between items-center border-b border-gray-700/50">
-          <div className="flex items-center gap-2">
-            {/* Logo Icon */}
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/50">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+      <div className="flex flex-col flex-grow overflow-hidden">
+        <div className="px-6 py-8 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-primary shadow-blue-200">
+              T
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+            <h1 className="text-xl font-black text-slate-800 dark:text-white tracking-tighter">
               Takip CRM
             </h1>
           </div>
-          {/* Mobilde kapat butonu */}
           <button
             onClick={onClose}
-            className="md:hidden p-1.5 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all"
-            aria-label="Menüyü Kapat"
+            className="md:hidden p-2 text-slate-400 hover:bg-slate-50 rounded-xl"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -394,106 +308,69 @@ const Sidebar = ({
             </svg>
           </button>
         </div>
-        <nav
-          className="flex flex-col gap-1 px-3 overflow-y-auto flex-1"
-          role="navigation"
-          aria-label="Sayfalar"
-        >
-          {navigationItems.map((item) => {
-            const { page, label, Icon, badge, hasSubmenu, submenu } = item;
-
-            if (hasSubmenu && submenu) {
-              // Parent item with submenu
-              const isExpanded = expandedMenus[page] || false;
-
-              return (
-                <div key={page}>
+        <nav className="flex flex-col gap-1 px-4 overflow-y-auto flex-1 custom-scrollbar">
+          {navigationItems.map((item) => (
+            <div key={item.page}>
+              {item.hasSubmenu ? (
+                <>
                   <ParentNavLink
-                    page={page}
-                    Icon={Icon}
-                    hasSubmenu={hasSubmenu}
-                    isExpanded={isExpanded}
-                    onToggleExpand={() => handleToggleExpand(page)}
+                    {...item}
+                    isExpanded={expandedMenus[item.page]}
+                    onToggleExpand={() => handleToggleExpand(item.page)}
                     onNavigate={handleNavClick}
                     activePage={activePage}
-                    badge={badge}
-                  >
-                    {label}
-                  </ParentNavLink>
-
-                  {/* Submenu with smooth expand/collapse animation */}
+                  />
                   <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                    }`}
+                    className={`overflow-hidden transition-all duration-300 ${expandedMenus[item.page] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
                     <div className="flex flex-col gap-1 mt-1">
-                      {submenu.map((subItem) => (
+                      {item.submenu.map((sub) => (
                         <SubNavLink
-                          key={subItem.page}
-                          page={subItem.page}
-                          Icon={subItem.Icon}
+                          key={sub.page}
+                          {...sub}
                           activePage={activePage}
                           onNavigate={handleNavClick}
-                          badge={subItem.badge}
-                        >
-                          {subItem.label}
-                        </SubNavLink>
+                        />
                       ))}
                     </div>
                   </div>
-                </div>
-              );
-            } else {
-              // Regular item without submenu
-              return (
-                <NavLink
-                  key={page}
-                  page={page}
-                  Icon={Icon}
-                  activePage={activePage}
-                  onNavigate={handleNavClick}
-                  badge={badge}
-                >
-                  {label}
-                </NavLink>
-              );
-            }
-          })}
-
-          {/* Guide Button */}
+                </>
+              ) : (
+                <NavLink {...item} activePage={activePage} onNavigate={handleNavClick} />
+              )}
+            </div>
+          ))}
           <button
             onClick={onToggleGuide}
-            aria-label="Kullanıcı rehberi"
-            className="group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 min-h-[40px] mt-1"
-            title="Rehberi aç"
+            className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 mt-2"
           >
-            <QuestionMarkCircleIcon
-              className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-              aria-hidden="true"
-            />
-            <span className="flex-1 text-left font-medium text-sm">Rehber</span>
+            <QuestionMarkCircleIcon className="w-5 h-5 text-slate-400" />
+            <span className="flex-1 text-left text-sm font-medium">Rehber</span>
           </button>
         </nav>
       </div>
-      {/* Footer Section */}
-      <div className="flex-shrink-0 px-3 pb-3 space-y-2">
-        {/* Logout Button */}
+      <div className="p-4 border-t border-slate-50 dark:border-gray-800 space-y-4">
+        {user && (
+          <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100 dark:border-gray-700">
+            <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0"></div>
+            <div className="min-w-0">
+              <p className="text-xs font-black text-slate-800 dark:text-white truncate">
+                {user.displayName || user.email?.split('@')[0]}
+              </p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                Yönetici
+              </p>
+            </div>
+          </div>
+        )}
         <button
           onClick={handleLogout}
-          aria-label="Çıkış yap"
-          className="group w-full flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-gray-800 min-h-[40px] border border-gray-700 hover:border-red-500"
-          title="Uygulamadan çıkış yap"
+          className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all"
         >
-          <LogoutIcon
-            className="w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-            aria-hidden="true"
-          />
-          <span className="flex-1 text-left font-medium text-sm">Çıkış Yap</span>
+          <LogoutIcon className="w-5 h-5" />
+          <span className="flex-1 text-left text-sm font-bold tracking-tight">Çıkış Yap</span>
         </button>
-
-        {/* Connection Status - Minimal */}
-        <div className="flex justify-center">
+        <div className="flex justify-center pb-2">
           <ConnectionStatusIndicator status={connectionStatus} />
         </div>
       </div>
@@ -501,5 +378,4 @@ const Sidebar = ({
   );
 };
 
-// Memoize Sidebar to prevent unnecessary re-renders
 export default memo(Sidebar);
