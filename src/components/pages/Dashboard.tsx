@@ -8,12 +8,7 @@ import {
   WhatsAppIcon,
   BellIcon,
 } from '../icons';
-import {
-  formatDate,
-  formatCurrency,
-  getStatusClass,
-  formatPhoneNumberForWhatsApp,
-} from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
 import OverdueActions from '../dashboard/OverdueActions';
 import CriticalAlerts from '../dashboard/CriticalAlerts';
 import InactiveCustomers from '../dashboard/InactiveCustomers';
@@ -23,12 +18,8 @@ import PendingQuotesModal from '../dashboard/PendingQuotesModal';
 import DailyOperationsTimeline from '../dashboard/DailyOperationsTimeline';
 import OperationalTabbedContent from '../dashboard/OperationalTabbedContent';
 import Modal from '../common/Modal';
-import MobileStat from '../common/MobileStat';
-import MobileListItem from '../common/MobileListItem';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
-import Button from '../common/Button';
-import Card from '../common/Card';
 import CustomerForm from '../forms/CustomerForm';
 import QuoteForm from '../forms/QuoteForm';
 import OrderForm from '../forms/OrderForm';
@@ -47,7 +38,37 @@ import type {
 } from '../../types';
 import { logger } from '../../utils/logger';
 
-// ... (BestSellingProduct and DashboardProps interfaces remain the same)
+interface BestSellingProduct {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  revenue: number;
+  customers: Array<{
+    customerId: string;
+    customerName: string;
+    quantity: number;
+    revenue: number;
+  }>;
+}
+
+interface DashboardProps {
+  customers: Customer[];
+  orders: Order[];
+  teklifler: Quote[];
+  gorusmeler: Meeting[];
+  products: Product[];
+  shipments: Shipment[];
+  overdueItems: Meeting[];
+  customTasks: CustomTask[];
+  setActivePage: (page: string) => void;
+  onMeetingSave: (meeting: Partial<Meeting>) => void;
+  onCustomTaskSave: (task: Partial<CustomTask>) => void;
+  onCustomerSave: (customer: Partial<Customer>) => Promise<string | void>;
+  onOrderSave: (order: Partial<Order>) => void;
+  onQuoteSave: (quote: Partial<Quote>) => void;
+  loading?: boolean;
+}
 
 const Dashboard = memo<DashboardProps>(
   ({
@@ -67,9 +88,6 @@ const Dashboard = memo<DashboardProps>(
     onQuoteSave,
     loading = false,
   }) => {
-    // Zustand store actions
-    const setSelectedProductId = useStore((state) => state.setSelectedProductId);
-
     const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
     const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
@@ -79,7 +97,6 @@ const Dashboard = memo<DashboardProps>(
     const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
     const [isNewActionMenuOpen, setIsNewActionMenuOpen] = useState(false);
 
-    // New states for form modals
     const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
     const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
     const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
@@ -92,6 +109,7 @@ const Dashboard = memo<DashboardProps>(
     const cancelledOrders =
       orders?.filter((o) => !o.isDeleted && o.status === 'İptal Edildi') || [];
     const today = new Date().toISOString().slice(0, 10);
+
     const upcomingActions = gorusmeler
       .filter((g) => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
       .sort(
@@ -99,11 +117,8 @@ const Dashboard = memo<DashboardProps>(
       )
       .slice(0, 5);
 
-    // Calculate today's tasks
     const todayTasks = useMemo<TodayTask[]>(() => {
       const tasks: TodayTask[] = [];
-
-      // Today's meetings
       gorusmeler
         .filter((m) => !m.isDeleted && m.next_action_date === today)
         .forEach((meeting) => {
@@ -120,8 +135,6 @@ const Dashboard = memo<DashboardProps>(
             customerId: meeting.customerId,
           });
         });
-
-      // Today's deliveries
       orders
         .filter((o) => !o.isDeleted && o.delivery_date === today && o.status !== 'Tamamlandı')
         .forEach((order) => {
@@ -137,8 +150,6 @@ const Dashboard = memo<DashboardProps>(
             customerId: order.customerId,
           });
         });
-
-      // Today's custom tasks
       customTasks
         .filter((t) => !t.isDeleted && t.date === today)
         .forEach((task) => {
@@ -154,16 +165,9 @@ const Dashboard = memo<DashboardProps>(
             priority: task.priority,
           });
         });
-
-      return tasks.sort((a, b) => {
-        if (a.time && b.time) return a.time.localeCompare(b.time);
-        if (a.time) return -1;
-        if (b.time) return 1;
-        return 0;
-      });
+      return tasks.sort((a, b) => (a.time && b.time ? a.time.localeCompare(b.time) : 0));
     }, [gorusmeler, orders, customers, customTasks, today]);
 
-    // Calculate low stock products
     const lowStockProducts = useMemo(() => {
       return products
         .filter(
@@ -174,133 +178,71 @@ const Dashboard = memo<DashboardProps>(
             p.minimum_stock !== undefined &&
             p.stock_quantity <= p.minimum_stock
         )
-        .sort((a, b) => {
-          const aPercentage = a.minimum_stock ? a.stock_quantity! / a.minimum_stock : 1;
-          const bPercentage = b.minimum_stock ? b.stock_quantity! / b.minimum_stock : 1;
-          return aPercentage - bPercentage;
-        })
+        .sort((a, b) => a.stock_quantity! / a.minimum_stock! - b.stock_quantity! / b.minimum_stock!)
         .slice(0, 5);
     }, [products]);
 
     const toggleTask = async (task: TodayTask) => {
       const newCompleted = !task.completed;
-
       try {
         if (task.sourceType === 'meeting') {
           const meeting = gorusmeler.find((m) => m.id === task.sourceId);
-          if (meeting) {
-            await onMeetingSave({
-              ...meeting,
-              status: newCompleted ? 'Tamamlandı' : 'Planlandı',
-            });
-            toast.success(newCompleted ? 'Görüşme tamamlandı!' : 'Görüşme aktif duruma alındı');
-          }
-        } else if (task.sourceType === 'order') {
-          const order = orders.find((o) => o.id === task.sourceId);
-          if (order) {
-            toast.info('Teslimat durumu siparişler sayfasından güncellenebilir');
-          }
+          if (meeting)
+            await onMeetingSave({ ...meeting, status: newCompleted ? 'Tamamlandı' : 'Planlandı' });
         } else if (task.sourceType === 'customTask') {
           const customTask = customTasks.find((t) => t.id === task.sourceId);
-          if (customTask) {
-            await onCustomTaskSave({
-              ...customTask,
-              completed: newCompleted,
-              completedAt: newCompleted ? new Date().toISOString() : undefined,
-            });
-          }
+          if (customTask) await onCustomTaskSave({ ...customTask, completed: newCompleted });
         }
       } catch (error) {
         logger.error('Task toggle error:', error);
-        toast.error('Görev güncellenirken hata oluştu');
       }
     };
 
     const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
-      const productSales: Record<
-        string,
-        {
-          quantity: number;
-          revenue: number;
-          customerData: Record<string, { quantity: number; revenue: number }>;
-        }
-      > = {};
-
+      const productSales: Record<string, any> = {};
       orders
         .filter((o) => !o.isDeleted)
         .forEach((order) => {
           if (order.items && Array.isArray(order.items)) {
             order.items.forEach((item) => {
               const productId = item.productId;
-              const customerId = order.customerId;
-
-              if (!productSales[productId]) {
-                productSales[productId] = {
-                  quantity: 0,
-                  revenue: 0,
-                  customerData: {},
-                };
-              }
-
-              if (!productSales[productId].customerData[customerId]) {
-                productSales[productId].customerData[customerId] = {
-                  quantity: 0,
-                  revenue: 0,
-                };
-              }
-
+              if (!productSales[productId])
+                productSales[productId] = { quantity: 0, revenue: 0, customerData: {} };
               const itemQuantity = item.quantity || 0;
               const itemRevenue = itemQuantity * (item.unit_price || 0);
-
               productSales[productId].quantity += itemQuantity;
               productSales[productId].revenue += itemRevenue;
-              productSales[productId].customerData[customerId].quantity += itemQuantity;
-              productSales[productId].customerData[customerId].revenue += itemRevenue;
             });
           }
         });
-
       return Object.entries(productSales)
-        .map(([productId, stats]) => {
-          const product = products.find((p) => p.id === productId && !p.isDeleted);
-
-          const customersList = Object.entries(stats.customerData)
-            .map(([customerId, customerStats]) => {
-              const customer = customers.find((c) => c.id === customerId && !c.isDeleted);
-              return {
-                customerId,
-                customerName: customer?.name || 'Bilinmeyen Müşteri',
-                quantity: customerStats.quantity,
-                revenue: customerStats.revenue,
-              };
-            })
-            .sort((a, b) => b.quantity - a.quantity);
-
+        .map(([productId, stats]: [string, any]) => {
+          const product = products.find((p) => p.id === productId);
           return {
             id: productId,
-            name: product?.name || 'Bilinmeyen Ürün',
+            name: product?.name || 'Ürün',
             unit: product?.unit || 'Adet',
             quantity: stats.quantity,
             revenue: stats.revenue,
-            customers: customersList,
+            customers: [],
           };
         })
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 5);
-    }, [orders, products, customers]);
+    }, [orders, products]);
 
     const upcomingDeliveries = useMemo(() => {
       const todayDate = new Date();
       const next7Days = new Date(todayDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-
       return orders
-        .filter((order) => {
-          if (order.isDeleted || !order.delivery_date) return false;
-          const deliveryDate = new Date(order.delivery_date);
-          return (
-            deliveryDate >= todayDate && deliveryDate <= next7Days && order.status !== 'Tamamlandı'
-          );
-        })
+        .filter(
+          (o) =>
+            !o.isDeleted &&
+            o.delivery_date &&
+            new Date(o.delivery_date) >= todayDate &&
+            new Date(o.delivery_date) <= next7Days &&
+            o.status !== 'Tamamlandı'
+        )
         .sort((a, b) => new Date(a.delivery_date!).getTime() - new Date(b.delivery_date!).getTime())
         .slice(0, 5);
     }, [orders]);
@@ -308,65 +250,44 @@ const Dashboard = memo<DashboardProps>(
     if (loading) {
       return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-2xl w-1/4 mb-4 animate-pulse"></div>
-          <div className="h-6 bg-gray-100 dark:bg-gray-800 rounded-xl w-1/2 mb-10 animate-pulse"></div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <SkeletonStat key={index} />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonStat key={i} />
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Array.from({ length: 2 }).map((_, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-soft border border-slate-50"
-              >
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-6 animate-pulse"></div>
-                <SkeletonList count={5} />
-              </div>
-            ))}
+            <SkeletonList count={5} />
+            <SkeletonList count={5} />
           </div>
         </div>
       );
     }
 
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* HEADER SECTION - REFACTORED */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
           <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Hoş Geldiniz 👋
-            </h1>
-            <p className="text-slate-500 dark:text-gray-400 mt-2 flex items-center gap-2 font-medium">
-              <CalendarIcon className="w-5 h-5 text-primary" />
-              {formatDate(new Date().toISOString())} | İşletmenizin durumu oldukça iyi.
+            </h2>
+            <p className="text-slate-500 dark:text-gray-400 mt-1">
+              İşletmenizin bugünkü performansı oldukça iyi.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" leftIcon={<ClipboardListIcon className="w-4 h-4" />}>
-              Rapor Al
-            </Button>
+          <div className="flex gap-3">
+            <button className="px-5 py-2.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-300 rounded-xl font-semibold shadow-sm hover:bg-slate-50 dark:hover:bg-gray-700 transition-all">
+              Raporlar
+            </button>
             <div className="relative">
-              <Button
-                variant="primary"
+              <button
                 onClick={() => setIsNewActionMenuOpen(!isNewActionMenuOpen)}
-                leftIcon={
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="3"
-                      d="M12 4v16m8-8H4"
-                    ></path>
-                  </svg>
-                }
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
               >
-                Yeni Ekle
-              </Button>
-
+                <span>+</span> Yeni Teklif
+              </button>
               {isNewActionMenuOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-soft-lg py-2 z-50 border border-slate-100 dark:border-gray-700 animate-slideUp">
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] py-2 z-50 border border-slate-100 dark:border-gray-700">
                   {[
                     { label: 'Yeni Teklif', icon: '📄', onClick: () => setIsQuoteFormOpen(true) },
                     {
@@ -392,10 +313,9 @@ const Dashboard = memo<DashboardProps>(
                         setIsNewActionMenuOpen(false);
                         item.onClick();
                       }}
-                      className="flex items-center w-full px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center w-full px-5 py-3 text-sm font-semibold text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
-                      <span className="mr-3 text-lg">{item.icon}</span>
-                      {item.label}
+                      <span className="mr-3 opacity-70">{item.icon}</span> {item.label}
                     </button>
                   ))}
                 </div>
@@ -414,85 +334,61 @@ const Dashboard = memo<DashboardProps>(
           onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
         />
 
-        {/* STATS GRID - REFACTORED TO MODERN SOFT */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 mt-8">
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-soft border border-slate-50 dark:border-gray-700 hover:shadow-soft-md transition-all cursor-pointer"
+            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => setShowOpenOrdersModal(true)}
           >
-            <p className="text-slate-400 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">
-              Açık Siparişler
-            </p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">
+            <p className="text-slate-400 text-sm font-medium mb-1">Açık Siparişler</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
               {openOrders.length}
             </h3>
-            <div className="mt-3 text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg inline-block font-black uppercase tracking-tight">
+            <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg inline-block font-bold">
               +2 bugün
             </div>
           </div>
-
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-soft border border-slate-50 dark:border-gray-700 hover:shadow-soft-md transition-all cursor-pointer"
+            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => setShowPendingQuotesModal(true)}
           >
-            <p className="text-slate-400 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">
-              Bekleyen Teklifler
-            </p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">
-              {teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı').length}
-            </h3>
-            <div className="mt-3 text-[10px] text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-lg inline-block font-black uppercase tracking-tight">
+            <p className="text-slate-400 text-sm font-medium mb-1">Bekleyen Teklifler</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
               {formatCurrency(
                 teklifler
                   .filter((t) => !t.isDeleted && t.status === 'Hazırlandı')
                   .reduce((sum, q) => sum + (q.total_amount || 0), 0)
               )}
+            </h3>
+            <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-lg inline-block font-bold">
+              {teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı').length} Adet
             </div>
           </div>
-
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-soft border border-slate-50 dark:border-gray-700 hover:shadow-soft-md transition-all cursor-pointer"
+            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => setShowUpcomingModal(true)}
           >
-            <p className="text-slate-400 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">
-              Planlanan Eylemler
-            </p>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white">
+            <p className="text-slate-400 text-sm font-medium mb-1">Planlanan Eylemler</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
               {upcomingActions.length}
             </h3>
-            <div className="mt-3 text-[10px] text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-lg inline-block font-black uppercase tracking-tight">
+            <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-lg inline-block font-bold">
               Görüşme/Ziyaret
             </div>
           </div>
-
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-soft border border-slate-50 dark:border-gray-700 hover:shadow-soft-md transition-all cursor-pointer border-b-4 border-b-red-500"
+            className="bg-white dark:bg-gray-800 p-6 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => setIsOverdueModalOpen(true)}
           >
-            <p className="text-slate-400 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 text-red-500">
-              Gecikmiş Eylemler
-            </p>
-            <h3 className="text-3xl font-black text-red-600">{overdueItems.length}</h3>
-            <div className="mt-3 text-[10px] text-red-600 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-lg inline-block font-black uppercase tracking-tight">
+            <p className="text-slate-400 text-sm font-medium mb-1">Gecikmiş Eylemler</p>
+            <h3 className="text-2xl font-bold text-red-600">{overdueItems.length}</h3>
+            <div className="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-lg inline-block font-bold">
               Acil İlgilen!
-            </div>
-          </div>
-
-          <div
-            className="bg-primary p-6 rounded-[1.5rem] shadow-primary text-white hover:scale-[1.02] transition-all cursor-pointer"
-            onClick={() => setShowCancelledOrdersModal(true)}
-          >
-            <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-2">
-              İptal Edilen
-            </p>
-            <h3 className="text-3xl font-black">{cancelledOrders.length}</h3>
-            <div className="mt-3 text-[10px] text-blue-100 bg-white/10 px-2 py-1 rounded-lg inline-block font-black uppercase tracking-tight">
-              Bu Ay
             </div>
           </div>
         </div>
 
-        {/* MAIN GRID - TIMELINE & CONTENT */}
+        {/* GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5">
             <DailyOperationsTimeline
@@ -515,13 +411,138 @@ const Dashboard = memo<DashboardProps>(
           </div>
         </div>
 
-        {/* Modals remain mostly the same but will benefit from the Card component internally if updated later */}
-        {/* ... (All Modal components follow here, exactly as before) */}
+        {/* MODALS */}
+        <Modal
+          show={isCustomerFormOpen}
+          onClose={() => setIsCustomerFormOpen(false)}
+          title="Yeni Müşteri Ekle"
+        >
+          <CustomerForm onSave={onCustomerSave} onCancel={() => setIsCustomerFormOpen(false)} />
+        </Modal>
+        <Modal
+          show={isQuoteFormOpen}
+          onClose={() => setIsQuoteFormOpen(false)}
+          title="Yeni Teklif Oluştur"
+        >
+          <QuoteForm
+            onSave={onQuoteSave}
+            onCancel={() => setIsQuoteFormOpen(false)}
+            customers={customers}
+            products={products}
+          />
+        </Modal>
+        <Modal
+          show={isOrderFormOpen}
+          onClose={() => setIsOrderFormOpen(false)}
+          title="Yeni Sipariş Oluştur"
+        >
+          <OrderForm
+            onSave={onOrderSave}
+            onCancel={() => setIsOrderFormOpen(false)}
+            customers={customers}
+            products={products}
+            shipments={shipments}
+          />
+        </Modal>
+        <Modal
+          show={isMeetingFormOpen}
+          onClose={() => setIsMeetingFormOpen(false)}
+          title="Yeni Görüşme Oluştur"
+        >
+          <MeetingForm
+            onSave={onMeetingSave}
+            onCancel={() => setIsMeetingFormOpen(false)}
+            customers={customers}
+            products={products}
+          />
+        </Modal>
+        <Modal
+          show={isCustomTaskFormOpen}
+          onClose={() => setIsCustomTaskFormOpen(false)}
+          title="Yeni Görev Ekle"
+        >
+          <CustomTaskForm
+            onSave={onCustomTaskSave}
+            onCancel={() => setIsCustomTaskFormOpen(false)}
+          />
+        </Modal>
+        <Modal
+          show={isOverdueModalOpen}
+          onClose={() => setIsOverdueModalOpen(false)}
+          title="Gecikmiş Eylemler"
+          maxWidth="max-w-4xl"
+        >
+          <OverdueActions
+            overdueItems={overdueItems}
+            setActivePage={setActivePage}
+            onMeetingUpdate={onMeetingSave}
+          />
+        </Modal>
+        <Modal
+          show={isInactiveCustomersModalOpen}
+          onClose={() => setIsInactiveCustomersModalOpen(false)}
+          title="İnaktif Müşteriler"
+          maxWidth="max-w-4xl"
+        >
+          <InactiveCustomers
+            customers={customers}
+            meetings={gorusmeler}
+            orders={orders}
+            quotes={teklifler}
+            shipments={shipments}
+            setActivePage={setActivePage}
+          />
+        </Modal>
+        <Modal
+          show={showUpcomingModal}
+          onClose={() => setShowUpcomingModal(false)}
+          title="Planlanan Eylemler"
+          maxWidth="max-w-4xl"
+        >
+          <UpcomingActionsModal
+            meetings={upcomingActions}
+            customers={customers}
+            onViewAllMeetings={() => {
+              setShowUpcomingModal(false);
+              setActivePage('Görüşmeler');
+            }}
+          />
+        </Modal>
+        <Modal
+          show={showOpenOrdersModal}
+          onClose={() => setShowOpenOrdersModal(false)}
+          title="Açık Siparişler"
+          maxWidth="max-w-4xl"
+        >
+          <OpenOrdersModal
+            orders={openOrders}
+            customers={customers}
+            shipments={shipments}
+            onViewAllOrders={() => {
+              setShowOpenOrdersModal(false);
+              setActivePage('Siparişler');
+            }}
+          />
+        </Modal>
+        <Modal
+          show={showPendingQuotesModal}
+          onClose={() => setShowPendingQuotesModal(false)}
+          title="Bekleyen Teklifler"
+          maxWidth="max-w-4xl"
+        >
+          <PendingQuotesModal
+            quotes={teklifler.filter((t) => !t.isDeleted && t.status === 'Hazırlandı')}
+            customers={customers}
+            onViewAllQuotes={() => {
+              setShowPendingQuotesModal(false);
+              setActivePage('Teklifler');
+            }}
+          />
+        </Modal>
       </div>
     );
   }
 );
 
 Dashboard.displayName = 'Dashboard';
-
 export default Dashboard;
