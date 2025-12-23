@@ -17,7 +17,7 @@ import type {
 } from '../../types';
 import { logger } from '../../utils/logger';
 import { sanitizeText } from '../../utils/sanitize';
-import { CalculatorIcon } from '@heroicons/react/24/outline';
+import { CreditCardIcon } from '../icons';
 
 interface QuoteFormData {
   customerId: string;
@@ -299,7 +299,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({
       {/* Payment & Currency Section - ENHANCED */}
       <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-          <CalculatorIcon className="w-4 h-4" />
+          <CreditCardIcon className="w-5 h-5" />
           Ödeme ve Para Birimi
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
