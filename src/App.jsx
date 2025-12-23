@@ -261,6 +261,7 @@ const CrmApp = () => {
     'customTasks',
     'payments',
     'stock_movements',
+    'returns',
   ]);
 
   // Get collections and loading/connection status from Zustand store

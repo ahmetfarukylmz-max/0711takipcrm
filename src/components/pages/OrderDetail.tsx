@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { formatDate, formatCurrency, getStatusClass } from '../../utils/formatters';
 import { formatCancellationReason } from '../../utils/orderHelpers';
 import { formatOrderNumber } from '../../utils/numberFormatters';
-import type { Order, Customer, Product, Payment, Shipment } from '../../types';
+import type { Order, Customer, Product, Payment, Shipment, ReturnInvoice } from '../../types';
 
 interface OrderDetailProps {
   /** Order data to display */
@@ -15,13 +15,15 @@ interface OrderDetailProps {
   payments?: Payment[];
   /** Related shipments */
   shipments?: Shipment[];
+  /** Related returns */
+  returns?: ReturnInvoice[];
 }
 
 /**
  * OrderDetail component - Displays detailed information about an order
  */
 const OrderDetail = memo<OrderDetailProps>(
-  ({ order, customer, products, payments = [], shipments = [] }) => {
+  ({ order, customer, products, payments = [], shipments = [], returns = [] }) => {
     if (!order) return null;
 
     const getProductName = (productId: string): string => {
@@ -33,6 +35,11 @@ const OrderDetail = memo<OrderDetailProps>(
     const relatedShipments = useMemo(() => {
       return shipments.filter((s) => s.orderId === order.id && !s.isDeleted);
     }, [shipments, order.id]);
+
+    // Find related returns
+    const relatedReturns = useMemo(() => {
+      return returns.filter((r) => r.orderId === order.id && !r.isDeleted);
+    }, [returns, order.id]);
 
     return (
       <div className="p-6 bg-white dark:bg-gray-800 rounded-lg">
@@ -282,6 +289,64 @@ const OrderDetail = memo<OrderDetailProps>(
         </div>
 
         {/* Related Payments Card REMOVED */}
+
+        {/* Return History Card */}
+        <div className="mt-6">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3">
+            ↩️ İade Geçmişi
+          </h3>
+          {relatedReturns.length > 0 ? (
+            <div className="space-y-3">
+              {relatedReturns.map((returnInv) => (
+                <div
+                  key={returnInv.id}
+                  className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700"
+                >
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-red-900 dark:text-red-100">
+                          {formatDate(returnInv.invoiceDate)}
+                        </span>
+                        <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-red-100 text-red-800">
+                          {returnInv.status}
+                        </span>
+                        {returnInv.invoiceNumber && (
+                          <span className="text-xs text-gray-500">
+                            Fatura No: {returnInv.invoiceNumber}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <ul className="list-disc list-inside">
+                          {returnInv.items.map((item, idx) => (
+                            <li key={idx}>
+                              {item.quantity} {item.unit} - {item.productName}{' '}
+                              <span className="text-xs italic">({item.condition})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Toplam İade Tutarı</p>
+                      <p className="font-bold text-red-600 dark:text-red-400">
+                        {formatCurrency(returnInv.totalAmount, order.currency)}
+                      </p>
+                    </div>
+                  </div>
+                  {returnInv.notes && (
+                    <p className="mt-2 text-xs text-gray-500 italic">Not: {returnInv.notes}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-center">
+              <p className="text-sm text-gray-500">Bu sipariş için henüz iade kaydı yok.</p>
+            </div>
+          )}
+        </div>
 
         {order.notes && (
           <div className="mt-6">

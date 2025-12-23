@@ -84,6 +84,7 @@ const Orders = memo<OrdersProps>(
     const storeProducts = useStore((state) => state.collections.products);
     const storeShipments = useStore((state) => state.collections.shipments);
     const storePayments = useStore((state) => state.collections.payments);
+    const storeReturns = useStore((state) => state.collections.returns);
 
     // Fallback logic
     const orders = propOrders || storeOrders || [];
@@ -91,6 +92,7 @@ const Orders = memo<OrdersProps>(
     const products = propProducts || storeProducts || [];
     const shipments = propShipments.length > 0 ? propShipments : storeShipments || [];
     const payments = propPayments.length > 0 ? propPayments : storePayments || [];
+    const returns = storeReturns || [];
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -1118,6 +1120,7 @@ const Orders = memo<OrdersProps>(
             products={products}
             payments={payments}
             shipments={shipments}
+            returns={returns}
           />
         </Modal>
 
