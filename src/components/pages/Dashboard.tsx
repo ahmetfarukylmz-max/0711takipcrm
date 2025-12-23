@@ -67,7 +67,243 @@ const Dashboard = memo<DashboardProps>(
     onQuoteSave,
     loading = false,
   }) => {
-    // ... (All state and useMemo logic remains exactly the same as before)
+    // Zustand store actions
+    const setSelectedProductId = useStore((state) => state.setSelectedProductId);
+
+    const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<BestSellingProduct | null>(null);
+    const [isInactiveCustomersModalOpen, setIsInactiveCustomersModalOpen] = useState(false);
+    const [showUpcomingModal, setShowUpcomingModal] = useState(false);
+    const [showOpenOrdersModal, setShowOpenOrdersModal] = useState(false);
+    const [showPendingQuotesModal, setShowPendingQuotesModal] = useState(false);
+    const [showCancelledOrdersModal, setShowCancelledOrdersModal] = useState(false);
+    const [isNewActionMenuOpen, setIsNewActionMenuOpen] = useState(false);
+
+    // New states for form modals
+    const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+    const [isQuoteFormOpen, setIsQuoteFormOpen] = useState(false);
+    const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+    const [isMeetingFormOpen, setIsMeetingFormOpen] = useState(false);
+    const [isCustomTaskFormOpen, setIsCustomTaskFormOpen] = useState(false);
+
+    const openOrders = orders.filter(
+      (o) => !o.isDeleted && ['Bekliyor', 'Hazırlanıyor'].includes(o.status)
+    );
+    const cancelledOrders =
+      orders?.filter((o) => !o.isDeleted && o.status === 'İptal Edildi') || [];
+    const today = new Date().toISOString().slice(0, 10);
+    const upcomingActions = gorusmeler
+      .filter((g) => !g.isDeleted && g.next_action_date && g.next_action_date >= today)
+      .sort(
+        (a, b) => new Date(a.next_action_date!).getTime() - new Date(b.next_action_date!).getTime()
+      )
+      .slice(0, 5);
+
+    // Calculate today's tasks
+    const todayTasks = useMemo<TodayTask[]>(() => {
+      const tasks: TodayTask[] = [];
+
+      // Today's meetings
+      gorusmeler
+        .filter((m) => !m.isDeleted && m.next_action_date === today)
+        .forEach((meeting) => {
+          const customer = customers.find((c) => c.id === meeting.customerId);
+          tasks.push({
+            id: `meeting-${meeting.id}`,
+            type: 'meeting',
+            title: customer?.name || 'Bilinmeyen Müşteri',
+            subtitle: meeting.next_action_notes || 'Görüşme',
+            time: meeting.meeting_time,
+            completed: meeting.status === 'Tamamlandı',
+            sourceType: 'meeting',
+            sourceId: meeting.id,
+            customerId: meeting.customerId,
+          });
+        });
+
+      // Today's deliveries
+      orders
+        .filter((o) => !o.isDeleted && o.delivery_date === today && o.status !== 'Tamamlandı')
+        .forEach((order) => {
+          const customer = customers.find((c) => c.id === order.customerId);
+          tasks.push({
+            id: `delivery-${order.id}`,
+            type: 'delivery',
+            title: customer?.name || 'Bilinmeyen Müşteri',
+            subtitle: `Teslimat - ${formatCurrency(order.total_amount)}`,
+            completed: order.status === 'Teslim Edildi',
+            sourceType: 'order',
+            sourceId: order.id,
+            customerId: order.customerId,
+          });
+        });
+
+      // Today's custom tasks
+      customTasks
+        .filter((t) => !t.isDeleted && t.date === today)
+        .forEach((task) => {
+          tasks.push({
+            id: `custom-${task.id}`,
+            type: 'custom',
+            title: task.title,
+            subtitle: task.notes || '',
+            time: task.time,
+            completed: task.completed,
+            sourceType: 'customTask',
+            sourceId: task.id,
+            priority: task.priority,
+          });
+        });
+
+      return tasks.sort((a, b) => {
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        if (a.time) return -1;
+        if (b.time) return 1;
+        return 0;
+      });
+    }, [gorusmeler, orders, customers, customTasks, today]);
+
+    // Calculate low stock products
+    const lowStockProducts = useMemo(() => {
+      return products
+        .filter(
+          (p) =>
+            !p.isDeleted &&
+            p.track_stock &&
+            p.stock_quantity !== undefined &&
+            p.minimum_stock !== undefined &&
+            p.stock_quantity <= p.minimum_stock
+        )
+        .sort((a, b) => {
+          const aPercentage = a.minimum_stock ? a.stock_quantity! / a.minimum_stock : 1;
+          const bPercentage = b.minimum_stock ? b.stock_quantity! / b.minimum_stock : 1;
+          return aPercentage - bPercentage;
+        })
+        .slice(0, 5);
+    }, [products]);
+
+    const toggleTask = async (task: TodayTask) => {
+      const newCompleted = !task.completed;
+
+      try {
+        if (task.sourceType === 'meeting') {
+          const meeting = gorusmeler.find((m) => m.id === task.sourceId);
+          if (meeting) {
+            await onMeetingSave({
+              ...meeting,
+              status: newCompleted ? 'Tamamlandı' : 'Planlandı',
+            });
+            toast.success(newCompleted ? 'Görüşme tamamlandı!' : 'Görüşme aktif duruma alındı');
+          }
+        } else if (task.sourceType === 'order') {
+          const order = orders.find((o) => o.id === task.sourceId);
+          if (order) {
+            toast.info('Teslimat durumu siparişler sayfasından güncellenebilir');
+          }
+        } else if (task.sourceType === 'customTask') {
+          const customTask = customTasks.find((t) => t.id === task.sourceId);
+          if (customTask) {
+            await onCustomTaskSave({
+              ...customTask,
+              completed: newCompleted,
+              completedAt: newCompleted ? new Date().toISOString() : undefined,
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('Task toggle error:', error);
+        toast.error('Görev güncellenirken hata oluştu');
+      }
+    };
+
+    const bestSellingProducts = useMemo<BestSellingProduct[]>(() => {
+      const productSales: Record<
+        string,
+        {
+          quantity: number;
+          revenue: number;
+          customerData: Record<string, { quantity: number; revenue: number }>;
+        }
+      > = {};
+
+      orders
+        .filter((o) => !o.isDeleted)
+        .forEach((order) => {
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach((item) => {
+              const productId = item.productId;
+              const customerId = order.customerId;
+
+              if (!productSales[productId]) {
+                productSales[productId] = {
+                  quantity: 0,
+                  revenue: 0,
+                  customerData: {},
+                };
+              }
+
+              if (!productSales[productId].customerData[customerId]) {
+                productSales[productId].customerData[customerId] = {
+                  quantity: 0,
+                  revenue: 0,
+                };
+              }
+
+              const itemQuantity = item.quantity || 0;
+              const itemRevenue = itemQuantity * (item.unit_price || 0);
+
+              productSales[productId].quantity += itemQuantity;
+              productSales[productId].revenue += itemRevenue;
+              productSales[productId].customerData[customerId].quantity += itemQuantity;
+              productSales[productId].customerData[customerId].revenue += itemRevenue;
+            });
+          }
+        });
+
+      return Object.entries(productSales)
+        .map(([productId, stats]) => {
+          const product = products.find((p) => p.id === productId && !p.isDeleted);
+
+          const customersList = Object.entries(stats.customerData)
+            .map(([customerId, customerStats]) => {
+              const customer = customers.find((c) => c.id === customerId && !c.isDeleted);
+              return {
+                customerId,
+                customerName: customer?.name || 'Bilinmeyen Müşteri',
+                quantity: customerStats.quantity,
+                revenue: customerStats.revenue,
+              };
+            })
+            .sort((a, b) => b.quantity - a.quantity);
+
+          return {
+            id: productId,
+            name: product?.name || 'Bilinmeyen Ürün',
+            unit: product?.unit || 'Adet',
+            quantity: stats.quantity,
+            revenue: stats.revenue,
+            customers: customersList,
+          };
+        })
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5);
+    }, [orders, products, customers]);
+
+    const upcomingDeliveries = useMemo(() => {
+      const todayDate = new Date();
+      const next7Days = new Date(todayDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      return orders
+        .filter((order) => {
+          if (order.isDeleted || !order.delivery_date) return false;
+          const deliveryDate = new Date(order.delivery_date);
+          return (
+            deliveryDate >= todayDate && deliveryDate <= next7Days && order.status !== 'Tamamlandı'
+          );
+        })
+        .sort((a, b) => new Date(a.delivery_date!).getTime() - new Date(b.delivery_date!).getTime())
+        .slice(0, 5);
+    }, [orders]);
 
     if (loading) {
       return (
