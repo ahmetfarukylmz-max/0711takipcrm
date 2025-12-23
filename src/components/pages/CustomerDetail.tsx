@@ -41,19 +41,27 @@ interface Stats {
   totalPayments: number;
   totalPaymentAmount: number;
   pendingPayments: number;
+  totalReturns: number;
 }
 
 interface Activity {
-  type: 'order' | 'quote' | 'meeting' | 'shipment' | 'payment';
+  type: 'order' | 'quote' | 'meeting' | 'shipment' | 'payment' | 'return';
   date: string;
   title: string;
   description: string;
   status: string;
   id: string;
-  data: Order | Quote | Meeting | Shipment | Payment;
+  data: Order | Quote | Meeting | Shipment | Payment | ReturnInvoice;
 }
 
-type TabId = 'overview' | 'timeline' | 'orders' | 'quotes' | 'top-products' | 'payments';
+type TabId =
+  | 'overview'
+  | 'timeline'
+  | 'orders'
+  | 'quotes'
+  | 'top-products'
+  | 'payments'
+  | 'returns';
 
 interface CustomerDetailProps {
   /** Customer to display */
@@ -184,6 +192,9 @@ const CustomerDetail = memo<CustomerDetailProps>(
           onViewShipment && onViewShipment(activity.data as Shipment);
         } else if (activity.type === 'payment') {
           onViewPayment && onViewPayment(activity.data as Payment);
+        } else if (activity.type === 'return') {
+          // No view modal for return yet, maybe toast?
+          // Or just do nothing
         }
       },
       [onViewOrder, onViewQuote, onViewShipment, onViewPayment]
@@ -218,6 +229,9 @@ const CustomerDetail = memo<CustomerDetailProps>(
         return sum + inTRY;
       }, 0);
       const pendingPayments = customerPayments.filter((p) => p.status === 'Bekliyor').length;
+      const totalReturns = returns.filter(
+        (r) => r.customerId === customer.id && !r.isDeleted
+      ).length;
 
       return {
         totalOrders: customerOrders.length,
@@ -230,8 +244,9 @@ const CustomerDetail = memo<CustomerDetailProps>(
         totalPayments: customerPayments.length,
         totalPaymentAmount,
         pendingPayments,
+        totalReturns,
       };
-    }, [customer.id, orders, quotes, meetings, payments]);
+    }, [customer.id, orders, quotes, meetings, payments, returns]);
 
     // Calculate balance (updated: based on DELIVERED SHIPMENTS)
     const balance = useMemo(() => {
@@ -456,9 +471,24 @@ const CustomerDetail = memo<CustomerDetailProps>(
           });
         });
 
+      // Add returns
+      returns
+        .filter((r) => r.customerId === customer.id && !r.isDeleted)
+        .forEach((returnInv) => {
+          activities.push({
+            type: 'return',
+            date: returnInv.invoiceDate,
+            title: 'İade Faturası',
+            description: `${formatCurrency(returnInv.totalAmount)} tutarında iade`,
+            status: returnInv.status,
+            id: returnInv.id,
+            data: returnInv,
+          });
+        });
+
       // Sort by date descending
       return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [customer.id, orders, quotes, meetings, shipments, payments]);
+    }, [customer.id, orders, quotes, meetings, shipments, payments, returns]);
 
     const getActivityIcon = (type: Activity['type']): JSX.Element | null => {
       switch (type) {
@@ -517,6 +547,17 @@ const CustomerDetail = memo<CustomerDetailProps>(
               />
             </svg>
           );
+        case 'return':
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
+            </svg>
+          );
         default:
           return null;
       }
@@ -534,6 +575,8 @@ const CustomerDetail = memo<CustomerDetailProps>(
           return 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300';
         case 'payment':
           return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-300';
+        case 'return':
+          return 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300';
         default:
           return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
       }
@@ -980,6 +1023,15 @@ const CustomerDetail = memo<CustomerDetailProps>(
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">ödeme</div>
             </div>
+
+            {/* İadeler */}
+            <div className="text-center">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">İadeler</div>
+              <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                {stats.totalReturns}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">kayıt</div>
+            </div>
           </div>
         </div>
 
@@ -992,6 +1044,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
               { id: 'orders' as TabId, label: `Siparişler (${stats.totalOrders})` },
               { id: 'quotes' as TabId, label: `Teklifler (${stats.totalQuotes})` },
               { id: 'payments' as TabId, label: `Ödemeler (${stats.totalPayments})` },
+              { id: 'returns' as TabId, label: `İadeler (${stats.totalReturns})` },
               { id: 'top-products' as TabId, label: 'Çok Satanlar' },
             ].map((tab) => (
               <button
@@ -1287,6 +1340,104 @@ const CustomerDetail = memo<CustomerDetailProps>(
                   0 && (
                   <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     Henüz teklif bulunmuyor
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'returns' && (
+            <>
+              {/* Desktop: Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Tarih
+                      </th>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        İade Faturası No
+                      </th>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Tutar
+                      </th>
+                      <th className="p-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Durum
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {returns
+                      .filter((r) => r.customerId === customer.id && !r.isDeleted)
+                      .map((returnInv) => (
+                        <tr key={returnInv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                            {formatDate(returnInv.invoiceDate)}
+                          </td>
+                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                            {returnInv.invoiceNumber || '-'}
+                          </td>
+                          <td className="p-3 text-sm text-gray-700 dark:text-gray-300">
+                            {formatCurrency(returnInv.totalAmount)}
+                          </td>
+                          <td className="p-3 text-sm">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800`}
+                            >
+                              {returnInv.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    {returns.filter((r) => r.customerId === customer.id && !r.isDeleted).length ===
+                      0 && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="p-8 text-center text-gray-500 dark:text-gray-400"
+                        >
+                          Henüz iade bulunmuyor
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile: Card View */}
+              <div className="md:hidden space-y-3">
+                {returns
+                  .filter((r) => r.customerId === customer.id && !r.isDeleted)
+                  .map((returnInv) => (
+                    <div
+                      key={returnInv.id}
+                      className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {formatDate(returnInv.invoiceDate)}
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800`}
+                        >
+                          {returnInv.status}
+                        </span>
+                      </div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(returnInv.totalAmount)}
+                      </div>
+                      {returnInv.invoiceNumber && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Fatura No: {returnInv.invoiceNumber}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                {returns.filter((r) => r.customerId === customer.id && !r.isDeleted).length ===
+                  0 && (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    Henüz iade bulunmuyor
                   </div>
                 )}
               </div>
