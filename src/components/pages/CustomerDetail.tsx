@@ -11,7 +11,16 @@ import {
   formatPhoneNumberForWhatsApp,
   getStatusClass,
 } from '../../utils/formatters';
-import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
+import type {
+  Customer,
+  Order,
+  Quote,
+  Meeting,
+  Shipment,
+  Product,
+  Payment,
+  ReturnInvoice,
+} from '../../types';
 
 interface ProductStats {
   id: string;
@@ -59,6 +68,8 @@ interface CustomerDetailProps {
   shipments?: Shipment[];
   /** List of all payments */
   payments?: Payment[];
+  /** List of all returns */
+  returns?: ReturnInvoice[];
   /** Handler for editing customer */
   onEdit: () => void;
   /** Handler for deleting customer */
@@ -105,6 +116,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
     meetings = [],
     shipments = [],
     payments = [],
+    returns = [],
     onEdit,
     onDelete,
     onBack,
@@ -236,6 +248,11 @@ const CustomerDetail = memo<CustomerDetailProps>(
         (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
       );
 
+      // Include all approved returns
+      const customerReturns = returns.filter(
+        (r) => r.customerId === customer.id && !r.isDeleted && r.status === 'Onaylandı'
+      );
+
       const totalDebt = customerShipments.reduce((sum, s) => {
         const order = orders.find((o) => o.id === s.orderId);
         if (!order || !s.items) return sum;
@@ -275,7 +292,14 @@ const CustomerDetail = memo<CustomerDetailProps>(
         return sum + inTRY;
       }, 0);
 
-      const balanceAmount = totalPayments - totalDebt;
+      const totalReturns = customerReturns.reduce((sum, r) => {
+        // Returns are assumed to be in base currency or handled similarly.
+        // For now, assuming TRY or that totalAmount is already normalized if needed.
+        // Given current structure, ReturnInvoice has totalAmount.
+        return sum + (r.totalAmount || 0);
+      }, 0);
+
+      const balanceAmount = totalPayments + totalReturns - totalDebt;
 
       // Determine status
       let status = '';
@@ -304,7 +328,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
         color,
         icon,
       };
-    }, [customer.id, orders, payments, shipments]);
+    }, [customer.id, orders, payments, shipments, returns]);
 
     // Calculate top products for this customer
     const topProducts = useMemo<ProductStats[]>(() => {

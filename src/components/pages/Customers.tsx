@@ -23,7 +23,16 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { useModal } from '../../hooks/useModal';
 import { useConfirm } from '../../hooks/useConfirm';
 import useStore from '../../store/useStore';
-import type { Customer, Order, Quote, Meeting, Shipment, Product, Payment } from '../../types';
+import type {
+  Customer,
+  Order,
+  Quote,
+  Meeting,
+  Shipment,
+  Product,
+  Payment,
+  ReturnInvoice,
+} from '../../types';
 import { logger } from '../../utils/logger';
 
 interface DeleteConfirmState {
@@ -50,6 +59,8 @@ interface CustomersProps {
   products?: Product[];
   /** List of payments */
   payments?: Payment[];
+  /** List of returns */
+  returns?: ReturnInvoice[];
   /** Callback when quote is saved */
   onQuoteSave?: (quote: Partial<Quote>) => void;
   /** Callback when order is saved */
@@ -80,6 +91,7 @@ const Customers = memo<CustomersProps>(
     shipments: propShipments = [],
     products: propProducts = [],
     payments: propPayments = [],
+    returns: propReturns,
     onQuoteSave,
     onOrderSave,
     onMeetingSave,
@@ -96,6 +108,7 @@ const Customers = memo<CustomersProps>(
     const storeShipments = useStore((state) => state.collections.shipments);
     const storeProducts = useStore((state) => state.collections.products);
     const storePayments = useStore((state) => state.collections.payments);
+    const storeReturns = useStore((state) => state.collections.returns);
 
     const customers = propCustomers || storeCustomers || [];
     const orders = propOrders.length > 0 ? propOrders : storeOrders || [];
@@ -104,6 +117,7 @@ const Customers = memo<CustomersProps>(
     const shipments = propShipments.length > 0 ? propShipments : storeShipments || [];
     const products = propProducts.length > 0 ? propProducts : storeProducts || [];
     const payments = propPayments.length > 0 ? propPayments : storePayments || [];
+    const returns = propReturns || storeReturns || [];
 
     const customerModal = useModal<Customer>(); // Replaces isModalOpen
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -409,6 +423,7 @@ const Customers = memo<CustomersProps>(
             meetings={meetings}
             shipments={shipments}
             payments={payments}
+            returns={returns}
             onEdit={handleEditFromDetail}
             onDelete={handleDeleteFromDetail}
             onBack={handleBackFromDetail}
