@@ -349,20 +349,7 @@ const Sidebar = ({
           </button>
         </nav>
       </div>
-      <div className="p-4 border-t border-slate-50 dark:border-gray-800 space-y-4">
-        {user && (
-          <div className="bg-slate-50 dark:bg-gray-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100 dark:border-gray-700">
-            <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0"></div>
-            <div className="min-w-0">
-              <p className="text-xs font-black text-slate-800 dark:text-white truncate">
-                {user.displayName || user.email?.split('@')[0]}
-              </p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
-                Yönetici
-              </p>
-            </div>
-          </div>
-        )}
+      <div className="p-4 border-t border-slate-50 dark:border-gray-800 space-y-2">
         <button
           onClick={handleLogout}
           className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all"
