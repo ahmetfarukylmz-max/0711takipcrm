@@ -498,22 +498,22 @@ const CustomerDetail = memo<CustomerDetailProps>(
           </div>
 
           {/* Action Toolbar */}
-          <div className="flex flex-wrap gap-2 pb-2">
+          <div className="flex flex-wrap gap-3 pb-2">
             <button
               onClick={handleOpenMeetingModal}
-              className="px-5 py-2.5 rounded-full bg-orange-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:scale-105 transition-all"
+              className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-orange-500 text-white font-bold text-sm shadow-lg shadow-orange-500/20 hover:bg-orange-600 active:scale-95 transition-all"
             >
               Yeni Görüşme
             </button>
             <button
               onClick={handleOpenQuoteModal}
-              className="px-5 py-2.5 rounded-full bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-600/20 hover:scale-105 transition-all"
+              className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 active:scale-95 transition-all"
             >
               Yeni Teklif
             </button>
             <button
               onClick={handleOpenOrderModal}
-              className="px-5 py-2.5 rounded-full bg-slate-900 text-white font-bold text-sm shadow-lg shadow-slate-900/20 hover:scale-105 transition-all"
+              className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-slate-900 text-white font-bold text-sm shadow-lg shadow-slate-900/20 hover:bg-slate-800 active:scale-95 transition-all"
             >
               Yeni Sipariş
             </button>
@@ -532,7 +532,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabId)}
-                className={`px-6 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20' : 'bg-white dark:bg-gray-800 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-700 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all border ${activeTab === tab.id ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20' : 'bg-white dark:bg-gray-800 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-gray-700 hover:bg-slate-50'}`}
               >
                 {tab.label}
               </button>
@@ -588,31 +588,31 @@ const CustomerDetail = memo<CustomerDetailProps>(
               {activeTab === 'timeline' && (
                 <div className="p-8 max-h-[600px] overflow-y-auto custom-scrollbar">
                   {timeline.map((activity, idx) => (
-                    <div key={idx} className="flex gap-6 mb-8 relative last:mb-0">
+                    <div key={idx} className="flex gap-4 mb-6 relative last:mb-0">
                       {idx < timeline.length - 1 && (
-                        <div className="absolute left-[23px] top-12 bottom-0 w-0.5 bg-slate-100 dark:bg-gray-700"></div>
+                        <div className="absolute left-[23px] top-10 bottom-0 w-0.5 bg-slate-100 dark:bg-gray-700"></div>
                       )}
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 ${activity.type === 'order' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-600'}`}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 z-10 ${activity.type === 'order' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600'}`}
                       >
-                        <span className="font-bold text-[10px] uppercase">
+                        <span className="font-black text-[10px] uppercase">
                           {activity.type.substring(0, 2)}
                         </span>
                       </div>
                       <div className="flex-1 pt-1">
                         <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-black text-slate-800 dark:text-white">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-white">
                             {activity.title}
                           </h4>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
                             {formatDate(activity.date)}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed mb-3">
+                        <p className="text-sm text-slate-600 dark:text-gray-400 leading-relaxed mb-2">
                           {activity.description}
                         </p>
                         <span
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${getStatusClass(activity.status)}`}
+                          className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusClass(activity.status)}`}
                         >
                           {activity.status}
                         </span>
