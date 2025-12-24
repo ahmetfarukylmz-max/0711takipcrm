@@ -120,11 +120,11 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
       className={`group w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 min-h-[48px] ${
         isActive
           ? 'bg-primary-50/90 text-primary-700 shadow-sm border border-primary-100/50 font-bold'
-          : 'text-slate-500 hover:bg-white/60 hover:text-slate-900'
+          : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
       }`}
     >
       <Icon
-        className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
+        className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}
       />
       <span className="flex-1 text-left text-sm font-medium tracking-tight">{children}</span>
       {badge > 0 && (
@@ -161,11 +161,11 @@ const ParentNavLink = memo(
         className={`group w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 min-h-[48px] ${
           isActive
             ? 'bg-primary-50/90 text-primary-700 shadow-sm border border-primary-100/50 font-bold'
-            : 'text-slate-500 hover:bg-white/60 hover:text-slate-900'
+            : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
         }`}
       >
         <Icon
-          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
+          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}
         />
         <span className="flex-1 text-left text-sm font-medium tracking-tight">{children}</span>
         {badge > 0 && (
@@ -175,9 +175,9 @@ const ParentNavLink = memo(
         )}
         {hasSubmenu &&
           (isExpanded ? (
-            <ChevronDownIcon className="w-4 h-4 text-slate-400" />
+            <ChevronDownIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
           ) : (
-            <ChevronRightIcon className="w-4 h-4 text-slate-400" />
+            <ChevronRightIcon className="w-4 h-4 text-slate-400 dark:text-slate-500" />
           ))}
       </button>
     );
@@ -191,12 +191,16 @@ const SubNavLink = memo(({ page, children, Icon, activePage, onNavigate }) => {
   return (
     <button
       onClick={() => onNavigate(page)}
-      className={`group w-full flex items-center gap-3 pl-12 pr-4 py-2 rounded-xl transition-all duration-200 min-h-[40px] ${
-        isActive ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
+      className={`group w-full flex items-center gap-3 pl-12 pr-4 py-2.5 rounded-xl transition-all duration-200 min-h-[40px] ${
+        isActive
+          ? 'text-primary-600 font-bold bg-primary-50/50 dark:bg-primary-900/20'
+          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
       }`}
     >
-      <Icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-slate-300'}`} />
-      <span className="flex-1 text-left text-xs">{children}</span>
+      <Icon
+        className={`w-4 h-4 transition-colors ${isActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300'}`}
+      />
+      <span className="flex-1 text-left text-xs font-medium">{children}</span>
     </button>
   );
 });
