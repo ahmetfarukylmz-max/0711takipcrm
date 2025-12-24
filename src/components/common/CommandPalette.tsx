@@ -340,12 +340,12 @@ const CommandPalette: React.FC = () => {
     <div className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-hidden p-4 sm:p-20">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 transition-opacity bg-gray-900/40 backdrop-blur-sm"
+        className="fixed inset-0 transition-opacity bg-gray-900/20 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
 
       {/* Dialog */}
-      <div className="relative mx-auto max-w-xl transform divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-2xl ring-1 ring-black ring-opacity-5 transition-all">
+      <div className="relative mx-auto max-w-xl transform divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-soft-lg ring-1 ring-black/5 dark:ring-white/10 transition-all border border-white/20">
         {/* Search Input */}
         <div className="relative">
           <MagnifyingGlassIcon className="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400" />

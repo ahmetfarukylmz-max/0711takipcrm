@@ -14,7 +14,7 @@ import { Customer } from '../../types';
 // Loading Screen Component
 const LoadingScreen = () => (
   <div className="flex h-screen items-center justify-center bg-background dark:bg-gray-900">
-    <div className="bg-white dark:bg-gray-800 p-8 rounded-[2rem] shadow-soft flex items-center gap-4 border border-slate-50 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-8 rounded-4xl shadow-soft flex items-center gap-4 border border-slate-50 dark:border-gray-700">
       <div className="w-10 h-10 border-4 border-primary-100 border-t-primary rounded-full animate-spin"></div>
       <span className="text-lg font-bold text-slate-700 dark:text-gray-300 tracking-tight">
         Veriler Hazırlanıyor...

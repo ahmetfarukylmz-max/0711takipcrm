@@ -287,7 +287,7 @@ const Sidebar = ({
       <div className="flex flex-col flex-grow overflow-hidden">
         <div className="px-6 py-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-primary shadow-blue-200">
+            <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-primary shadow-blue-200">
               T
             </div>
             <h1 className="text-xl font-black text-slate-800 dark:text-white tracking-tighter">
@@ -296,7 +296,7 @@ const Sidebar = ({
           </div>
           <button
             onClick={onClose}
-            className="md:hidden p-2 text-slate-400 hover:bg-slate-50 rounded-xl"
+            className="md:hidden p-2 text-slate-400 hover:bg-slate-50 rounded-2xl"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
