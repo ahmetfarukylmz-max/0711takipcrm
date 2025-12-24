@@ -19,18 +19,20 @@ const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-[2rem] border border-slate-50 dark:border-gray-700 shadow-soft overflow-hidden transition-all duration-300 hover:shadow-soft-md ${className}`}
+      className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-[2rem] border border-white/60 dark:border-gray-700/60 shadow-glass overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 ${className}`}
     >
       {(title || action) && (
-        <div className="px-8 py-6 border-b border-slate-50 dark:border-gray-700 flex items-center justify-between">
+        <div className="px-8 py-6 border-b border-slate-100/50 dark:border-gray-700/50 flex items-center justify-between bg-white/40 dark:bg-gray-800/40">
           <div>
             {title && (
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-none">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-sm text-slate-400 dark:text-gray-400 mt-1">{subtitle}</p>
+              <p className="text-sm text-slate-500 dark:text-gray-400 mt-1 font-medium">
+                {subtitle}
+              </p>
             )}
           </div>
           {action && <div>{action}</div>}

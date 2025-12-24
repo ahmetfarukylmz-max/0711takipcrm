@@ -52,7 +52,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="flex h-screen bg-background dark:bg-gray-950 font-sans relative overflow-hidden">
+    <div className="flex h-screen bg-background dark:bg-gray-950 font-sans relative overflow-hidden p-4 gap-4 selection:bg-primary-100 selection:text-primary-900">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -62,10 +62,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       />
       <CommandPalette />
 
-      {/* Sidebar - Desktop */}
-      <div
-        className={`hidden md:block transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full opacity-0 overflow-hidden'
+      {/* Sidebar - Desktop (Floating & Glass) */}
+      <aside
+        className={`hidden md:flex flex-col w-72 h-full rounded-[2rem] transition-all duration-300 ease-in-out z-50 ${
+          sidebarOpen
+            ? 'translate-x-0 opacity-100'
+            : '-translate-x-full opacity-0 w-0 p-0 overflow-hidden'
         }`}
       >
         <Sidebar
@@ -77,17 +79,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-      </div>
+      </aside>
 
       {/* Content Area */}
-      <main className="flex-1 h-full overflow-y-auto custom-scrollbar relative">
-        {/* Desktop Sidebar Toggle Button - Modernized */}
+      <main className="flex-1 h-full rounded-[2rem] overflow-hidden relative flex flex-col transition-all duration-300">
+        {/* Desktop Sidebar Toggle Button - Floating */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={`hidden md:flex fixed top-6 left-6 z-40 p-2.5 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-soft border border-slate-100 dark:border-gray-700 text-slate-500 hover:text-primary transition-all hover:scale-110 active:scale-95 ${
+          className={`hidden md:flex fixed bottom-8 left-8 z-[60] p-3 rounded-2xl bg-slate-900 text-white shadow-lg hover:scale-110 active:scale-95 transition-all ${
             sidebarOpen ? 'md:hidden' : 'block'
           }`}
-          title="Menüyü Aç/Kapat"
+          title="Menüyü Aç"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -99,14 +101,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           </svg>
         </button>
 
-        <div className="min-h-full pb-24 md:pb-10">
+        <div className="h-full overflow-y-auto custom-scrollbar pr-2">
           <PullToRefresh onRefresh={onRefresh}>
             <Suspense fallback={<LoadingScreen />}>
-              <div className="animate-fadeIn p-4 sm:p-6 lg:p-10">
+              <div className="animate-fadeIn p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
                 <Outlet />
               </div>
             </Suspense>
           </PullToRefresh>
+          <div className="h-24 md:h-10"></div> {/* Bottom spacer */}
         </div>
       </main>
 

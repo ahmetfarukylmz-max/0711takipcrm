@@ -96,7 +96,7 @@ const MobileStat: React.FC<MobileStatProps> = ({
   return (
     <div
       className={`
-                bg-white p-4 rounded-xl border border-gray-100 shadow-sm
+                bg-white p-4 rounded-2xl border border-gray-100 shadow-glass
                 ${onClick ? 'active:scale-[0.98] cursor-pointer' : ''}
                 hover:shadow-md transition-all group
             `}
@@ -112,7 +112,7 @@ const MobileStat: React.FC<MobileStatProps> = ({
           </span>
         )}
       </div>
-      <h3 className="text-2xl font-bold text-gray-900">{displayValue}</h3>
+      <h3 className="text-2xl font-bold text-gray-900 font-mono">{displayValue}</h3>
       {(trend || secondaryText) && (
         <p
           className={`text-xs mt-1 ${secondaryText ? 'text-gray-400' : trend?.isPositive ? 'text-green-600' : 'text-red-600'} flex items-center`}

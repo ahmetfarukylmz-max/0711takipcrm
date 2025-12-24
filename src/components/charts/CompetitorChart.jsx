@@ -19,8 +19,9 @@ const CompetitorChart = ({ data, title }) => {
       {
         label: 'Kazanılan Teklif Sayısı',
         data: data.map((d) => d.count),
-        backgroundColor: '#3B82F6',
-        borderRadius: 4,
+        backgroundColor: '#4F46E5', // Indigo-600
+        borderRadius: 8, // More rounded bars
+        barThickness: 20,
       },
     ],
   };
@@ -34,6 +35,9 @@ const CompetitorChart = ({ data, title }) => {
         display: false,
       },
       tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        titleFont: { family: "'Inter', sans-serif" },
+        bodyFont: { family: "'JetBrains Mono', monospace" },
         callbacks: {
           label: function (context) {
             return `${context.raw} Adet Teklif`;
@@ -47,25 +51,31 @@ const CompetitorChart = ({ data, title }) => {
         grid: {
           display: false,
         },
+        ticks: {
+          font: { family: "'JetBrains Mono', monospace" },
+        },
       },
       y: {
         grid: {
           display: false,
+        },
+        ticks: {
+          font: { family: "'Inter', sans-serif", weight: 600 },
         },
       },
     },
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md h-full">
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-8 rounded-[2rem] border border-white/60 dark:border-gray-700/60 shadow-glass h-full">
+      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
         {title || 'En Güçlü Rakipler'}
       </h3>
       <div className="h-64">
         {data.length > 0 ? (
           <Bar data={chartData} options={options} />
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-500">
+          <div className="h-full flex items-center justify-center text-slate-400 font-medium">
             Veri bulunamadı
           </div>
         )}

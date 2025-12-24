@@ -117,18 +117,18 @@ const NavLink = memo(({ page, children, Icon, activePage, onNavigate, badge }) =
   return (
     <button
       onClick={() => onNavigate(page)}
-      className={`group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 min-h-[44px] ${
+      className={`group w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 min-h-[48px] ${
         isActive
-          ? 'bg-primary-50 text-primary-600 shadow-sm font-bold'
-          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          ? 'bg-primary-50/90 text-primary-700 shadow-sm border border-primary-100/50 font-bold'
+          : 'text-slate-500 hover:bg-white/60 hover:text-slate-900'
       }`}
     >
       <Icon
         className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
       />
-      <span className="flex-1 text-left text-sm tracking-tight">{children}</span>
+      <span className="flex-1 text-left text-sm font-medium tracking-tight">{children}</span>
       {badge > 0 && (
-        <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-[10px] font-black bg-red-500 text-white rounded-full">
+        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-mono font-bold bg-rose-500 text-white rounded-full shadow-sm shadow-rose-200">
           {badge > 99 ? '99+' : badge}
         </span>
       )}
@@ -158,18 +158,18 @@ const ParentNavLink = memo(
     return (
       <button
         onClick={handleClick}
-        className={`group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 min-h-[44px] ${
+        className={`group w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 min-h-[48px] ${
           isActive
-            ? 'bg-primary-50 text-primary-600 shadow-sm font-bold'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            ? 'bg-primary-50/90 text-primary-700 shadow-sm border border-primary-100/50 font-bold'
+            : 'text-slate-500 hover:bg-white/60 hover:text-slate-900'
         }`}
       >
         <Icon
           className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-primary-600' : 'group-hover:scale-110 text-slate-400'}`}
         />
-        <span className="flex-1 text-left text-sm tracking-tight">{children}</span>
+        <span className="flex-1 text-left text-sm font-medium tracking-tight">{children}</span>
         {badge > 0 && (
-          <span className="flex items-center justify-center min-w-[18px] h-4 px-1 text-[10px] font-black bg-red-500 text-white rounded-full">
+          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-mono font-bold bg-rose-500 text-white rounded-full shadow-sm shadow-rose-200">
             {badge}
           </span>
         )}
@@ -282,17 +282,29 @@ const Sidebar = ({
 
   return (
     <aside
-      className={`w-64 bg-white dark:bg-gray-900 border-r border-slate-100 dark:border-gray-800 flex flex-col fixed md:relative h-full z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      className={`h-full flex flex-col bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl shadow-glass border border-white/50 dark:border-gray-700/50 rounded-[2rem] overflow-hidden ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
     >
       <div className="flex flex-col flex-grow overflow-hidden">
         <div className="px-6 py-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-primary shadow-blue-200">
-              T
+            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white shadow-glow">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                ></path>
+              </svg>
             </div>
-            <h1 className="text-xl font-black text-slate-800 dark:text-white tracking-tighter">
-              Takip CRM
-            </h1>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+                Takip CRM
+              </h1>
+              <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest mt-1">
+                Crystal Ed.
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -308,7 +320,7 @@ const Sidebar = ({
             </svg>
           </button>
         </div>
-        <nav className="flex flex-col gap-1 px-4 overflow-y-auto flex-1 custom-scrollbar">
+        <nav className="flex flex-col gap-1 px-4 overflow-y-auto flex-1 custom-scrollbar pb-4">
           {navigationItems.map((item) => (
             <div key={item.page}>
               {item.hasSubmenu ? (
@@ -323,7 +335,7 @@ const Sidebar = ({
                   <div
                     className={`overflow-hidden transition-all duration-300 ${expandedMenus[item.page] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
-                    <div className="flex flex-col gap-1 mt-1">
+                    <div className="flex flex-col gap-1 mt-1 pl-2 border-l border-slate-200/50 ml-6">
                       {item.submenu.map((sub) => (
                         <SubNavLink
                           key={sub.page}
@@ -342,9 +354,9 @@ const Sidebar = ({
           ))}
           <button
             onClick={onToggleGuide}
-            className="group w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-slate-500 hover:bg-slate-50 hover:text-slate-900 mt-2"
+            className="group w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:bg-white/50 hover:text-slate-900 mt-2 transition-all"
           >
-            <QuestionMarkCircleIcon className="w-5 h-5 text-slate-400" />
+            <QuestionMarkCircleIcon className="w-5 h-5 text-slate-400 group-hover:text-primary-400 transition-colors" />
             <span className="flex-1 text-left text-sm font-medium">Rehber</span>
           </button>
         </nav>

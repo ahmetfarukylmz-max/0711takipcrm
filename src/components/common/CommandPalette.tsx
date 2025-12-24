@@ -345,14 +345,14 @@ const CommandPalette: React.FC = () => {
       />
 
       {/* Dialog */}
-      <div className="relative mx-auto max-w-xl transform divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden rounded-3xl bg-white dark:bg-gray-800 shadow-soft-lg ring-1 ring-black/5 dark:ring-white/10 transition-all border border-white/20">
+      <div className="relative mx-auto max-w-xl transform divide-y divide-slate-100/50 dark:divide-gray-700/50 overflow-hidden rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl shadow-glass ring-1 ring-black/5 dark:ring-white/10 transition-all border border-white/40 dark:border-gray-700/40">
         {/* Search Input */}
         <div className="relative">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400" />
+          <MagnifyingGlassIcon className="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-slate-400" />
           <input
             ref={inputRef}
             type="text"
-            className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-0 sm:text-sm outline-none"
+            className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 sm:text-sm outline-none font-medium"
             placeholder="Ne yapmak istiyorsunuz? (Sayfa, Müşteri, Ürün...)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -360,7 +360,10 @@ const CommandPalette: React.FC = () => {
         </div>
 
         {/* Results List */}
-        <div ref={listRef} className="max-h-[60vh] scroll-py-3 overflow-y-auto p-3">
+        <div
+          ref={listRef}
+          className="max-h-[60vh] scroll-py-3 overflow-y-auto p-3 custom-scrollbar"
+        >
           {filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
               <div
@@ -370,21 +373,21 @@ const CommandPalette: React.FC = () => {
                   setOpen(false);
                 }}
                 className={`
-                  group flex cursor-default select-none rounded-xl p-3 items-center gap-3
+                  group flex cursor-default select-none rounded-2xl p-3 items-center gap-3 transition-colors duration-200
                   ${
                     index === selectedIndex
-                      ? 'bg-blue-50 dark:bg-blue-900/30'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      ? 'bg-primary-50/70 dark:bg-primary-900/30'
+                      : 'hover:bg-slate-50/50 dark:hover:bg-gray-700/30'
                   }
                 `}
               >
                 <div
                   className={`
-                  flex h-10 w-10 flex-none items-center justify-center rounded-lg
+                  flex h-10 w-10 flex-none items-center justify-center rounded-xl transition-colors duration-200
                   ${
                     index === selectedIndex
-                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200'
-                      : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                      ? 'bg-primary-100 text-primary-600 dark:bg-primary-800 dark:text-primary-200 shadow-sm'
+                      : 'bg-slate-100 text-slate-500 dark:bg-gray-700 dark:text-gray-400'
                   }
                 `}
                 >
@@ -392,20 +395,20 @@ const CommandPalette: React.FC = () => {
                 </div>
                 <div className="flex-auto truncate">
                   <p
-                    className={`truncate text-sm font-medium ${index === selectedIndex ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}
+                    className={`truncate text-sm font-semibold ${index === selectedIndex ? 'text-primary-900 dark:text-primary-100' : 'text-slate-700 dark:text-slate-200'}`}
                   >
                     {item.title}
                   </p>
                   {item.subtitle && (
                     <p
-                      className={`truncate text-xs ${index === selectedIndex ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
+                      className={`truncate text-xs font-medium ${index === selectedIndex ? 'text-primary-600 dark:text-primary-300' : 'text-slate-400 dark:text-gray-500'}`}
                     >
                       {item.subtitle}
                     </p>
                   )}
                 </div>
                 {index === selectedIndex && (
-                  <span className="text-xs text-blue-600 dark:text-blue-300 font-medium px-2">
+                  <span className="text-[10px] text-primary-600 dark:text-primary-300 font-bold px-2 py-1 bg-white/50 dark:bg-black/20 rounded-md">
                     Giriş ↵
                   </span>
                 )}
