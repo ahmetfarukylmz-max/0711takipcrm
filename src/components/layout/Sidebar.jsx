@@ -335,7 +335,9 @@ const Sidebar = ({
                     onToggleExpand={() => handleToggleExpand(item.page)}
                     onNavigate={handleNavClick}
                     activePage={activePage}
-                  />
+                  >
+                    {item.label}
+                  </ParentNavLink>
                   <div
                     className={`overflow-hidden transition-all duration-300 ${expandedMenus[item.page] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
@@ -346,13 +348,17 @@ const Sidebar = ({
                           {...sub}
                           activePage={activePage}
                           onNavigate={handleNavClick}
-                        />
+                        >
+                          {sub.label}
+                        </SubNavLink>
                       ))}
                     </div>
                   </div>
                 </>
               ) : (
-                <NavLink {...item} activePage={activePage} onNavigate={handleNavClick} />
+                <NavLink {...item} activePage={activePage} onNavigate={handleNavClick}>
+                  {item.label}
+                </NavLink>
               )}
             </div>
           ))}
