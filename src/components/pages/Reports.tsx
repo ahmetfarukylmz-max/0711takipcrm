@@ -2,7 +2,9 @@ import React, { useMemo, useState, memo, ChangeEvent } from 'react';
 import SalesChart from '../charts/SalesChart';
 import OrderStatusChart from '../charts/OrderStatusChart';
 import CustomerAnalyticsChart from '../charts/CustomerAnalyticsChart';
-import LossReasonChart from '../charts/LossReasonChart'; // NEW
+import PaymentMethodChart from '../charts/PaymentMethodChart';
+import LossReasonChart from '../charts/LossReasonChart';
+// NEW
 import CompetitorChart from '../charts/CompetitorChart'; // NEW
 import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDetails';
 import Modal from '../common/Modal';
@@ -565,8 +567,19 @@ const Reports = memo<ReportsProps>(
           <OrderStatusChart data={orderStatusData} />
         </div>
 
-        <div className="mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <CustomerAnalyticsChart data={customerAnalytics} title="En İyi 10 Müşteri" />
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+              <span className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                💳
+              </span>
+              Ödeme Yöntemi Dağılımı
+            </h3>
+            <div className="h-[350px]">
+              <PaymentMethodChart payments={payments} />
+            </div>
+          </div>
         </div>
 
         {/* Additional Stats */}
