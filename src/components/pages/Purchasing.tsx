@@ -745,16 +745,10 @@ const RequestDetailModal = ({
 
 const Purchasing: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   useFirestoreCollections(['purchase_requests', 'products']); // Sync collections
   const { collections } = useStore();
   const requests = collections.purchase_requests || [];
-  const setSidebarOpen = useStore((state) => state.setSidebarOpen);
-
-  // Auto-collapse sidebar for better view
-  React.useEffect(() => {
-    setSidebarOpen(false);
-    return () => setSidebarOpen(true);
-  }, [setSidebarOpen]);
 
   const [activeDragItem, setActiveDragItem] = useState<PurchaseRequest | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -874,24 +868,45 @@ const Purchasing: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col bg-gray-50/50 dark:bg-gray-900/50">
+    <div className="h-screen flex flex-col bg-gray-50/50 dark:bg-gray-950">
       {/* HEADER */}
-      <div className="flex justify-between items-center px-6 py-4 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            🛒 Satınalma Yönetimi
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Talepleri sürükleyip bırakarak durumlarını güncelleyebilirsiniz.
-          </p>
+      <div className="flex justify-between items-center px-8 py-6 flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all active:scale-95 group"
+            title="Geri Dön"
+          >
+            <svg
+              className="w-6 h-6 transform group-hover:-translate-x-1 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2 tracking-tight">
+              🛒 Satınalma Yönetimi
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+              Talepleri sürükleyip bırakarak durumlarını güncelleyebilirsiniz.
+            </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => setIsNewModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95"
+            className="bg-primary-600 text-white px-6 py-3 rounded-2xl hover:bg-primary-700 transition-all flex items-center gap-2 shadow-lg shadow-primary-600/20 active:scale-95 font-bold"
           >
-            <span className="text-lg">➕</span>
-            <span className="font-medium">Yeni Talep</span>
+            <span>➕</span>
+            <span>Yeni Talep</span>
           </button>
         </div>
       </div>
@@ -904,8 +919,8 @@ const Purchasing: React.FC = () => {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-6">
-          <div className="flex h-full gap-5 min-w-max pb-2">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden px-8 py-6">
+          <div className="flex h-full gap-6 min-w-max pb-4">
             {COLUMNS.map((column) => (
               <KanbanColumn
                 key={column.id}

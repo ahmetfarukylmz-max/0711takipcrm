@@ -617,7 +617,6 @@ const CrmApp = () => {
         />
         <Route path="/lots" element={<StockLotManagement />} />
         <Route path="/reconciliation" element={<LotReconciliation />} />
-        <Route path="/purchasing" element={<Purchasing />} />
         <Route path="/admin" element={<Admin />} />
         <Route
           path="/pdf-generator"
@@ -633,6 +632,7 @@ const CrmApp = () => {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+      <Route path="/purchasing" element={<Purchasing />} />
     </Routes>
   );
 };
