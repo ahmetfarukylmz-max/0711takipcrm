@@ -1005,24 +1005,26 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {selectedCustomerBalance.orderDetails.map((order) => (
-                          <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                              {formatDate(order.date)}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                              {order.orderNumber || '-'}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
-                              {formatCurrency(order.amount, order.currency)}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                {order.status || 'Bekliyor'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {selectedCustomerBalance.orderDetails
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .map((order) => (
+                            <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                                {formatDate(order.date)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {order.orderNumber || '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white text-right">
+                                {formatCurrency(order.amount, order.currency)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                  {order.status || 'Bekliyor'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   )}
@@ -1053,24 +1055,29 @@ const Balances = memo<BalancesProps>(({ onCustomerClick }) => {
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {selectedCustomerBalance.paymentDetails.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                              {formatDate(payment.date)}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-medium text-green-600 dark:text-green-400 text-right">
-                              {formatCurrency(payment.amount, payment.currency)}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                              {payment.method}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                {payment.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {selectedCustomerBalance.paymentDetails
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .map((payment) => (
+                            <tr
+                              key={payment.id}
+                              className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                              <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                                {formatDate(payment.date)}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-medium text-green-600 dark:text-green-400 text-right">
+                                {formatCurrency(payment.amount, payment.currency)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                {payment.method}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                  {payment.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   )}

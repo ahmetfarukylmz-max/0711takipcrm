@@ -635,6 +635,10 @@ const CustomerDetail = memo<CustomerDetailProps>(
                     <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
                       {orders
                         .filter((o) => o.customerId === customer.id && !o.isDeleted)
+                        .sort(
+                          (a, b) =>
+                            new Date(b.order_date).getTime() - new Date(a.order_date).getTime()
+                        )
                         .map((order) => (
                           <tr
                             key={order.id}
@@ -675,6 +679,11 @@ const CustomerDetail = memo<CustomerDetailProps>(
                     <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
                       {quotes
                         .filter((q) => q.customerId === customer.id && !q.isDeleted)
+                        .sort(
+                          (a, b) =>
+                            new Date(b.teklif_tarihi).getTime() -
+                            new Date(a.teklif_tarihi).getTime()
+                        )
                         .map((quote) => (
                           <tr
                             key={quote.id}
