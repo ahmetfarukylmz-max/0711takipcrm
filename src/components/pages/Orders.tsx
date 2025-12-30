@@ -104,6 +104,13 @@ const Orders = memo<OrdersProps>(
       isOpen: false,
       item: null,
     });
+    const [completeConfirm, setCompleteConfirm] = useState<{
+      isOpen: boolean;
+      order: Order | null;
+    }>({
+      isOpen: false,
+      order: null,
+    });
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
     const [orderToShip, setOrderToShip] = useState<Order | null>(null);
@@ -141,6 +148,14 @@ const Orders = memo<OrdersProps>(
           onDelete(deleteConfirm.item.id);
           setDeleteConfirm({ isOpen: false, item: null });
         }
+      }
+    };
+
+    const confirmComplete = () => {
+      if (completeConfirm.order) {
+        onSave({ ...completeConfirm.order, status: 'Tamamlandı' });
+        toast.success('Sipariş manuel olarak tamamlandı (Eksik bakiye kapatıldı).');
+        setCompleteConfirm({ isOpen: false, order: null });
       }
     };
 
@@ -782,6 +797,18 @@ const Orders = memo<OrdersProps>(
                     });
                   }
 
+                  // Manual Complete Action (Short Close)
+                  if (
+                    order.status !== 'Tamamlandı' &&
+                    order.status !== 'İptal Edildi' &&
+                    order.status !== 'Taslak'
+                  ) {
+                    orderActions.push({
+                      label: '✅ Manuel Tamamla',
+                      onClick: () => setCompleteConfirm({ isOpen: true, order }),
+                    });
+                  }
+
                   // Check if order has delivered shipments for return
                   const hasDeliveredShipments = shipments.some(
                     (s) => s.orderId === order.id && s.status === 'Teslim Edildi' && !s.isDeleted
@@ -1171,6 +1198,23 @@ const Orders = memo<OrdersProps>(
             onClose={() => setCancellingOrder(null)}
           />
         )}
+
+        <ConfirmDialog
+          isOpen={completeConfirm.isOpen}
+          onClose={() => setCompleteConfirm({ isOpen: false, order: null })}
+          onConfirm={confirmComplete}
+          title="Siparişi Manuel Tamamla"
+          message={`"${completeConfirm.order && formatOrderNumber(completeConfirm.order)}" numaralı siparişi manuel olarak tamamlamak üzeresiniz.
+
+Bu işlem:
+1. Sipariş durumunu "Tamamlandı" yapacak.
+2. Gönderilmeyen (eksik) ürünler artık "Sevk Bekliyor" olarak görünmeyecek.
+3. Kalan bakiye iptal edilmiş sayılacak.
+
+Onaylıyor musunuz?`}
+          confirmLabel="Evet, Tamamla"
+          confirmVariant="success"
+        />
 
         <ConfirmDialog
           isOpen={deleteConfirm.isOpen}
