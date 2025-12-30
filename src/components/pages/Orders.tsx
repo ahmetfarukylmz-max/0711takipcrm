@@ -401,6 +401,7 @@ const Orders = memo<OrdersProps>(
                                 <p><span class="font-semibold">Sipariş Tarihi:</span> ${formatDate(order.order_date)}</p>
                                 <p><span class="font-semibold">Teslim Tarihi:</span> ${formatDate(order.delivery_date)}</p>
                                 <p><span class="font-semibold">Durum:</span> ${order.status}</p>
+                                <p><span class="font-semibold">Yazdırılma Tarihi:</span> ${new Date().toLocaleDateString('tr-TR')}</p>
                             </div>
                         </div>
                     </header>
@@ -489,7 +490,7 @@ const Orders = memo<OrdersProps>(
 
                     <footer class="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
                         <p>Siparişiniz için teşekkür ederiz.</p>
-                        <p class="mt-1">Teslim Tarihi: ${formatDate(order.delivery_date)} | Yazdırılma Tarihi: ${new Date().toLocaleDateString('tr-TR')}</p>
+                        <p class="mt-1">Teslim Tarihi: ${formatDate(order.delivery_date)}</p>
                     </footer>
                     </div>
                 </div>

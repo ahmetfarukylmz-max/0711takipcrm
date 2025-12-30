@@ -249,12 +249,16 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 <span className="font-bold text-gray-800">Tarih:</span>
                 <span>{documentDate}</span>
               </div>
+              <div className="flex justify-end gap-2">
+                <span className="font-bold text-gray-800">Yazdırılma:</span>
+                <span>{new Date().toLocaleDateString('tr-TR')}</span>
+              </div>
               {validUntilOrDeliveryLabel && (
                 <div className="flex justify-end gap-2">
                   <span className="font-bold text-gray-800">{validUntilOrDeliveryLabel}</span>
                   <span>{validUntilOrDeliveryDate}</span>
                 </div>
-              )}
+              )}{' '}
               {isShipment && (doc as Shipment).carrier && (
                 <div className="flex justify-end gap-2">
                   <span className="font-bold text-gray-800">Nakliye:</span>
@@ -415,7 +419,6 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               <div className="flex justify-between items-end">
                 <div className="text-xs text-gray-500">
                   <p>Bu belge elektronik ortamda oluşturulmuştur.</p>
-                  <p>Yazdırılma Tarihi: {new Date().toLocaleDateString('tr-TR')}</p>
                 </div>
                 <div className="text-center px-8">
                   <h4 className="font-bold text-gray-900 mb-12">ONAYLAYAN</h4>
