@@ -627,10 +627,10 @@ const Orders = memo<OrdersProps>(
             {selectedItems.size > 0 && (
               <button
                 onClick={handleBatchDelete}
-                className="flex items-center flex-1 sm:flex-none bg-red-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-red-600"
+                className="flex items-center flex-1 sm:flex-none bg-red-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base rounded-lg hover:bg-red-600"
               >
                 <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0"
+                  className="w-3.5 h-3.5 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -648,10 +648,10 @@ const Orders = memo<OrdersProps>(
             )}
             <button
               onClick={handleExport}
-              className="flex items-center flex-1 sm:flex-none bg-green-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-green-600"
+              className="flex items-center flex-1 sm:flex-none bg-green-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base rounded-lg hover:bg-green-600"
             >
               <svg
-                className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2"
+                className="w-3.5 h-3.5 sm:w-5 sm:h-5 mr-1 sm:mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -664,13 +664,14 @@ const Orders = memo<OrdersProps>(
                 />
               </svg>
               <span className="hidden md:inline">Excel</span>
+              <span className="md:hidden">Excel</span>
             </button>
             <button
               onClick={handleExportDetailed}
-              className="flex items-center flex-1 sm:flex-none bg-teal-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-teal-600"
+              className="flex items-center flex-1 sm:flex-none bg-teal-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base rounded-lg hover:bg-teal-600"
             >
               <svg
-                className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2"
+                className="w-3.5 h-3.5 sm:w-5 sm:h-5 mr-1 sm:mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -683,13 +684,14 @@ const Orders = memo<OrdersProps>(
                 />
               </svg>
               <span className="hidden md:inline">Detaylı</span>
+              <span className="md:hidden">Detaylı</span>
             </button>
             <button
               onClick={() => handleOpenModal()}
               data-action="add-order"
-              className="flex items-center flex-1 sm:flex-none bg-blue-500 text-white px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg hover:bg-blue-600"
+              className="flex items-center flex-1 sm:flex-none bg-blue-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base rounded-lg hover:bg-blue-600"
             >
-              <PlusIcon />
+              <PlusIcon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               <span className="hidden sm:inline">Yeni Sipariş</span>
               <span className="sm:hidden">Yeni</span>
             </button>

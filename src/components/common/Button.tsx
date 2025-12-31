@@ -33,9 +33,9 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-8 py-3.5 text-base',
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-3.5 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm',
+    lg: 'px-6 py-3 sm:px-8 sm:py-3.5 text-sm sm:text-base',
   };
 
   return (
