@@ -545,9 +545,14 @@ const Customers = memo<CustomersProps>(
             {selectedItems.size > 0 && (
               <button
                 onClick={handleBatchDelete}
-                className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                className="flex items-center bg-red-500 text-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg hover:bg-red-600"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -555,12 +560,13 @@ const Customers = memo<CustomersProps>(
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                Seçili {selectedItems.size} Müşteriyi Sil
+                <span className="md:inline hidden">Seçili {selectedItems.size} Müşteriyi Sil</span>
+                <span className="md:hidden">Sil ({selectedItems.size})</span>
               </button>
             )}
             <button
               onClick={handleExport}
-              className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+              className="hidden md:flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -574,7 +580,7 @@ const Customers = memo<CustomersProps>(
             </button>
             <button
               onClick={handleImportClick}
-              className="flex items-center bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
+              className="hidden md:flex items-center bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -589,10 +595,10 @@ const Customers = memo<CustomersProps>(
             <button
               onClick={() => handleOpenModal()}
               data-action="add-customer"
-              className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+              className="flex items-center bg-blue-500 text-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base rounded-lg hover:bg-blue-600"
             >
-              <PlusIcon />
-              Yeni Müşteri
+              <PlusIcon className="w-4 h-4 md:w-5 md:h-5 md:mr-2" />
+              <span className="ml-1 md:ml-0">Yeni Müşteri</span>
             </button>
           </div>
         </div>
