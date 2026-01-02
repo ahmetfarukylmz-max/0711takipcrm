@@ -49,6 +49,7 @@ const Reports = lazy(() => import('./components/pages/Reports'));
 const Admin = lazy(() => import('./components/pages/Admin'));
 const PdfGenerator = lazy(() => import('./components/pages/PdfGenerator'));
 const Purchasing = lazy(() => import('./components/pages/Purchasing'));
+const SalesIntelligencePage = lazy(() => import('./components/pages/SalesIntelligencePage'));
 // Hybrid Costing System Pages
 const StockLotManagement = lazy(() => import('./components/pages/StockLotManagement'));
 const LotReconciliation = lazy(() => import('./components/pages/LotReconciliation'));
@@ -144,6 +145,9 @@ const CrmApp = () => {
       case '/purchasing':
         setActivePage('Satınalma');
         break;
+      case '/sales-intelligence':
+        setActivePage('Satış Zekası');
+        break;
       default:
         setActivePage('Anasayfa');
     }
@@ -196,6 +200,9 @@ const CrmApp = () => {
         break;
       case 'Satınalma':
         navigate('/purchasing');
+        break;
+      case 'Satış Zekası':
+        navigate('/sales-intelligence');
         break;
       default:
         navigate('/');
@@ -618,6 +625,7 @@ const CrmApp = () => {
         <Route path="/lots" element={<StockLotManagement />} />
         <Route path="/reconciliation" element={<LotReconciliation />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/sales-intelligence" element={<SalesIntelligencePage />} />
         <Route
           path="/pdf-generator"
           element={

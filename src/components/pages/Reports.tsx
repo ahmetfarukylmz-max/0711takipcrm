@@ -7,7 +7,6 @@ import LossReasonChart from '../charts/LossReasonChart';
 // NEW
 import CompetitorChart from '../charts/CompetitorChart'; // NEW
 import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDetails';
-import SalesIntelligence from '../dashboard/SalesIntelligence';
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { ChartBarIcon } from '../icons';
@@ -664,11 +663,6 @@ const Reports = memo<ReportsProps>(
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Sales Intelligence Module */}
-        <div className="mb-12">
-          <SalesIntelligence />
         </div>
 
         {/* User Guide Section */}

@@ -18,6 +18,7 @@ import {
   LogoutIcon,
   QuestionMarkCircleIcon,
   ShieldIcon,
+  LightbulbIcon,
 } from '../icons';
 
 const ShoppingCartIcon = (props) => (
@@ -272,6 +273,7 @@ const Sidebar = ({
       { page: 'Görüşmeler', label: 'Görüşmeler', Icon: CalendarIcon, badge: 0 },
       { page: 'Sevkiyat', label: 'Sevkiyat', Icon: TruckIcon, badge: 0 },
       { page: 'Cari Hesaplar', label: 'Cari Hesaplar', Icon: ScaleIcon, badge: 0 },
+      { page: 'Satış Zekası', label: 'Satış Zekası', Icon: LightbulbIcon, badge: 0 },
       {
         page: 'Ödemeler',
         label: 'Ödemeler',
