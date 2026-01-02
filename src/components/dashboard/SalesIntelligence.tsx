@@ -2,15 +2,15 @@ import React, { useMemo } from 'react';
 import useStore from '../../store/useStore';
 import { calculateIntelligence } from '../../services/intelligenceService';
 import {
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Lightbulb,
-  Target,
-  ArrowRight,
-  BarChart3,
-  Users,
-} from 'lucide-react';
+  TrendingUpIcon,
+  TrendingDownIcon,
+  AlertTriangleIcon,
+  LightbulbIcon,
+  TargetIcon,
+  ArrowRightIcon,
+  ChartBarIcon,
+  UsersIcon,
+} from '../../components/icons';
 import { formatCurrency } from '../../utils/formatters';
 
 const SalesIntelligence: React.FC = () => {
@@ -31,7 +31,7 @@ const SalesIntelligence: React.FC = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative group">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
-              <Target size={20} />
+              <TargetIcon className="w-5 h-5" />
             </div>
             <div
               className={`flex items-center gap-1 text-sm font-medium ${
@@ -39,9 +39,9 @@ const SalesIntelligence: React.FC = () => {
               }`}
             >
               {monthlyForecast.trend === 'up' ? (
-                <TrendingUp size={16} />
+                <TrendingUpIcon className="w-4 h-4" />
               ) : (
-                <TrendingDown size={16} />
+                <TrendingDownIcon className="w-4 h-4" />
               )}
               %{Math.abs(monthlyForecast.growthRate).toFixed(1)}
             </div>
@@ -56,7 +56,7 @@ const SalesIntelligence: React.FC = () => {
             Mevcut Hız: {formatCurrency(monthlyForecast.currentTotal)}
           </p>
           <div className="absolute -bottom-1 -right-1 opacity-5 group-hover:opacity-10 transition-opacity">
-            <BarChart3 size={80} />
+            <ChartBarIcon className="w-20 h-20" />
           </div>
         </div>
 
@@ -64,7 +64,7 @@ const SalesIntelligence: React.FC = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative group">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
-              <TrendingUp size={20} />
+              <TrendingUpIcon className="w-5 h-5" />
             </div>
           </div>
           <h3 className="text-slate-500 text-sm font-medium mb-1">Tahmini Tonaj</h3>
@@ -77,7 +77,7 @@ const SalesIntelligence: React.FC = () => {
             Bugüne Kadar: {tonnageForecast.current.toFixed(1)} {tonnageForecast.unit}
           </p>
           <div className="absolute -bottom-1 -right-1 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Target size={80} />
+            <TargetIcon className="w-20 h-20" />
           </div>
         </div>
 
@@ -85,7 +85,7 @@ const SalesIntelligence: React.FC = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm overflow-hidden relative group">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
-              <ArrowRight size={20} />
+              <ArrowRightIcon className="w-5 h-5" />
             </div>
           </div>
           <h3 className="text-slate-500 text-sm font-medium mb-1">Teklif Dönüşüm (Son 3 Ay)</h3>
@@ -94,7 +94,7 @@ const SalesIntelligence: React.FC = () => {
           </div>
           <p className="text-xs text-slate-400 mt-2">Başarılı Satış Oranı</p>
           <div className="absolute -bottom-1 -right-1 opacity-5 group-hover:opacity-10 transition-opacity">
-            <TrendingUp size={80} />
+            <TrendingUpIcon className="w-20 h-20" />
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@ const SalesIntelligence: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Lightbulb className="text-amber-500" size={20} />
+              <LightbulbIcon className="text-amber-500 w-5 h-5" />
               Yapay Zeka Brifingi
             </h2>
           </div>
@@ -124,9 +124,9 @@ const SalesIntelligence: React.FC = () => {
                     className={`mt-1 ${insight.type === 'risk' ? 'text-rose-600' : 'text-indigo-600'}`}
                   >
                     {insight.type === 'risk' ? (
-                      <AlertTriangle size={20} />
+                      <AlertTriangleIcon className="w-5 h-5" />
                     ) : (
-                      <Lightbulb size={20} />
+                      <LightbulbIcon className="w-5 h-5" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -150,7 +150,7 @@ const SalesIntelligence: React.FC = () => {
                         }`}
                       >
                         {insight.actionLabel}
-                        <ArrowRight size={14} />
+                        <ArrowRightIcon className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -168,7 +168,7 @@ const SalesIntelligence: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Users className="text-rose-500" size={20} />
+              <UsersIcon className="text-rose-500 w-5 h-5" />
               Kayıp Riski Olan Müşteriler
             </h2>
           </div>
