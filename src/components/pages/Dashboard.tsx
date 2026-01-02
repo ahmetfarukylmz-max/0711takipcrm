@@ -17,6 +17,7 @@ import OpenOrdersModal from '../dashboard/OpenOrdersModal';
 import PendingQuotesModal from '../dashboard/PendingQuotesModal';
 import DailyOperationsTimeline from '../dashboard/DailyOperationsTimeline';
 import OperationalTabbedContent from '../dashboard/OperationalTabbedContent';
+import SalesIntelligence from '../dashboard/SalesIntelligence';
 import Modal from '../common/Modal';
 import SkeletonStat from '../common/SkeletonStat';
 import SkeletonList from '../common/SkeletonList';
@@ -324,15 +325,19 @@ const Dashboard = memo<DashboardProps>(
           </div>
         </div>
 
-        <CriticalAlerts
-          customers={customers}
-          orders={orders}
-          meetings={gorusmeler}
-          quotes={teklifler}
-          shipments={shipments}
-          setActivePage={setActivePage}
-          onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
-        />
+        <SalesIntelligence />
+
+        <div className="mt-8">
+          <CriticalAlerts
+            customers={customers}
+            orders={orders}
+            meetings={gorusmeler}
+            quotes={teklifler}
+            shipments={shipments}
+            setActivePage={setActivePage}
+            onShowInactiveCustomers={() => setIsInactiveCustomersModalOpen(true)}
+          />
+        </div>
 
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 mt-8">
