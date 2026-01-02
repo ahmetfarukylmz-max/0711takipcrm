@@ -30,16 +30,8 @@ const SalesIntelligence: React.FC = () => {
     return calculateIntelligence(orders, quotes, customers, meetings, products);
   }, [orders, quotes, customers, meetings, products]);
 
-  const {
-    monthlyForecast,
-    tonnageForecast,
-    riskyCustomers,
-    insights,
-    conversionRate,
-    segments,
-    recommendations,
-    hotHours,
-  } = data;
+  const { monthlyForecast, tonnageForecast, riskyCustomers, insights, conversionRate, segments } =
+    data;
 
   // Simulator Calculations
   const simulatedForecast = useMemo(() => {
@@ -145,24 +137,29 @@ const SalesIntelligence: React.FC = () => {
               <p className="text-xs text-slate-400 mt-2">
                 Mevcut: {formatCurrency(monthlyForecast.currentTotal)}
               </p>
+              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
+                <ChartBarIcon className="w-20 h-20" />
+              </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
-                  <ClockIcon className="w-5 h-5" />
+                  <TrendingUpIcon className="w-5 h-5" />
                 </div>
               </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Altın Saatler</h3>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-slate-800 dark:text-white">
-                  {hotHours.day}
-                </span>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                  {hotHours.hour}
+              <h3 className="text-slate-500 text-sm font-medium mb-1">Tahmini Tonaj</h3>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-slate-800 dark:text-white">
+                  {tonnageForecast.projected.toFixed(1)} {tonnageForecast.unit}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-2">En yüksek sipariş yoğunluğu</p>
+              <p className="text-xs text-slate-400 mt-2">
+                Bugüne Kadar: {tonnageForecast.current.toFixed(1)} {tonnageForecast.unit}
+              </p>
+              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
+                <TargetIcon className="w-20 h-20" />
+              </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
@@ -178,10 +175,13 @@ const SalesIntelligence: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-2">Tekliflerin siparişe dönme oranı</p>
+              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
+                <TrendingUpIcon className="w-20 h-20" />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Insights List */}
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -250,53 +250,6 @@ const SalesIntelligence: React.FC = () => {
                 ) : (
                   <div className="text-center p-8 text-gray-400 border border-dashed rounded-xl">
                     Şu an için kritik bir uyarı yok.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Recommendations */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <TargetIcon className="text-blue-500 w-5 h-5" />
-                Ürün Tavsiyeleri (Cross-Sell)
-              </h2>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm divide-y divide-slate-50 dark:divide-gray-700">
-                {recommendations.length > 0 ? (
-                  recommendations.map((rec, i) => (
-                    <div
-                      key={i}
-                      className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-slate-800 dark:text-white text-sm">
-                            {rec.customerName}
-                          </h4>
-                          <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">
-                            %{rec.confidenceScore} Eşleşme
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                          👉 <span className="font-medium text-blue-600">{rec.productName}</span>{' '}
-                          önerilebilir.
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{rec.reason}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleCreateQuote(rec.customerId, rec.productId)}
-                          className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
-                          title="Teklif Hazırla"
-                        >
-                          <DocumentTextIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-sm italic">
-                    Yeterli veri oluştuğunda burada ürün önerileri çıkacak.
                   </div>
                 )}
               </div>
