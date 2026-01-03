@@ -1,4 +1,4 @@
-import { Order, Quote, Customer, Meeting, OrderItem, Product } from '../types';
+import { Order, Quote, Customer, Meeting, Product, Payment } from '../types';
 import {
   differenceInDays,
   parseISO,
@@ -6,53 +6,54 @@ import {
   endOfMonth,
   isWithinInterval,
   subMonths,
+  addDays,
+  format,
 } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
-export interface SalesInsight {
-  type: 'risk' | 'opportunity' | 'performance' | 'info';
+export interface SmartAction {
+  id: string;
+  type: 'financial' | 'sales' | 'relationship' | 'stock';
   title: string;
   message: string;
-  actionLabel?: string;
+  priority: 'high' | 'medium' | 'low';
+  customerId?: string;
+  customerName?: string;
+  actionLabel: string;
   actionPath?: string;
-  priority: 'low' | 'medium' | 'high';
-  relatedCustomerId?: string;
-  relatedProductId?: string;
+  score?: number; // Sorting score
 }
 
-export interface CustomerSegment {
-  id: string;
-  name: string;
-  segment: 'Şampiyon' | 'Sadık' | 'Potansiyel' | 'Riskli' | 'Kaybedilmiş' | 'Yeni';
-  score: number; // RFM Score (0-100)
+export interface CustomerHealthProfile {
+  customerId: string;
+  customerName: string;
+  segment: string;
+
+  // Financial
+  totalDebt: number;
+  avgPaymentDelay: number; // days
+  lastPaymentDate?: string;
+  financialRiskScore: number; // 0-100 (100 = High Risk)
+
+  // Engagement
+  lastContactDate?: string;
+  contactFrequency: number; // days between contacts
+  engagementScore: number; // 0-100 (100 = Highly Engaged)
+
+  // Consumption
   lastOrderDate?: string;
-  totalSpent: number;
+  orderFrequency: number; // days between orders
+  predictedNextOrderDate?: string;
 }
 
 export interface IntelligenceData {
+  dailyActions: SmartAction[];
+  customerProfiles: CustomerHealthProfile[];
   monthlyForecast: {
-    pessimistic: number;
     realistic: number;
     optimistic: number;
     currentTotal: number;
-    targetTotal?: number;
-    trend: 'up' | 'down' | 'stable';
-    growthRate: number;
   };
-  tonnageForecast: {
-    current: number;
-    projected: number;
-    unit: string;
-  };
-  riskyCustomers: Array<{
-    customerId: string;
-    customerName: string;
-    riskScore: number;
-    reason: string;
-    lastOrderDays: number;
-  }>;
-  insights: SalesInsight[];
-  conversionRate: number;
-  segments: CustomerSegment[];
 }
 
 export const calculateIntelligence = (
@@ -60,219 +61,229 @@ export const calculateIntelligence = (
   quotes: Quote[],
   customers: Customer[],
   meetings: Meeting[],
-  products: Product[] = []
+  products: Product[],
+  payments: Payment[]
 ): IntelligenceData => {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
-  // --- 1. TEMEL METRİKLER ---
-  const currentMonthOrders = orders.filter(
-    (o) =>
-      !o.isDeleted &&
-      o.status !== 'İptal Edildi' &&
-      isWithinInterval(parseISO(o.order_date), { start: monthStart, end: monthEnd })
+  const actions: SmartAction[] = [];
+  const profiles: CustomerHealthProfile[] = [];
+
+  // --- 1. MÜŞTERİ PROFİL ANALİZİ ---
+  customers
+    .filter((c) => !c.isDeleted)
+    .forEach((customer) => {
+      // A. Finansal Analiz
+      const customerOrders = orders.filter(
+        (o) => o.customerId === customer.id && !o.isDeleted && o.status !== 'İptal Edildi'
+      );
+      const customerPayments = payments.filter(
+        (p) => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi'
+      );
+
+      const totalInvoiced = customerOrders.reduce((sum, o) => sum + o.total_amount, 0);
+      const totalPaid = customerPayments.reduce((sum, p) => sum + p.amount, 0);
+      const currentDebt = totalInvoiced - totalPaid;
+
+      const lastPayment = customerPayments.sort(
+        (a, b) =>
+          parseISO(b.paidDate || b.createdAt).getTime() -
+          parseISO(a.paidDate || a.createdAt).getTime()
+      )[0];
+      const daysSinceLastPayment = lastPayment
+        ? differenceInDays(now, parseISO(lastPayment.paidDate || lastPayment.createdAt))
+        : 999;
+
+      // B. İletişim Analizi
+      const customerMeetings = meetings.filter((m) => m.customerId === customer.id && !m.isDeleted);
+      const lastMeeting = customerMeetings.sort(
+        (a, b) => parseISO(b.meeting_date).getTime() - parseISO(a.meeting_date).getTime()
+      )[0];
+      const daysSinceLastContact = lastMeeting
+        ? differenceInDays(now, parseISO(lastMeeting.meeting_date))
+        : 999;
+
+      // C. Sipariş Frekansı
+      const sortedOrders = customerOrders.sort(
+        (a, b) => parseISO(b.order_date).getTime() - parseISO(a.order_date).getTime()
+      );
+      const lastOrder = sortedOrders[0];
+      const daysSinceLastOrder = lastOrder
+        ? differenceInDays(now, parseISO(lastOrder.order_date))
+        : 999;
+
+      let avgOrderInterval = 30;
+      if (customerOrders.length >= 2) {
+        const firstOrder = sortedOrders[sortedOrders.length - 1];
+        const totalDays = differenceInDays(
+          parseISO(lastOrder.order_date),
+          parseISO(firstOrder.order_date)
+        );
+        avgOrderInterval = Math.round(totalDays / (customerOrders.length - 1));
+      }
+
+      // --- SKORLAMA ---
+      // Finansal Risk Skoru (Yüksek Borç & Gecikme = Yüksek Risk)
+      let finRisk = 0;
+      if (currentDebt > 50000) finRisk += 30;
+      if (currentDebt > 200000) finRisk += 20;
+      if (daysSinceLastPayment > 60 && currentDebt > 0) finRisk += 40;
+      else if (daysSinceLastPayment > 45 && currentDebt > 0) finRisk += 20;
+
+      // İlişki Skoru (Sık İletişim = Yüksek Skor)
+      let engScore = 0;
+      if (daysSinceLastContact < 15) engScore = 100;
+      else if (daysSinceLastContact < 30) engScore = 70;
+      else if (daysSinceLastContact < 60) engScore = 40;
+      else engScore = 10;
+
+      const profile: CustomerHealthProfile = {
+        customerId: customer.id,
+        customerName: customer.name,
+        segment: 'Standart', // Basitleştirildi
+        totalDebt: currentDebt,
+        avgPaymentDelay: 0, // TODO: Vade tarihi implementasyonu sonrası
+        lastPaymentDate: lastPayment?.paidDate,
+        financialRiskScore: finRisk,
+        lastContactDate: lastMeeting?.meeting_date,
+        contactFrequency: 30, // Basitleştirildi
+        engagementScore: engScore,
+        lastOrderDate: lastOrder?.order_date,
+        orderFrequency: avgOrderInterval,
+        predictedNextOrderDate: lastOrder
+          ? format(addDays(parseISO(lastOrder.order_date), avgOrderInterval), 'yyyy-MM-dd')
+          : undefined,
+      };
+
+      profiles.push(profile);
+
+      // --- AKSİYON ÜRETİMİ ---
+
+      // 1. Tahsilat Uyarısı
+      if (finRisk >= 70) {
+        actions.push({
+          id: `fin-${customer.id}`,
+          type: 'financial',
+          title: 'Kritik Tahsilat Riski',
+          message: `${customer.name} bakiyesi ${currentDebt.toLocaleString('tr-TR')} TL'ye ulaştı ve uzun süredir ödeme yok.`,
+          priority: 'high',
+          actionLabel: 'Tahsilat İste',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 90,
+        });
+      } else if (currentDebt > 0 && daysSinceLastPayment > 45) {
+        actions.push({
+          id: `fin-med-${customer.id}`,
+          type: 'financial',
+          title: 'Ödeme Hatırlatması',
+          message: `${customer.name} bakiyesi açıkta bekliyor. Son ödeme üzerinden ${daysSinceLastPayment} gün geçti.`,
+          priority: 'medium',
+          actionLabel: 'Hatırlat',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 60,
+        });
+      }
+
+      // 2. İhmal Uyarısı (Relationship)
+      // Eğer müşterinin borcu yoksa ve düzenli alıyorsa ama aranmıyorsa
+      if (customerOrders.length > 3 && daysSinceLastContact > 45 && finRisk < 50) {
+        actions.push({
+          id: `rel-${customer.id}`,
+          type: 'relationship',
+          title: 'Müşteri İhmal Ediliyor',
+          message: `${customer.name} ile en son ${daysSinceLastContact} gün önce görüşüldü. Rakibe kaptırma riski var.`,
+          priority: 'medium',
+          actionLabel: 'Arama Planla',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 70,
+        });
+      }
+
+      // 3. Sipariş Zamanı (Stock Prediction)
+      if (
+        lastOrder &&
+        daysSinceLastOrder > avgOrderInterval * 1.1 &&
+        daysSinceLastOrder < avgOrderInterval * 1.5
+      ) {
+        actions.push({
+          id: `sales-${customer.id}`,
+          type: 'sales',
+          title: 'Sipariş Zamanı Geldi',
+          message: `${customer.name} normal döngüsüne göre (${avgOrderInterval} gün) yeniden sipariş vermeliydi.`,
+          priority: 'medium',
+          actionLabel: 'Teklif Ver',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 50,
+        });
+      }
+    });
+
+  // --- 4. STOK UYARILARI ---
+  // En çok satan ürünlerin stok kontrolü
+  const productSales: Record<string, number> = {};
+  orders.forEach((o) =>
+    o.items.forEach(
+      (i) => (productSales[i.productId] = (productSales[i.productId] || 0) + i.quantity)
+    )
   );
 
-  const currentTotal = currentMonthOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+  products.forEach((product) => {
+    if (productSales[product.id] > 0) {
+      // Sadece satılan ürünler
+      // Kritik stok: Son 30 günlük satışın %20'si kalmışsa veya sabit 50
+      const criticalLevel = 50;
+      if ((product.stockQuantity || 0) <= criticalLevel) {
+        actions.push({
+          id: `stock-${product.id}`,
+          type: 'stock',
+          title: 'Kritik Stok Seviyesi',
+          message: `${product.name} ürününden sadece ${product.stockQuantity} adet kaldı. Acil sipariş geçilmeli.`,
+          priority: 'high',
+          actionLabel: 'Satınalma Talebi',
+          actionPath: 'Depo',
+          score: 85,
+        });
+      }
+    }
+  });
 
-  const calculateTonnage = (items: OrderItem[]) => {
-    return items.reduce((sum, item) => {
-      const unit = item.unit?.toLowerCase() || '';
-      if (unit.includes('kg')) return sum + item.quantity / 1000;
-      if (unit.includes('ton')) return sum + item.quantity;
-      return sum;
-    }, 0);
-  };
-
-  const currentTonnage = currentMonthOrders.reduce((sum, o) => sum + calculateTonnage(o.items), 0);
-  const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
-  const elapsedDays = differenceInDays(now, monthStart) + 1;
-  const runRate = currentTotal / elapsedDays;
-  const projectedTotal = runRate * daysInMonth;
-
-  // Geçen ay kıyaslama
-  const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = endOfMonth(subMonths(now, 1));
-  const lastMonthTotal = orders
+  // --- 5. TAHMİNLEME (FORECAST) ---
+  const currentTotal = orders
     .filter(
       (o) =>
         !o.isDeleted &&
         o.status !== 'İptal Edildi' &&
-        isWithinInterval(parseISO(o.order_date), { start: lastMonthStart, end: lastMonthEnd })
+        isWithinInterval(parseISO(o.order_date), { start: monthStart, end: monthEnd })
     )
-    .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    .reduce((sum, o) => sum + o.total_amount, 0);
 
-  const growthRate =
-    lastMonthTotal > 0 ? ((projectedTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+  // Bekleyen "Sıcak" Teklifler
+  const pendingHotQuotes = quotes
+    .filter(
+      (q) =>
+        !q.isDeleted &&
+        q.status === 'Hazırlandı' &&
+        differenceInDays(now, parseISO(q.teklif_tarihi)) < 15
+    )
+    .reduce((sum, q) => sum + q.total_amount, 0);
 
-  const last3Months = subMonths(now, 3);
-  const recentQuotes = quotes.filter(
-    (q) => !q.isDeleted && parseISO(q.teklif_tarihi) >= last3Months
-  );
-  const convertedQuotes = recentQuotes.filter((q) => q.status === 'Onaylandı' || q.orderId);
-  const conversionRate =
-    recentQuotes.length > 0 ? (convertedQuotes.length / recentQuotes.length) * 100 : 0;
-
-  // --- 2. MÜŞTERİ SEGMENTASYONU (RFM Analizi Basitleştirilmiş) ---
-  const segments: CustomerSegment[] = [];
-  const riskyCustomers: IntelligenceData['riskyCustomers'] = [];
-
-  customers
-    .filter((c) => !c.isDeleted)
-    .forEach((customer) => {
-      const customerOrders = orders
-        .filter((o) => !o.isDeleted && o.customerId === customer.id)
-        .sort((a, b) => parseISO(b.order_date).getTime() - parseISO(a.order_date).getTime());
-
-      const totalSpent = customerOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-      const lastOrderDate = customerOrders.length > 0 ? customerOrders[0].order_date : null;
-      const orderCount = customerOrders.length;
-
-      let segment: CustomerSegment['segment'] = 'Yeni';
-      let score = 50;
-
-      if (orderCount === 0) {
-        segment = 'Potansiyel';
-        score = 20;
-      } else if (lastOrderDate) {
-        const daysSinceLastOrder = differenceInDays(now, parseISO(lastOrderDate));
-
-        // CHURN (Kayıp) Tespiti
-        if (customerOrders.length >= 2) {
-          let totalInterval = 0;
-          for (let i = 0; i < customerOrders.length - 1; i++) {
-            totalInterval += differenceInDays(
-              parseISO(customerOrders[i].order_date),
-              parseISO(customerOrders[i + 1].order_date)
-            );
-          }
-          const avgInterval = totalInterval / (customerOrders.length - 1);
-
-          // Hassaslaştırılmış Risk Kriteri: Ortalamayı %50 aşınca ve en az 1 hafta sessiz kalınca uyar
-          if (daysSinceLastOrder > avgInterval * 1.5 && daysSinceLastOrder > 7) {
-            segment = 'Riskli';
-            score = 30;
-            riskyCustomers.push({
-              customerId: customer.id,
-              customerName: customer.name,
-              riskScore: Math.min(Math.round((daysSinceLastOrder / avgInterval) * 50), 100), // Skor hesaplaması güncellendi
-              reason: `Sipariş aralığı (${Math.round(avgInterval)} gün) aşıldı.`,
-              lastOrderDays: daysSinceLastOrder,
-            });
-          } else if (daysSinceLastOrder > 180) {
-            segment = 'Kaybedilmiş';
-            score = 10;
-          }
-        }
-        if (segment === 'Yeni' || segment === 'Potansiyel') {
-          if (totalSpent > 100000 && daysSinceLastOrder < 30) {
-            segment = 'Şampiyon';
-            score = 95;
-          } else if (orderCount > 5 && daysSinceLastOrder < 60) {
-            segment = 'Sadık';
-            score = 80;
-          }
-        }
-      }
-
-      segments.push({
-        id: customer.id,
-        name: customer.name,
-        segment,
-        score,
-        lastOrderDate: lastOrderDate || undefined,
-        totalSpent,
-      });
-    });
-
-  // --- 3. INSIGHTS OLUŞTURMA ---
-  const insights: SalesInsight[] = [];
-
-  if (riskyCustomers.length > 0) {
-    // Show top 3 risky customers individually
-    const topRisks = riskyCustomers.sort((a, b) => b.riskScore - a.riskScore).slice(0, 3);
-
-    topRisks.forEach((risk) => {
-      insights.push({
-        type: 'risk',
-        title: 'Müşteri Kayıp Riski',
-        message: `${risk.customerName} normal sipariş döngüsünün dışına çıktı (${risk.lastOrderDays} gündür sessiz).`,
-        actionLabel: 'Analizi İncele',
-        priority: 'high',
-        relatedCustomerId: risk.customerId,
-      });
-    });
-  }
-
-  // Pending Quotes
-  const pendingHighValueQuotes = quotes.filter(
-    (q) =>
-      q.status === 'Hazırlandı' &&
-      q.total_amount > (currentTotal / 10 || 50000) &&
-      differenceInDays(now, parseISO(q.teklif_tarihi)) > 3
-  );
-
-  if (pendingHighValueQuotes.length > 0) {
-    insights.push({
-      type: 'opportunity',
-      title: 'Unutulan Fırsatlar',
-      message: `${pendingHighValueQuotes.length} adet yüksek tutarlı teklif 3 günden fazladır bekliyor.`,
-      actionLabel: 'Teklifleri İncele',
-      priority: 'medium',
-      actionPath: 'Teklifler',
-    });
-  }
-
-  // --- 4. STOK UYARILARI (Stock Alerts) ---
-  // En çok satılan ürünleri bul
-  const productSales: Record<string, number> = {};
-  orders.forEach((order) => {
-    order.items.forEach((item) => {
-      productSales[item.productId] = (productSales[item.productId] || 0) + item.quantity;
-    });
-  });
-
-  const topSellingProducts = Object.entries(productSales)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([id]) => products.find((p) => p.id === id))
-    .filter(Boolean) as Product[];
-
-  // Çok satan ama stoğu azalan ürünler
-  topSellingProducts.forEach((product) => {
-    // Kritik stok seviyesi: 50 (veya ürün bazlı dinamik olabilir)
-    if (product.stockQuantity < 50) {
-      insights.push({
-        type: 'risk',
-        title: 'Kritik Stok Uyarısı',
-        message: `${product.name} çok satıyor ancak stokta sadece ${product.stockQuantity} adet kaldı.`,
-        actionLabel: 'Stok Girişi Yap',
-        priority: 'high',
-        // actionPath: 'Depo' // İleride eklenebilir
-      });
-    }
-  });
+  const daysElapsed = differenceInDays(now, monthStart) + 1;
+  const daysTotal = differenceInDays(monthEnd, monthStart) + 1;
+  const runRate = currentTotal / daysElapsed;
 
   return {
+    dailyActions: actions.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10), // En önemli 10 aksiyon
+    customerProfiles: profiles,
     monthlyForecast: {
-      pessimistic: projectedTotal * 0.9,
-      realistic: projectedTotal,
-      optimistic:
-        runRate * daysInMonth +
-        pendingHighValueQuotes.reduce((sum, q) => sum + q.total_amount, 0) * (conversionRate / 100),
       currentTotal,
-      trend: growthRate > 0 ? 'up' : growthRate < 0 ? 'down' : 'stable',
-      growthRate,
+      realistic: runRate * daysTotal + pendingHotQuotes * 0.3, // %30 kapanma oranı tahmini
+      optimistic: runRate * daysTotal + pendingHotQuotes * 0.6, // %60 kapanma oranı tahmini
     },
-    tonnageForecast: {
-      current: currentTonnage,
-      projected: (currentTonnage / elapsedDays) * daysInMonth,
-      unit: 'Ton',
-    },
-    riskyCustomers: riskyCustomers.slice(0, 5),
-    insights,
-    conversionRate,
-    segments,
   };
 };

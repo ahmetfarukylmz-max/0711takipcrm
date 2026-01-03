@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import useStore from '../../store/useStore';
-import { calculateIntelligence } from '../../services/intelligenceService';
+import { calculateIntelligence, SmartAction } from '../../services/intelligenceService';
 import CustomerRiskAnalysisModal from './CustomerRiskAnalysisModal';
 import {
   TrendingUpIcon,
@@ -13,52 +13,56 @@ import {
   UsersIcon,
   WhatsAppIcon,
   DocumentTextIcon,
+  PhoneIcon,
   ClockIcon,
+  CheckCircleIcon,
+  CurrencyDollarIcon,
+  ShieldIcon,
+  BriefcaseIcon,
+  ShoppingCartIcon,
 } from '../../components/icons';
-import { formatCurrency, formatPhoneNumberForWhatsApp } from '../../utils/formatters';
+import { formatCurrency, formatPhoneNumberForWhatsApp, formatDate } from '../../utils/formatters';
 import { toast } from 'react-hot-toast';
 
 const SalesIntelligence: React.FC = () => {
   const { collections, setActivePage, setPrefilledQuote } = useStore();
-  const { orders, teklifler: quotes, customers, gorusmeler: meetings, products } = collections;
-  const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'simulator'>('overview');
-  const [selectedRiskCustomerId, setSelectedRiskCustomerId] = useState<string | null>(null);
+  // payments koleksiyonunu ekledik
+  const {
+    orders,
+    teklifler: quotes,
+    customers,
+    gorusmeler: meetings,
+    products,
+    payments,
+  } = collections;
 
-  // Simulator State
-  const [simConversionRate, setSimConversionRate] = useState(0); // +% increase
-  const [simOrderValue, setSimOrderValue] = useState(0); // +% increase
+  const [activeTab, setActiveTab] = useState<'actions' | 'customers' | 'forecast'>('actions');
+  const [selectedRiskCustomerId, setSelectedRiskCustomerId] = useState<string | null>(null);
+  const [actionFilter, setActionFilter] = useState<'all' | 'financial' | 'sales' | 'relationship'>(
+    'all'
+  );
 
   const data = useMemo(() => {
-    return calculateIntelligence(orders, quotes, customers, meetings, products);
-  }, [orders, quotes, customers, meetings, products]);
+    // payments parametresi eklendi
+    return calculateIntelligence(orders, quotes, customers, meetings, products, payments || []);
+  }, [orders, quotes, customers, meetings, products, payments]);
 
-  const { monthlyForecast, tonnageForecast, riskyCustomers, insights, conversionRate, segments } =
-    data;
+  const { dailyActions, customerProfiles, monthlyForecast } = data;
 
-  // Simulator Calculations
-  const simulatedForecast = useMemo(() => {
-    const baseTotal = monthlyForecast.realistic;
-    const conversionMultiplier = 1 + simConversionRate / 100;
-    const valueMultiplier = 1 + simOrderValue / 100;
-    return baseTotal * conversionMultiplier * valueMultiplier;
-  }, [monthlyForecast.realistic, simConversionRate, simOrderValue]);
+  const filteredActions = dailyActions.filter((action) => {
+    if (actionFilter === 'all') return true;
+    if (actionFilter === 'financial') return action.type === 'financial';
+    if (actionFilter === 'sales') return action.type === 'sales' || action.type === 'stock';
+    if (actionFilter === 'relationship') return action.type === 'relationship';
+    return true;
+  });
 
-  const handleCreateQuote = (customerId: string, productId?: string) => {
+  const handleCreateQuote = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     if (customer) {
       setPrefilledQuote({
         customerId: customer.id,
-        items: productId
-          ? [
-              {
-                productId,
-                productName: products.find((p) => p.id === productId)?.name,
-                quantity: 1,
-                unit_price: 0,
-                total: 0,
-              },
-            ]
-          : [],
+        items: [],
       });
       setActivePage('Teklifler');
       setSelectedRiskCustomerId(null);
@@ -81,14 +85,44 @@ const SalesIntelligence: React.FC = () => {
     }
   };
 
+  const getActionIcon = (type: SmartAction['type']) => {
+    switch (type) {
+      case 'financial':
+        return <CurrencyDollarIcon className="w-5 h-5 text-rose-600" />;
+      case 'sales':
+        return <ShoppingCartIcon className="w-5 h-5 text-blue-600" />;
+      case 'relationship':
+        return <UsersIcon className="w-5 h-5 text-purple-600" />;
+      case 'stock':
+        return <AlertTriangleIcon className="w-5 h-5 text-amber-600" />;
+      default:
+        return <LightbulbIcon className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  const getActionColor = (type: SmartAction['type']) => {
+    switch (type) {
+      case 'financial':
+        return 'bg-rose-50 border-rose-100 dark:bg-rose-900/10 dark:border-rose-800';
+      case 'sales':
+        return 'bg-blue-50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-800';
+      case 'relationship':
+        return 'bg-purple-50 border-purple-100 dark:bg-purple-900/10 dark:border-purple-800';
+      case 'stock':
+        return 'bg-amber-50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-800';
+      default:
+        return 'bg-gray-50 border-gray-100';
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* TABS */}
       <div className="flex space-x-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 w-fit">
         {[
-          { id: 'overview', label: 'Genel Bakış', icon: ChartBarIcon },
-          { id: 'customers', label: 'Müşteri Analizi', icon: UsersIcon },
-          { id: 'simulator', label: 'Hedef Simülatörü', icon: TargetIcon },
+          { id: 'actions', label: 'Günlük Aksiyon Planı', icon: CheckCircleIcon },
+          { id: 'customers', label: 'Müşteri Sağlık Matrisi', icon: ShieldIcon },
+          { id: 'forecast', label: 'Finansal Öngörü', icon: ChartBarIcon },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -109,399 +143,221 @@ const SalesIntelligence: React.FC = () => {
         ))}
       </div>
 
-      {/* --- TAB: OVERVIEW --- */}
-      {activeTab === 'overview' && (
-        <>
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                  <TargetIcon className="w-5 h-5" />
-                </div>
+      {/* --- TAB: ACTIONS --- */}
+      {activeTab === 'actions' && (
+        <div className="space-y-6">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {[
+              { id: 'all', label: 'Tümü' },
+              { id: 'financial', label: 'Finans & Risk' },
+              { id: 'sales', label: 'Satış & Stok' },
+              { id: 'relationship', label: 'İletişim' },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setActionFilter(filter.id as any)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  actionFilter === filter.id
+                    ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {filteredActions.length > 0 ? (
+              filteredActions.map((action) => (
                 <div
-                  className={`flex items-center gap-1 text-sm font-medium ${
-                    monthlyForecast.trend === 'up' ? 'text-emerald-600' : 'text-rose-600'
-                  }`}
+                  key={action.id}
+                  className={`p-5 rounded-2xl border flex gap-5 transition-all hover:shadow-md ${getActionColor(action.type)}`}
                 >
-                  {monthlyForecast.trend === 'up' ? (
-                    <TrendingUpIcon className="w-4 h-4" />
-                  ) : (
-                    <TrendingDownIcon className="w-4 h-4" />
-                  )}
-                  %{Math.abs(monthlyForecast.growthRate).toFixed(1)}
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Tahmini Ay Sonu Ciro</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-800 dark:text-white">
-                  {formatCurrency(monthlyForecast.realistic)}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                Mevcut: {formatCurrency(monthlyForecast.currentTotal)}
-              </p>
-              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
-                <ChartBarIcon className="w-20 h-20" />
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
-                  <TrendingUpIcon className="w-5 h-5" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Tahmini Tonaj</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-800 dark:text-white">
-                  {tonnageForecast.projected.toFixed(1)} {tonnageForecast.unit}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                Bugüne Kadar: {tonnageForecast.current.toFixed(1)} {tonnageForecast.unit}
-              </p>
-              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
-                <TargetIcon className="w-20 h-20" />
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
-                  <ArrowRightIcon className="w-5 h-5" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Dönüşüm Oranı</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-800 dark:text-white">
-                  %{conversionRate.toFixed(1)}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">Tekliflerin siparişe dönme oranı</p>
-              <div className="absolute -bottom-1 -right-1 opacity-5 transition-opacity">
-                <TrendingUpIcon className="w-20 h-20" />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            {/* Insights List */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <LightbulbIcon className="text-amber-500 w-5 h-5" />
-                Yapay Zeka Brifingi
-              </h2>
-              <div className="space-y-3">
-                {insights.length > 0 ? (
-                  insights.map((insight, index) => (
-                    <div
-                      key={index}
-                      className={`p-4 rounded-xl border flex gap-4 transition-all hover:shadow-md ${
-                        insight.type === 'risk'
-                          ? 'bg-rose-50 border-rose-100 dark:bg-rose-900/10 dark:border-rose-800'
-                          : 'bg-indigo-50 border-indigo-100 dark:bg-indigo-900/10 dark:border-indigo-800'
-                      }`}
-                    >
-                      <div
-                        className={`mt-1 ${insight.type === 'risk' ? 'text-rose-600' : 'text-indigo-600'}`}
-                      >
-                        {insight.type === 'risk' ? (
-                          <AlertTriangleIcon className="w-5 h-5" />
-                        ) : (
-                          <LightbulbIcon className="w-5 h-5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h4
-                          className={`font-semibold text-sm ${insight.type === 'risk' ? 'text-rose-900 dark:text-rose-100' : 'text-indigo-900 dark:text-indigo-100'}`}
-                        >
-                          {insight.title}
-                        </h4>
-                        <p
-                          className={`text-sm mt-1 ${insight.type === 'risk' ? 'text-rose-700 dark:text-rose-300' : 'text-indigo-700 dark:text-indigo-300'}`}
-                        >
-                          {insight.message}
-                        </p>
-                        <div className="flex gap-2 mt-3">
-                          {insight.actionLabel && (
-                            <button
-                              onClick={() => {
-                                if (insight.actionPath) setActivePage(insight.actionPath);
-
-                                if (
-                                  insight.actionLabel === 'Analizi İncele' &&
-                                  insight.relatedCustomerId
-                                ) {
-                                  setSelectedRiskCustomerId(insight.relatedCustomerId);
-                                }
-
-                                if (
-                                  insight.actionLabel === 'Hemen Ara' &&
-                                  insight.relatedCustomerId
-                                ) {
-                                  handleWhatsApp(insight.relatedCustomerId);
-                                }
-
-                                if (insight.actionLabel === 'Stok Girişi Yap') {
-                                  toast('Stok yönetimine yönlendiriliyor...');
-                                  setActivePage('Depo'); // veya ilgili sayfa
-                                }
-
-                                if (
-                                  insight.actionLabel === 'Teklif Hazırla' &&
-                                  insight.relatedCustomerId
-                                )
-                                  handleCreateQuote(
-                                    insight.relatedCustomerId,
-                                    insight.relatedProductId
-                                  );
-                              }}
-                              className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
-                                insight.type === 'risk'
-                                  ? 'text-rose-600 hover:text-rose-800'
-                                  : 'text-indigo-600 hover:text-indigo-800'
-                              }`}
-                            >
-                              {insight.actionLabel}
-                              <ArrowRightIcon className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center p-8 rounded-xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50">
-                    <div className="bg-white dark:bg-gray-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-slate-400">
-                      <LightbulbIcon className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">
-                      Analiz Tamamlandı
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Şu an için kritik bir risk veya kaçan fırsat tespit edilmedi. İşler yolunda
-                      görünüyor!
-                    </p>
+                  <div className="mt-1 p-2 bg-white/60 dark:bg-black/20 rounded-xl h-fit">
+                    {getActionIcon(action.type)}
                   </div>
-                )}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-bold text-slate-800 dark:text-white">{action.title}</h4>
+                      {action.priority === 'high' && (
+                        <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                          Acil
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm mt-1 text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {action.message}
+                    </p>
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() => {
+                          if (action.actionPath) setActivePage(action.actionPath);
+
+                          if (action.type === 'financial' && action.customerId) {
+                            handleWhatsApp(action.customerId);
+                          } else if (action.type === 'sales' && action.customerId) {
+                            handleCreateQuote(action.customerId);
+                          } else if (action.type === 'relationship' && action.customerId) {
+                            handleWhatsApp(action.customerId);
+                          }
+                        }}
+                        className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 shadow-sm"
+                      >
+                        {action.actionLabel}
+                        <ArrowRightIcon className="w-4 h-4" />
+                      </button>
+
+                      {action.customerId && (
+                        <button
+                          onClick={() => setSelectedRiskCustomerId(action.customerId!)}
+                          className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
+                        >
+                          Detaylı Analiz
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-slate-100 dark:border-gray-700">
+                <div className="bg-emerald-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
+                  <CheckCircleIcon className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Harika! Her Şey Yolunda
+                </h3>
+                <p className="text-slate-500 mt-2 max-w-md mx-auto">
+                  Şu an için acil müdahale gerektiren bir durum tespit edilmedi. Tüm
+                  müşterilerinizle iletişiminiz güncel ve finansal riskler kontrol altında.
+                </p>
               </div>
-            </div>
+            )}
           </div>
-        </>
+        </div>
       )}
 
-      {/* --- TAB: CUSTOMERS --- */}
+      {/* --- TAB: CUSTOMER HEALTH MATRIX --- */}
       {activeTab === 'customers' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Şampiyonlar', key: 'Şampiyon', color: 'bg-emerald-100 text-emerald-800' },
-              { label: 'Sadık', key: 'Sadık', color: 'bg-blue-100 text-blue-800' },
-              { label: 'Riskli', key: 'Riskli', color: 'bg-rose-100 text-rose-800' },
-              { label: 'Potansiyel', key: 'Potansiyel', color: 'bg-amber-100 text-amber-800' },
-            ].map((seg) => {
-              const count = segments.filter((s) => s.segment === seg.key).length;
-              return (
-                <div
-                  key={seg.key}
-                  className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm"
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium text-slate-600 dark:text-gray-300">{seg.label}</h3>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${seg.color}`}>
-                      {count}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm overflow-hidden">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 dark:bg-gray-700 text-slate-500 dark:text-gray-300 font-medium">
-                <tr>
-                  <th className="px-6 py-4">Müşteri</th>
-                  <th className="px-6 py-4">Segment</th>
-                  <th className="px-6 py-4">Skor</th>
-                  <th className="px-6 py-4">Toplam Harcama</th>
-                  <th className="px-6 py-4 text-right">Aksiyon</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                {segments
-                  .sort((a, b) => b.score - a.score)
-                  .map((customer) => (
-                    <tr
-                      key={customer.id}
-                      className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                        {customer.name}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            customer.segment === 'Şampiyon'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : customer.segment === 'Riskli'
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {customer.segment}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-blue-500"
-                              style={{ width: `${customer.score}%` }}
-                            />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 dark:bg-gray-700 text-slate-500 dark:text-gray-300 font-medium">
+                  <tr>
+                    <th className="px-6 py-4">Müşteri</th>
+                    <th className="px-6 py-4">Finansal Risk</th>
+                    <th className="px-6 py-4">İlişki Durumu</th>
+                    <th className="px-6 py-4">Son Sipariş</th>
+                    <th className="px-6 py-4">Tahmini Sipariş</th>
+                    <th className="px-6 py-4 text-right">Bakiye</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
+                  {customerProfiles
+                    .sort((a, b) => b.financialRiskScore - a.financialRiskScore)
+                    .map((profile) => (
+                      <tr
+                        key={profile.customerId}
+                        className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                          {profile.customerName}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${profile.financialRiskScore > 50 ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${profile.financialRiskScore}%` }}
+                              />
+                            </div>
+                            <span
+                              className={`text-xs font-bold ${profile.financialRiskScore > 50 ? 'text-rose-600' : 'text-slate-500'}`}
+                            >
+                              {profile.financialRiskScore}/100
+                            </span>
                           </div>
-                          <span className="text-xs text-slate-500">{customer.score}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-gray-300">
-                        {formatCurrency(customer.totalSpent)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleWhatsApp(customer.id)}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="WhatsApp"
-                          >
-                            <WhatsAppIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleCreateQuote(customer.id)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Teklif Hazırla"
-                          >
-                            <DocumentTextIcon className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-purple-500"
+                                style={{ width: `${profile.engagementScore}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-slate-500">
+                              {profile.engagementScore}/100
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 dark:text-gray-300">
+                          {profile.lastOrderDate ? formatDate(profile.lastOrderDate) : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 dark:text-gray-300">
+                          {profile.predictedNextOrderDate ? (
+                            <div className="flex items-center gap-1">
+                              <ClockIcon className="w-3.5 h-3.5 text-slate-400" />
+                              {formatDate(profile.predictedNextOrderDate)}
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">
+                          {formatCurrency(profile.totalDebt)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* --- TAB: SIMULATOR --- */}
-      {activeTab === 'simulator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-8 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm h-fit">
-            <div>
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4">Senaryo Ayarları</h3>
-              <p className="text-sm text-slate-500 mb-6">
-                Aşağıdaki parametreleri değiştirerek ay sonu cironuzun nasıl etkileneceğini simüle
-                edin.
-              </p>
-
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-gray-300">
-                      Dönüşüm Oranı Artışı
-                    </label>
-                    <span className="text-sm font-bold text-blue-600">+{simConversionRate}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    step="5"
-                    value={simConversionRate}
-                    onChange={(e) => setSimConversionRate(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Tekliflerin onaya dönüşme hızını artırırsanız.
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-gray-300">
-                      Ortalama Sipariş Tutarı
-                    </label>
-                    <span className="text-sm font-bold text-green-600">+{simOrderValue}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    step="5"
-                    value={simOrderValue}
-                    onChange={(e) => setSimOrderValue(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">
-                    Müşterileri daha pahalı ürünlere yönlendirirseniz.
-                  </p>
-                </div>
-              </div>
+      {/* --- TAB: FORECAST --- */}
+      {activeTab === 'forecast' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-slate-500 font-medium text-sm mb-2">Mevcut Ciro</h3>
+            <div className="text-3xl font-bold text-slate-900 dark:text-white">
+              {formatCurrency(monthlyForecast.currentTotal)}
             </div>
-
-            <div className="pt-6 border-t border-slate-100 dark:border-gray-700">
-              <button
-                onClick={() => {
-                  setSimConversionRate(0);
-                  setSimOrderValue(0);
-                }}
-                className="w-full py-2 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Sıfırla
-              </button>
+            <div className="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
+              <div className="h-full bg-slate-400" style={{ width: '100%' }}></div>
             </div>
           </div>
 
-          <div className="lg:col-span-2 flex flex-col justify-center items-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-10 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-10 opacity-10">
-              <TargetIcon className="w-64 h-64" />
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <TargetIcon className="w-24 h-24" />
             </div>
-
-            <h3 className="text-xl font-medium opacity-90 mb-2">Simüle Edilmiş Ay Sonu Ciro</h3>
-            <div className="text-5xl md:text-6xl font-black tracking-tight mb-4">
-              {formatCurrency(simulatedForecast)}
+            <h3 className="text-indigo-600 dark:text-indigo-400 font-bold text-sm mb-2">
+              Gerçekçi Ay Sonu Tahmini
+            </h3>
+            <div className="text-3xl font-bold text-indigo-900 dark:text-white">
+              {formatCurrency(monthlyForecast.realistic)}
             </div>
-
-            <div className="flex gap-4 mt-4">
-              <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-2xl">
-                <span className="block text-xs opacity-75 uppercase tracking-wider">Mevcut</span>
-                <span className="text-xl font-bold">
-                  {formatCurrency(monthlyForecast.realistic)}
-                </span>
-              </div>
-              <div className="bg-emerald-500/30 backdrop-blur-sm px-6 py-3 rounded-2xl border border-emerald-400/30">
-                <span className="block text-xs text-emerald-100 uppercase tracking-wider">
-                  Fark (Kazanç)
-                </span>
-                <span className="text-xl font-bold text-emerald-50">
-                  +{formatCurrency(simulatedForecast - monthlyForecast.realistic)}
-                </span>
-              </div>
-            </div>
-
-            <p className="mt-8 text-center text-indigo-100 max-w-lg text-sm leading-relaxed">
-              Bu hedefe ulaşmak için yaklaşık{' '}
-              <span className="font-bold text-white">
-                {Math.ceil(
-                  (simulatedForecast - monthlyForecast.realistic) /
-                    (monthlyForecast.currentTotal / 20)
-                )}
-              </span>{' '}
-              ekstra satış yapmanız gerekiyor.
+            <p className="text-xs text-indigo-500 mt-2">
+              Mevcut hız + Bekleyen sıcak tekliflerin %30'u
             </p>
           </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-emerald-600 dark:text-emerald-400 font-bold text-sm mb-2">
+              İyimser Hedef
+            </h3>
+            <div className="text-3xl font-bold text-emerald-900 dark:text-white">
+              {formatCurrency(monthlyForecast.optimistic)}
+            </div>
+            <p className="text-xs text-emerald-500 mt-2">Tüm potansiyel fırsatlar zorlanırsa</p>
+          </div>
         </div>
       )}
+
       {selectedRiskCustomerId && (
         <CustomerRiskAnalysisModal
           isOpen={true}
