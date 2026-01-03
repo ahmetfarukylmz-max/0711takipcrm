@@ -102,23 +102,27 @@ export const calculateIntelligence = (
       );
       const currentDebt = totalInvoiced - totalPaid;
 
-      const lastPayment = customerPayments.sort(
-        (a, b) =>
-          parseISO(b.paidDate || b.createdAt).getTime() -
-          parseISO(a.paidDate || a.createdAt).getTime()
-      )[0];
-      const daysSinceLastPayment = lastPayment
-        ? differenceInDays(now, parseISO(lastPayment.paidDate || lastPayment.createdAt))
-        : 999;
+      const lastPayment = customerPayments.sort((a, b) => {
+        const dateA = a.paidDate || a.createdAt;
+        const dateB = b.paidDate || b.createdAt;
+        return (dateB ? parseISO(dateB).getTime() : 0) - (dateA ? parseISO(dateA).getTime() : 0);
+      })[0];
+      const daysSinceLastPayment =
+        lastPayment && (lastPayment.paidDate || lastPayment.createdAt)
+          ? differenceInDays(now, parseISO(lastPayment.paidDate || lastPayment.createdAt))
+          : 999;
 
       // B. İletişim Analizi
       const customerMeetings = meetings.filter((m) => m.customerId === customer.id && !m.isDeleted);
-      const lastMeeting = customerMeetings.sort(
-        (a, b) => parseISO(b.meeting_date).getTime() - parseISO(a.meeting_date).getTime()
-      )[0];
-      const daysSinceLastContact = lastMeeting
-        ? differenceInDays(now, parseISO(lastMeeting.meeting_date))
-        : 999;
+      const lastMeeting = customerMeetings.sort((a, b) => {
+        const dateA = a.meeting_date || a.createdAt;
+        const dateB = b.meeting_date || b.createdAt;
+        return (dateB ? parseISO(dateB).getTime() : 0) - (dateA ? parseISO(dateA).getTime() : 0);
+      })[0];
+      const daysSinceLastContact =
+        lastMeeting && lastMeeting.meeting_date
+          ? differenceInDays(now, parseISO(lastMeeting.meeting_date))
+          : 999;
 
       // C. Sipariş Frekansı
       const sortedOrders = customerOrders.sort(
