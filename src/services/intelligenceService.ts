@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/formatters';
 import { Order, Quote, Customer, Meeting, Product, Payment } from '../types';
 import {
   differenceInDays,
@@ -239,6 +240,73 @@ export const calculateIntelligence = (
           customerId: customer.id,
           customerName: customer.name,
           score: 50,
+        });
+      }
+
+      // 4. Uyuyan Dev Analizi (Dormant High-Value)
+      // Son 3 ay vs Önceki 9 ay
+      const threeMonthsAgo = subMonths(now, 3);
+      const yearAgo = subMonths(now, 12);
+
+      const recentOrders = customerOrders.filter((o) => parseISO(o.order_date) >= threeMonthsAgo);
+      const historicOrders = customerOrders.filter(
+        (o) => parseISO(o.order_date) < threeMonthsAgo && parseISO(o.order_date) >= yearAgo
+      );
+
+      const recentTotal = recentOrders.reduce(
+        (sum, o) => sum + convertToTRY(o.total_amount, o.currency),
+        0
+      );
+      const historicTotal = historicOrders.reduce(
+        (sum, o) => sum + convertToTRY(o.total_amount, o.currency),
+        0
+      );
+
+      const recentAvg = recentTotal / 3;
+      const historicAvg = historicTotal / 9;
+
+      if (historicAvg > 50000 && recentAvg < historicAvg * 0.3) {
+        actions.push({
+          id: `dormant-${customer.id}`,
+          type: 'sales',
+          title: 'Uyuyan Dev',
+          message: `${customer.name} eskiden ayda ortalama ${formatCurrency(historicAvg)} alıyordu, son dönemde ${formatCurrency(recentAvg)} seviyesine düştü.`,
+          priority: 'high',
+          actionLabel: 'İlişkiyi Isıt',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 80,
+        });
+      }
+
+      // 5. Dönemsel Satış Analizi (Seasonal Sales)
+      // Geçen yıl bu ay ne almış?
+      const lastYearStart = startOfMonth(subMonths(now, 12));
+      const lastYearEnd = endOfMonth(subMonths(now, 12));
+
+      const lastYearOrders = customerOrders.filter((o) =>
+        isWithinInterval(parseISO(o.order_date), { start: lastYearStart, end: lastYearEnd })
+      );
+
+      const currentMonthOrders = customerOrders.filter((o) =>
+        isWithinInterval(parseISO(o.order_date), { start: monthStart, end: monthEnd })
+      );
+
+      if (lastYearOrders.length > 0 && currentMonthOrders.length === 0) {
+        const lastYearTotal = lastYearOrders.reduce(
+          (sum, o) => sum + convertToTRY(o.total_amount, o.currency),
+          0
+        );
+        actions.push({
+          id: `seasonal-${customer.id}`,
+          type: 'sales',
+          title: 'Dönemsel Fırsat',
+          message: `${customer.name} geçen yıl bu ay ${formatCurrency(lastYearTotal)} sipariş vermişti. Bu ay henüz siparişi yok.`,
+          priority: 'medium',
+          actionLabel: 'Hatırlat',
+          customerId: customer.id,
+          customerName: customer.name,
+          score: 65,
         });
       }
     });
