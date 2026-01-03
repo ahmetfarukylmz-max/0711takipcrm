@@ -149,14 +149,15 @@ export const calculateIntelligence = (
           }
           const avgInterval = totalInterval / (customerOrders.length - 1);
 
-          if (daysSinceLastOrder > avgInterval * 2 && daysSinceLastOrder > 30) {
+          // Hassaslaştırılmış Risk Kriteri: Ortalamayı %50 aşınca ve en az 1 hafta sessiz kalınca uyar
+          if (daysSinceLastOrder > avgInterval * 1.5 && daysSinceLastOrder > 7) {
             segment = 'Riskli';
             score = 30;
             riskyCustomers.push({
               customerId: customer.id,
               customerName: customer.name,
-              riskScore: Math.min(Math.round((daysSinceLastOrder / avgInterval) * 30), 100),
-              reason: `Ortalama sipariş aralığı (${Math.round(avgInterval)} gün) ciddi şekilde aşıldı.`,
+              riskScore: Math.min(Math.round((daysSinceLastOrder / avgInterval) * 50), 100), // Skor hesaplaması güncellendi
+              reason: `Sipariş aralığı (${Math.round(avgInterval)} gün) aşıldı.`,
               lastOrderDays: daysSinceLastOrder,
             });
           } else if (daysSinceLastOrder > 180) {
@@ -164,7 +165,6 @@ export const calculateIntelligence = (
             score = 10;
           }
         }
-
         if (segment === 'Yeni' || segment === 'Potansiyel') {
           if (totalSpent > 100000 && daysSinceLastOrder < 30) {
             segment = 'Şampiyon';
@@ -253,35 +253,6 @@ export const calculateIntelligence = (
       });
     }
   });
-
-  // --- 5. ÇAPRAZ SATIŞ FIRSATI (Cross-Sell) ---
-  // Şampiyon müşterilerden, en çok satan ürünü henüz almamış olanı bul
-  const championCustomers = segments.filter((s) => s.segment === 'Şampiyon');
-  if (championCustomers.length > 0 && topSellingProducts.length > 0) {
-    const topProduct = topSellingProducts[0];
-
-    // Rastgele bir şampiyon seç
-    const targetCustomer = championCustomers.find((c) => {
-      const customerOrders = orders.filter((o) => o.customerId === c.id);
-      // Bu müşteri topProduct'ı hiç almış mı?
-      const hasBought = customerOrders.some((o) =>
-        o.items.some((i) => i.productId === topProduct.id)
-      );
-      return !hasBought;
-    });
-
-    if (targetCustomer) {
-      insights.push({
-        type: 'opportunity',
-        title: 'Çapraz Satış Fırsatı',
-        message: `${targetCustomer.name} en iyi müşterilerinizden ancak en çok satan "${topProduct.name}" ürününü hiç almadı.`,
-        actionLabel: 'Teklif Hazırla',
-        priority: 'medium',
-        relatedCustomerId: targetCustomer.id,
-        relatedProductId: topProduct.id,
-      });
-    }
-  }
 
   return {
     monthlyForecast: {
