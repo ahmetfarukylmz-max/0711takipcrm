@@ -243,6 +243,11 @@ const SalesIntelligence: React.FC = () => {
                                   handleWhatsApp(insight.relatedCustomerId);
                                 }
 
+                                if (insight.actionLabel === 'Stok Girişi Yap') {
+                                  toast('Stok yönetimine yönlendiriliyor...');
+                                  setActivePage('Depo'); // veya ilgili sayfa
+                                }
+
                                 if (
                                   insight.actionLabel === 'Teklif Hazırla' &&
                                   insight.relatedCustomerId
@@ -267,8 +272,17 @@ const SalesIntelligence: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center p-8 text-gray-400 border border-dashed rounded-xl">
-                    Şu an için kritik bir uyarı yok.
+                  <div className="text-center p-8 rounded-xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50">
+                    <div className="bg-white dark:bg-gray-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-slate-400">
+                      <LightbulbIcon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900 dark:text-white">
+                      Analiz Tamamlandı
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Şu an için kritik bir risk veya kaçan fırsat tespit edilmedi. İşler yolunda
+                      görünüyor!
+                    </p>
                   </div>
                 )}
               </div>

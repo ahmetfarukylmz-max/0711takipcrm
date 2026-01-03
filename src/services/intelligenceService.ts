@@ -224,6 +224,65 @@ export const calculateIntelligence = (
     });
   }
 
+  // --- 4. STOK UYARILARI (Stock Alerts) ---
+  // En çok satılan ürünleri bul
+  const productSales: Record<string, number> = {};
+  orders.forEach((order) => {
+    order.items.forEach((item) => {
+      productSales[item.productId] = (productSales[item.productId] || 0) + item.quantity;
+    });
+  });
+
+  const topSellingProducts = Object.entries(productSales)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([id]) => products.find((p) => p.id === id))
+    .filter(Boolean) as Product[];
+
+  // Çok satan ama stoğu azalan ürünler
+  topSellingProducts.forEach((product) => {
+    // Kritik stok seviyesi: 50 (veya ürün bazlı dinamik olabilir)
+    if (product.stockQuantity < 50) {
+      insights.push({
+        type: 'risk',
+        title: 'Kritik Stok Uyarısı',
+        message: `${product.name} çok satıyor ancak stokta sadece ${product.stockQuantity} adet kaldı.`,
+        actionLabel: 'Stok Girişi Yap',
+        priority: 'high',
+        // actionPath: 'Depo' // İleride eklenebilir
+      });
+    }
+  });
+
+  // --- 5. ÇAPRAZ SATIŞ FIRSATI (Cross-Sell) ---
+  // Şampiyon müşterilerden, en çok satan ürünü henüz almamış olanı bul
+  const championCustomers = segments.filter((s) => s.segment === 'Şampiyon');
+  if (championCustomers.length > 0 && topSellingProducts.length > 0) {
+    const topProduct = topSellingProducts[0];
+
+    // Rastgele bir şampiyon seç
+    const targetCustomer = championCustomers.find((c) => {
+      const customerOrders = orders.filter((o) => o.customerId === c.id);
+      // Bu müşteri topProduct'ı hiç almış mı?
+      const hasBought = customerOrders.some((o) =>
+        o.items.some((i) => i.productId === topProduct.id)
+      );
+      return !hasBought;
+    });
+
+    if (targetCustomer) {
+      insights.push({
+        type: 'opportunity',
+        title: 'Çapraz Satış Fırsatı',
+        message: `${targetCustomer.name} en iyi müşterilerinizden ancak en çok satan "${topProduct.name}" ürününü hiç almadı.`,
+        actionLabel: 'Teklif Hazırla',
+        priority: 'medium',
+        relatedCustomerId: targetCustomer.id,
+        relatedProductId: topProduct.id,
+      });
+    }
+  }
+
   return {
     monthlyForecast: {
       pessimistic: projectedTotal * 0.9,
