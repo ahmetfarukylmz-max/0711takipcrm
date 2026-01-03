@@ -224,6 +224,14 @@ const SalesIntelligence: React.FC = () => {
                             <button
                               onClick={() => {
                                 if (insight.actionPath) setActivePage(insight.actionPath);
+
+                                if (
+                                  insight.actionLabel === 'Hemen Ara' &&
+                                  insight.relatedCustomerId
+                                ) {
+                                  handleWhatsApp(insight.relatedCustomerId);
+                                }
+
                                 if (
                                   insight.actionLabel === 'Teklif Hazırla' &&
                                   insight.relatedCustomerId
