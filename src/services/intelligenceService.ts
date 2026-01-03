@@ -71,6 +71,15 @@ export const calculateIntelligence = (
   const actions: SmartAction[] = [];
   const profiles: CustomerHealthProfile[] = [];
 
+  const USD_TO_TRY_RATE = 35;
+  const EUR_TO_TRY_RATE = 38;
+
+  const convertToTRY = (amount: number, currency?: string) => {
+    if (currency === 'USD') return amount * USD_TO_TRY_RATE;
+    if (currency === 'EUR') return amount * EUR_TO_TRY_RATE;
+    return amount;
+  };
+
   // --- 1. MÜŞTERİ PROFİL ANALİZİ ---
   customers
     .filter((c) => !c.isDeleted)
@@ -80,11 +89,17 @@ export const calculateIntelligence = (
         (o) => o.customerId === customer.id && !o.isDeleted && o.status !== 'İptal Edildi'
       );
       const customerPayments = payments.filter(
-        (p) => p.customerId === customer.id && !p.isDeleted && p.status === 'Tahsil Edildi'
+        (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
       );
 
-      const totalInvoiced = customerOrders.reduce((sum, o) => sum + o.total_amount, 0);
-      const totalPaid = customerPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalInvoiced = customerOrders.reduce(
+        (sum, o) => sum + convertToTRY(o.total_amount, o.currency),
+        0
+      );
+      const totalPaid = customerPayments.reduce(
+        (sum, p) => sum + convertToTRY(p.amount, p.currency),
+        0
+      );
       const currentDebt = totalInvoiced - totalPaid;
 
       const lastPayment = customerPayments.sort(
