@@ -243,8 +243,9 @@ export const calculateIntelligence = (
       }
     });
 
-  // --- 4. STOK UYARILARI ---
-  // En çok satan ürünlerin stok kontrolü
+  // --- 4. STOK UYARILARI (DEVRE DIŞI) ---
+  // Stok verileri sağlıklı olmadığı için geçici olarak kapatıldı.
+  /*
   const productSales: Record<string, number> = {};
   orders.forEach((o) =>
     o.items.forEach(
@@ -254,8 +255,6 @@ export const calculateIntelligence = (
 
   products.forEach((product) => {
     if (productSales[product.id] > 0) {
-      // Sadece satılan ürünler
-      // Kritik stok: Son 30 günlük satışın %20'si kalmışsa veya sabit 50
       const criticalLevel = 50;
       if ((product.stockQuantity || 0) <= criticalLevel) {
         actions.push({
@@ -271,6 +270,7 @@ export const calculateIntelligence = (
       }
     }
   });
+  */
 
   // --- 5. TAHMİNLEME (FORECAST) ---
   const currentTotal = orders
