@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import useStore from '../../store/useStore';
 import { calculateIntelligence } from '../../services/intelligenceService';
+import CustomerRiskAnalysisModal from './CustomerRiskAnalysisModal';
 import {
   TrendingUpIcon,
   TrendingDownIcon,
@@ -21,6 +22,7 @@ const SalesIntelligence: React.FC = () => {
   const { collections, setActivePage, setPrefilledQuote } = useStore();
   const { orders, teklifler: quotes, customers, gorusmeler: meetings, products } = collections;
   const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'simulator'>('overview');
+  const [selectedRiskCustomerId, setSelectedRiskCustomerId] = useState<string | null>(null);
 
   // Simulator State
   const [simConversionRate, setSimConversionRate] = useState(0); // +% increase
@@ -59,6 +61,7 @@ const SalesIntelligence: React.FC = () => {
           : [],
       });
       setActivePage('Teklifler');
+      setSelectedRiskCustomerId(null);
       toast.success('Teklif taslağı oluşturuldu');
     }
   };
@@ -69,6 +72,7 @@ const SalesIntelligence: React.FC = () => {
       const phone = formatPhoneNumberForWhatsApp(customer.phone);
       if (phone) {
         window.open(`https://wa.me/${phone}`, '_blank');
+        setSelectedRiskCustomerId(null);
       } else {
         toast.error('Geçersiz telefon numarası');
       }
@@ -224,6 +228,13 @@ const SalesIntelligence: React.FC = () => {
                             <button
                               onClick={() => {
                                 if (insight.actionPath) setActivePage(insight.actionPath);
+
+                                if (
+                                  insight.actionLabel === 'Analizi İncele' &&
+                                  insight.relatedCustomerId
+                                ) {
+                                  setSelectedRiskCustomerId(insight.relatedCustomerId);
+                                }
 
                                 if (
                                   insight.actionLabel === 'Hemen Ara' &&
@@ -476,6 +487,15 @@ const SalesIntelligence: React.FC = () => {
             </p>
           </div>
         </div>
+      )}
+      {selectedRiskCustomerId && (
+        <CustomerRiskAnalysisModal
+          isOpen={true}
+          onClose={() => setSelectedRiskCustomerId(null)}
+          customerId={selectedRiskCustomerId}
+          onCreateQuote={() => handleCreateQuote(selectedRiskCustomerId)}
+          onWhatsApp={() => handleWhatsApp(selectedRiskCustomerId)}
+        />
       )}
     </div>
   );

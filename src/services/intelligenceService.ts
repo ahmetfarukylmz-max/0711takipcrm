@@ -190,14 +190,18 @@ export const calculateIntelligence = (
   const insights: SalesInsight[] = [];
 
   if (riskyCustomers.length > 0) {
-    const topRisk = riskyCustomers.sort((a, b) => b.riskScore - a.riskScore)[0];
-    insights.push({
-      type: 'risk',
-      title: 'Müşteri Kayıp Riski',
-      message: `${topRisk.customerName} normal sipariş döngüsünün dışına çıktı (${topRisk.lastOrderDays} gündür sessiz).`,
-      actionLabel: 'Hemen Ara',
-      priority: 'high',
-      relatedCustomerId: topRisk.customerId,
+    // Show top 3 risky customers individually
+    const topRisks = riskyCustomers.sort((a, b) => b.riskScore - a.riskScore).slice(0, 3);
+
+    topRisks.forEach((risk) => {
+      insights.push({
+        type: 'risk',
+        title: 'Müşteri Kayıp Riski',
+        message: `${risk.customerName} normal sipariş döngüsünün dışına çıktı (${risk.lastOrderDays} gündür sessiz).`,
+        actionLabel: 'Analizi İncele',
+        priority: 'high',
+        relatedCustomerId: risk.customerId,
+      });
     });
   }
 
