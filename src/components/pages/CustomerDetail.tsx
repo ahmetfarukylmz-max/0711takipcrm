@@ -326,6 +326,41 @@ const CustomerDetail = memo<CustomerDetailProps>(
       return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [customer.id, orders, quotes, meetings, payments]);
 
+    const topProducts = useMemo<ProductStats[]>(() => {
+      const productMap = new Map<string, ProductStats>();
+
+      orders
+        .filter((o) => o.customerId === customer.id && !o.isDeleted && o.status !== 'İptal Edildi')
+        .forEach((order) => {
+          order.items.forEach((item) => {
+            const existing = productMap.get(item.productId);
+            const itemTotal =
+              item.total !== undefined ? item.total : item.quantity * item.unit_price;
+
+            // Handle currency conversion
+            let itemRevenueTRY = itemTotal;
+            if (order.currency === 'USD') itemRevenueTRY = itemTotal * 35;
+            else if (order.currency === 'EUR') itemRevenueTRY = itemTotal * 38;
+
+            if (existing) {
+              existing.quantity += item.quantity;
+              existing.revenue += itemRevenueTRY;
+              existing.orderCount += 1;
+            } else {
+              productMap.set(item.productId, {
+                id: item.productId,
+                name: item.productName || 'Bilinmeyen Ürün',
+                quantity: item.quantity,
+                revenue: itemRevenueTRY,
+                orderCount: 1,
+              });
+            }
+          });
+        });
+
+      return Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue);
+    }, [customer.id, orders]);
+
     return (
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 items-start animate-fadeIn">
         {/* LEFT COLUMN: FIXED PROFILE CARD */}
@@ -721,11 +756,53 @@ const CustomerDetail = memo<CustomerDetailProps>(
               )}
 
               {activeTab === 'top-products' && (
-                <div className="p-8">
-                  {/* Top products content... */}
-                  <p className="text-center text-slate-400 text-sm font-medium">
-                    Bu bölümdeki geliştirmeler devam ediyor...
-                  </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-gray-700/50">
+                      <tr>
+                        <th className="px-8 py-4">Ürün</th>
+                        <th className="px-8 py-4 text-center">Sipariş Sayısı</th>
+                        <th className="px-8 py-4 text-right">Toplam Miktar</th>
+                        <th className="px-8 py-4 text-right">Toplam Ciro (TRY)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                      {topProducts.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-8 py-8 text-center text-slate-400 font-medium"
+                          >
+                            Henüz ürün satışı bulunmuyor.
+                          </td>
+                        </tr>
+                      ) : (
+                        topProducts.map((product) => (
+                          <tr
+                            key={product.id}
+                            className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors group"
+                          >
+                            <td className="px-8 py-5">
+                              <p className="font-bold text-slate-800 dark:text-white">
+                                {product.name}
+                              </p>
+                            </td>
+                            <td className="px-8 py-5 text-center font-medium text-slate-600 dark:text-gray-400">
+                              {product.orderCount}
+                            </td>
+                            <td className="px-8 py-5 text-right font-mono font-bold text-slate-600 dark:text-gray-300">
+                              {product.quantity.toLocaleString()}
+                            </td>
+                            <td className="px-8 py-5 text-right">
+                              <span className="font-black text-slate-900 dark:text-white font-mono bg-green-50 text-green-700 px-2 py-1 rounded-lg">
+                                {formatCurrency(product.revenue)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
