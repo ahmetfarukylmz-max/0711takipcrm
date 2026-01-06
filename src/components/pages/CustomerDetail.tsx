@@ -848,7 +848,101 @@ const CustomerDetail = memo<CustomerDetailProps>(
                 Tahsilatlar
               </button>
             </div>
-            {/* ... Modal content body similar to original but with new styling */}
+
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+              {balanceDetailTab === 'orders' ? (
+                <table className="w-full text-left text-xs">
+                  <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-gray-800 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3">Tarih</th>
+                      <th className="px-6 py-3">İşlem / Ref</th>
+                      <th className="px-6 py-3 text-right">Tutar</th>
+                      <th className="px-6 py-3 text-right">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                    {balance.orderDetails && balance.orderDetails.length > 0 ? (
+                      balance.orderDetails.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="px-6 py-3 font-medium text-slate-600 dark:text-gray-300 whitespace-nowrap">
+                            {formatDate(item.date)}
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="font-bold text-slate-800 dark:text-white">
+                              {item.type || 'Sipariş'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {item.orderNumber}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-right font-mono font-bold text-rose-600">
+                            {formatCurrency(item.amount, item.currency as any)}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase">
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
+                          Henüz borç kaydı bulunmuyor (Teslim edilen sevkiyat yok).
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-gray-800 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-3">Tarih</th>
+                      <th className="px-6 py-3">Yöntem</th>
+                      <th className="px-6 py-3 text-right">Tutar</th>
+                      <th className="px-6 py-3 text-right">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                    {balance.paymentDetails && balance.paymentDetails.length > 0 ? (
+                      balance.paymentDetails.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <td className="px-6 py-3 font-medium text-slate-600 dark:text-gray-300 whitespace-nowrap">
+                            {formatDate(item.date)}
+                          </td>
+                          <td className="px-6 py-3 font-bold text-slate-800 dark:text-white">
+                            {item.method}
+                          </td>
+                          <td className="px-6 py-3 text-right font-mono font-bold text-green-600">
+                            {formatCurrency(item.amount, item.currency as any)}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusClass(item.status)}`}
+                            >
+                              {item.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
+                          Henüz tahsilat kaydı bulunmuyor.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </Modal>
       </div>
