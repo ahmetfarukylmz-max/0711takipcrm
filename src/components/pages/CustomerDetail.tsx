@@ -12,6 +12,7 @@ import {
   formatPhoneNumberForWhatsApp,
   getStatusClass,
 } from '../../utils/formatters';
+import { calculateCustomerBalance } from '../../utils/balanceHelpers';
 import type {
   Customer,
   Order,
@@ -217,57 +218,8 @@ const CustomerDetail = memo<CustomerDetailProps>(
     }, [customer.id, orders, quotes, meetings, payments, returns]);
 
     const balance = useMemo(() => {
-      const customerShipments = shipments.filter(
-        (s) =>
-          s.status === 'Teslim Edildi' &&
-          !s.isDeleted &&
-          orders.find((o) => o.id === s.orderId)?.customerId === customer.id
-      );
-      const customerPayments = payments.filter(
-        (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
-      );
-      const customerReturns = returns.filter(
-        (r) => r.customerId === customer.id && !r.isDeleted && r.status === 'Onaylandı'
-      );
-
-      const totalDebt = customerShipments.reduce((sum, s) => {
-        const order = orders.find((o) => o.id === s.orderId);
-        if (!order || !s.items) return sum;
-        const shipmentTotal = s.items.reduce((itemSum, item) => {
-          const orderItem = order.items.find((oi) => oi.productId === item.productId);
-          if (!orderItem) return itemSum;
-          return itemSum + orderItem.unit_price * item.quantity * (1 + (order.vatRate || 0) / 100);
-        }, 0);
-        const currency = order.currency || 'TRY';
-        const inTRY =
-          currency === 'USD'
-            ? shipmentTotal * 35
-            : currency === 'EUR'
-              ? shipmentTotal * 38
-              : shipmentTotal;
-        return sum + inTRY;
-      }, 0);
-
-      const totalPayments = customerPayments.reduce(
-        (sum, p) =>
-          sum +
-          (p.currency === 'USD' ? p.amount * 35 : p.currency === 'EUR' ? p.amount * 38 : p.amount),
-        0
-      );
-      const totalReturnsAmount = customerReturns.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-      const balanceAmount = totalPayments + totalReturnsAmount - totalDebt;
-
-      return {
-        balance: balanceAmount,
-        status:
-          Math.abs(balanceAmount) < 100
-            ? 'Hesap Dengede'
-            : balanceAmount > 0
-              ? 'Alacak Var'
-              : 'Borç Var',
-        icon: Math.abs(balanceAmount) < 100 ? '⚖️' : balanceAmount > 0 ? '💰' : '⚠️',
-      };
-    }, [customer.id, orders, payments, shipments, returns]);
+      return calculateCustomerBalance(customer, orders, payments, shipments, returns);
+    }, [customer, orders, payments, shipments, returns]);
 
     const timeline = useMemo<Activity[]>(() => {
       const activities: Activity[] = [];
