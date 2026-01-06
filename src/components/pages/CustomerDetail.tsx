@@ -299,9 +299,18 @@ const CustomerDetail = memo<CustomerDetailProps>(
               existing.revenue += itemRevenueTRY;
               existing.orderCount += 1;
             } else {
+              // Try to find product name from current products list if missing in order item
+              let productName = item.productName;
+              if (!productName) {
+                const productDef = products.find((p) => p.id === item.productId);
+                productName = productDef
+                  ? productDef.name
+                  : `Bilinmeyen Ürün (${item.productId.substring(0, 6)}...)`;
+              }
+
               productMap.set(item.productId, {
                 id: item.productId,
-                name: item.productName || 'Bilinmeyen Ürün',
+                name: productName,
                 quantity: item.quantity,
                 revenue: itemRevenueTRY,
                 orderCount: 1,
