@@ -40,6 +40,8 @@ interface Stats {
   totalMeetings: number;
   completedOrders: number;
   pendingQuotes: number;
+  totalShipments: number;
+  uninvoicedShipments: number;
   totalPayments: number;
   totalPaymentAmount: number;
   pendingPayments: number;
@@ -61,6 +63,7 @@ type TabId =
   | 'timeline'
   | 'orders'
   | 'quotes'
+  | 'shipments'
   | 'top-products'
   | 'payments'
   | 'returns';
@@ -87,6 +90,7 @@ interface CustomerDetailProps {
   onMeetingSave?: (meeting: Partial<Meeting>) => void;
   onCustomerSave?: (customer: Partial<Customer>) => Promise<string | void>;
   onProductSave?: (product: Partial<Product>) => Promise<string | void>;
+  onShipmentUpdate?: (shipment: Partial<Shipment>) => void;
   onNavigate?: (page: string) => void;
   products: Product[];
 }
@@ -112,6 +116,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
     onMeetingSave,
     onCustomerSave,
     onProductSave,
+    onShipmentUpdate,
     products,
   }) => {
     const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -175,6 +180,10 @@ const CustomerDetail = memo<CustomerDetailProps>(
       const customerQuotes = quotes.filter((q) => q.customerId === customer.id && !q.isDeleted);
       const customerMeetings = meetings.filter((m) => m.customerId === customer.id && !m.isDeleted);
       const customerPayments = payments.filter((p) => p.customerId === customer.id && !p.isDeleted);
+      const customerShipments = shipments.filter((s) => {
+        const order = orders.find((o) => o.id === s.orderId);
+        return order && order.customerId === customer.id && !s.isDeleted;
+      });
 
       const totalOrderAmount = customerOrders.reduce(
         (sum, order) => sum + (order.total_amount || 0),
@@ -186,6 +195,9 @@ const CustomerDetail = memo<CustomerDetailProps>(
       );
       const completedOrders = customerOrders.filter((o) => o.status === 'Tamamlandı').length;
       const pendingQuotes = customerQuotes.filter((q) => q.status === 'Bekliyor').length;
+      const uninvoicedShipments = customerShipments.filter(
+        (s) => s.status === 'Teslim Edildi' && !s.isInvoiced
+      ).length;
 
       const totalPaymentAmount = customerPayments.reduce((sum, payment) => {
         const amount = payment.amount || 0;
@@ -210,6 +222,8 @@ const CustomerDetail = memo<CustomerDetailProps>(
         totalMeetings: customerMeetings.length,
         completedOrders,
         pendingQuotes,
+        totalShipments: customerShipments.length,
+        uninvoicedShipments,
         totalPayments: customerPayments.length,
         totalPaymentAmount,
         pendingPayments,
@@ -491,6 +505,47 @@ const CustomerDetail = memo<CustomerDetailProps>(
                 </span>
               </div>
             </div>
+
+            {/* UNINVOICED SHIPMENTS ALERT */}
+            {stats.uninvoicedShipments > 0 && (
+              <div
+                onClick={() => setActiveTab('shipments')}
+                className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-[2rem] border border-orange-200 dark:border-orange-800 shadow-glass relative overflow-hidden group cursor-pointer hover:shadow-md transition md:col-span-3 lg:col-span-3"
+              >
+                <div className="absolute right-0 top-0 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                      <p className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase tracking-wider">
+                        Fatura Bekleyen
+                      </p>
+                    </div>
+                    <h3 className="text-2xl font-black text-orange-900 dark:text-orange-100 font-mono tracking-tighter">
+                      {stats.uninvoicedShipments} Sevkiyat
+                    </h3>
+                    <p className="text-xs font-bold text-orange-700 dark:text-orange-300 mt-2">
+                      Muhasebe onayı bekleniyor
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm">
+                    <svg
+                      className="w-6 h-6 text-orange-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      ></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Toolbar */}
@@ -522,6 +577,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
               { id: 'timeline', label: 'Aktiviteler' },
               { id: 'orders', label: `Siparişler (${stats.totalOrders})` },
               { id: 'quotes', label: `Teklifler (${stats.totalQuotes})` },
+              { id: 'shipments', label: `Sevkiyatlar (${stats.totalShipments})` },
               { id: 'payments', label: 'Ödemeler' },
               { id: 'top-products', label: 'Çok Satanlar' },
             ].map((tab) => (
@@ -662,6 +718,225 @@ const CustomerDetail = memo<CustomerDetailProps>(
               )}
 
               {/* Other tabs follow the same logic... */}
+              {activeTab === 'shipments' && (
+                <div className="p-6 space-y-8">
+                  {/* UNINVOICED SHIPMENTS SECTION */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <svg
+                          className="w-5 h-5 text-orange-600 dark:text-orange-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-800 dark:text-white">
+                          Fatura Bekleyen Sevkiyatlar
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-gray-400">
+                          Müşteriye teslim edilmiş ancak henüz faturalandırılmamış ürünler.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {shipments
+                        .filter((s) => {
+                          const order = orders.find((o) => o.id === s.orderId);
+                          return (
+                            order &&
+                            order.customerId === customer.id &&
+                            !s.isDeleted &&
+                            s.status === 'Teslim Edildi' &&
+                            !s.isInvoiced
+                          );
+                        })
+                        .map((shipment) => {
+                          const order = orders.find((o) => o.id === shipment.orderId);
+                          return (
+                            <div
+                              key={shipment.id}
+                              className="flex flex-col md:flex-row items-center gap-4 p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all group"
+                            >
+                              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 text-orange-500 flex items-center justify-center shrink-0 border border-orange-100 dark:border-gray-700 shadow-sm">
+                                <svg
+                                  className="w-6 h-6"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                                  ></path>
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0 text-center md:text-left w-full md:w-auto">
+                                <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                                  <h4 className="font-bold text-slate-800 dark:text-white">
+                                    Sevkiyat #{shipment.trackingNumber || 'Belirtilmemiş'}
+                                  </h4>
+                                  <span className="text-[10px] font-mono text-slate-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-slate-100 dark:border-gray-700">
+                                    {formatDate(shipment.shipment_date)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-600 dark:text-gray-400 truncate">
+                                  Sipariş: {order?.orderNumber || 'Bilinmiyor'}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      'Bu sevkiyatın faturasının kesildiğini onaylıyor musunuz?'
+                                    )
+                                  ) {
+                                    onShipmentUpdate &&
+                                      onShipmentUpdate({
+                                        id: shipment.id,
+                                        isInvoiced: true,
+                                        invoicedAt: new Date().toISOString(),
+                                      });
+                                    toast.success('Fatura durumu güncellendi');
+                                  }
+                                }}
+                                className="w-full md:w-auto px-6 py-3 bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-gray-700 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400 text-slate-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                Faturayı İşle
+                              </button>
+                            </div>
+                          );
+                        })}
+                      {shipments.filter((s) => {
+                        const order = orders.find((o) => o.id === s.orderId);
+                        return (
+                          order &&
+                          order.customerId === customer.id &&
+                          !s.isDeleted &&
+                          s.status === 'Teslim Edildi' &&
+                          !s.isInvoiced
+                        );
+                      }).length === 0 && (
+                        <div className="text-center py-8 bg-slate-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-slate-200 dark:border-gray-700">
+                          <p className="text-slate-400 text-sm">
+                            Fatura bekleyen sevkiyat bulunmuyor. Harika! 🎉
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-gray-700"></div>
+
+                  {/* ALL SHIPMENTS LIST */}
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">
+                      Tüm Sevkiyat Geçmişi
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-gray-700/50">
+                          <tr>
+                            <th className="px-6 py-4">Tarih</th>
+                            <th className="px-6 py-4">Ref No</th>
+                            <th className="px-6 py-4">Sipariş</th>
+                            <th className="px-6 py-4 text-center">Durum</th>
+                            <th className="px-6 py-4 text-center">Fatura</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                          {shipments
+                            .filter((s) => {
+                              const order = orders.find((o) => o.id === s.orderId);
+                              return order && order.customerId === customer.id && !s.isDeleted;
+                            })
+                            .sort(
+                              (a, b) =>
+                                new Date(b.shipment_date).getTime() -
+                                new Date(a.shipment_date).getTime()
+                            )
+                            .map((shipment) => {
+                              const order = orders.find((o) => o.id === shipment.orderId);
+                              return (
+                                <tr
+                                  key={shipment.id}
+                                  onClick={() => onViewShipment && onViewShipment(shipment)}
+                                  className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                >
+                                  <td className="px-6 py-4 font-bold text-slate-600 dark:text-gray-300">
+                                    {formatDate(shipment.shipment_date)}
+                                  </td>
+                                  <td className="px-6 py-4 font-mono text-slate-500 dark:text-gray-400">
+                                    {shipment.trackingNumber || '-'}
+                                  </td>
+                                  <td className="px-6 py-4 text-slate-800 dark:text-white">
+                                    {order?.orderNumber || 'Bilinmiyor'}
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    <span
+                                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusClass(shipment.status)}`}
+                                    >
+                                      {shipment.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    {shipment.isInvoiced ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-[10px] font-bold uppercase border border-green-100 dark:border-green-800">
+                                        <svg
+                                          className="w-3 h-3"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M5 13l4 4L19 7"
+                                          />
+                                        </svg>
+                                        Kesildi
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px] font-bold uppercase">
+                                        Bekliyor
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'quotes' && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
