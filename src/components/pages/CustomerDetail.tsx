@@ -812,11 +812,14 @@ const CustomerDetail = memo<CustomerDetailProps>(
                                 </td>
                                 <td className="px-6 py-4">
                                   <div className="text-slate-800 dark:text-white font-medium">
-                                    {order?.orderNumber || 'Bilinmiyor'}
+                                    {shipment.orderNumber || order?.orderNumber || 'Sipariş No Yok'}
                                   </div>
                                   <div className="text-xs text-slate-500 truncate max-w-[150px]">
-                                    {order?.items?.[0]?.productName}{' '}
-                                    {order?.items?.length > 1 && `+${order.items.length - 1} diğer`}
+                                    {shipment.items && shipment.items.length > 0
+                                      ? `${shipment.items[0].productName || 'Ürün'} ${shipment.items.length > 1 ? `+${shipment.items.length - 1} diğer` : ''}`
+                                      : order?.items && order.items.length > 0
+                                        ? `${order.items[0].productName} ${order.items.length > 1 ? `+${order.items.length - 1} diğer` : ''}`
+                                        : '-'}
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 text-center">
