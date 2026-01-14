@@ -120,6 +120,7 @@ const CustomerDetail = memo<CustomerDetailProps>(
     products,
   }) => {
     const [activeTab, setActiveTab] = useState<TabId>('overview');
+    const [shipmentFilter, setShipmentFilter] = useState<'all' | 'uninvoiced' | 'completed'>('all');
     const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState<boolean>(false);
@@ -719,220 +720,199 @@ const CustomerDetail = memo<CustomerDetailProps>(
 
               {/* Other tabs follow the same logic... */}
               {activeTab === 'shipments' && (
-                <div className="p-6 space-y-8">
-                  {/* UNINVOICED SHIPMENTS SECTION */}
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                        <svg
-                          className="w-5 h-5 text-orange-600 dark:text-orange-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                          Fatura Bekleyen Sevkiyatlar
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-gray-400">
-                          Müşteriye teslim edilmiş ancak henüz faturalandırılmamış ürünler.
-                        </p>
-                      </div>
+                <div className="p-0">
+                  {/* Filter Header */}
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-6 border-b border-slate-100 dark:border-gray-700">
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800 dark:text-white">
+                        Sevkiyat Yönetimi
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-gray-400">
+                        Toplam {stats.totalShipments} sevkiyat, {stats.uninvoicedShipments} fatura
+                        bekleyen
+                      </p>
                     </div>
-
-                    <div className="space-y-3">
-                      {shipments
-                        .filter((s) => {
-                          const order = orders.find((o) => o.id === s.orderId);
-                          return (
-                            order &&
-                            order.customerId === customer.id &&
-                            !s.isDeleted &&
-                            s.status === 'Teslim Edildi' &&
-                            !s.isInvoiced
-                          );
-                        })
-                        .map((shipment) => {
-                          const order = orders.find((o) => o.id === shipment.orderId);
-                          return (
-                            <div
-                              key={shipment.id}
-                              className="flex flex-col md:flex-row items-center gap-4 p-4 rounded-2xl bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all group"
-                            >
-                              <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 text-orange-500 flex items-center justify-center shrink-0 border border-orange-100 dark:border-gray-700 shadow-sm">
-                                <svg
-                                  className="w-6 h-6"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                                  ></path>
-                                </svg>
-                              </div>
-                              <div className="flex-1 min-w-0 text-center md:text-left w-full md:w-auto">
-                                <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                                  <h4 className="font-bold text-slate-800 dark:text-white">
-                                    Sevkiyat #{shipment.trackingNumber || 'Belirtilmemiş'}
-                                  </h4>
-                                  <span className="text-[10px] font-mono text-slate-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-slate-100 dark:border-gray-700">
-                                    {formatDate(shipment.shipment_date)}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-600 dark:text-gray-400 truncate">
-                                  Sipariş: {order?.orderNumber || 'Bilinmiyor'}
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      'Bu sevkiyatın faturasının kesildiğini onaylıyor musunuz?'
-                                    )
-                                  ) {
-                                    onShipmentUpdate &&
-                                      onShipmentUpdate({
-                                        id: shipment.id,
-                                        isInvoiced: true,
-                                        invoicedAt: new Date().toISOString(),
-                                      });
-                                    toast.success('Fatura durumu güncellendi');
-                                  }
-                                }}
-                                className="w-full md:w-auto px-6 py-3 bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-gray-700 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400 text-slate-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                Faturayı İşle
-                              </button>
-                            </div>
-                          );
-                        })}
-                      {shipments.filter((s) => {
-                        const order = orders.find((o) => o.id === s.orderId);
-                        return (
-                          order &&
-                          order.customerId === customer.id &&
-                          !s.isDeleted &&
-                          s.status === 'Teslim Edildi' &&
-                          !s.isInvoiced
-                        );
-                      }).length === 0 && (
-                        <div className="text-center py-8 bg-slate-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-slate-200 dark:border-gray-700">
-                          <p className="text-slate-400 text-sm">
-                            Fatura bekleyen sevkiyat bulunmuyor. Harika! 🎉
-                          </p>
-                        </div>
-                      )}
+                    <div className="flex bg-slate-100 dark:bg-gray-700 p-1 rounded-xl">
+                      <button
+                        onClick={() => setShipmentFilter('all')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${shipmentFilter === 'all' ? 'bg-white dark:bg-gray-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-gray-400 hover:text-slate-700'}`}
+                      >
+                        Tümü
+                      </button>
+                      <button
+                        onClick={() => setShipmentFilter('uninvoiced')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${shipmentFilter === 'uninvoiced' ? 'bg-white dark:bg-gray-600 text-orange-600 dark:text-orange-400 shadow-sm' : 'text-slate-500 dark:text-gray-400 hover:text-slate-700'}`}
+                      >
+                        Fatura Bekleyen
+                        {stats.uninvoicedShipments > 0 && (
+                          <span className="bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded text-[10px]">
+                            {stats.uninvoicedShipments}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShipmentFilter('completed')}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${shipmentFilter === 'completed' ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm' : 'text-slate-500 dark:text-gray-400 hover:text-slate-700'}`}
+                      >
+                        Tamamlanan
+                      </button>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-100 dark:border-gray-700"></div>
+                  {/* Clean Unified Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-gray-700/50">
+                        <tr>
+                          <th className="px-6 py-4">Tarih / Ref</th>
+                          <th className="px-6 py-4">Sipariş</th>
+                          <th className="px-6 py-4 text-center">Durum</th>
+                          <th className="px-6 py-4 text-center">Fatura Durumu</th>
+                          <th className="px-6 py-4 text-right">İşlem</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
+                        {shipments
+                          .filter((s) => {
+                            // Base filter: belongs to customer & not deleted
+                            const order = orders.find((o) => o.id === s.orderId);
+                            const belongsToCustomer =
+                              order && order.customerId === customer.id && !s.isDeleted;
+                            if (!belongsToCustomer) return false;
 
-                  {/* ALL SHIPMENTS LIST */}
-                  <div>
-                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4">
-                      Tüm Sevkiyat Geçmişi
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-gray-700/50">
-                          <tr>
-                            <th className="px-6 py-4">Tarih</th>
-                            <th className="px-6 py-4">Ref No</th>
-                            <th className="px-6 py-4">Sipariş</th>
-                            <th className="px-6 py-4 text-center">Durum</th>
-                            <th className="px-6 py-4 text-center">Fatura</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
-                          {shipments
-                            .filter((s) => {
-                              const order = orders.find((o) => o.id === s.orderId);
-                              return order && order.customerId === customer.id && !s.isDeleted;
-                            })
-                            .sort(
-                              (a, b) =>
-                                new Date(b.shipment_date).getTime() -
-                                new Date(a.shipment_date).getTime()
-                            )
-                            .map((shipment) => {
-                              const order = orders.find((o) => o.id === shipment.orderId);
-                              return (
-                                <tr
-                                  key={shipment.id}
-                                  onClick={() => onViewShipment && onViewShipment(shipment)}
-                                  className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
-                                >
-                                  <td className="px-6 py-4 font-bold text-slate-600 dark:text-gray-300">
+                            // UI Filter logic
+                            if (shipmentFilter === 'uninvoiced')
+                              return s.status === 'Teslim Edildi' && !s.isInvoiced;
+                            if (shipmentFilter === 'completed') return s.isInvoiced;
+                            return true;
+                          })
+                          .sort(
+                            (a, b) =>
+                              new Date(b.shipment_date).getTime() -
+                              new Date(a.shipment_date).getTime()
+                          )
+                          .map((shipment) => {
+                            const order = orders.find((o) => o.id === shipment.orderId);
+                            const isUninvoicedActionable =
+                              shipment.status === 'Teslim Edildi' && !shipment.isInvoiced;
+
+                            return (
+                              <tr
+                                key={shipment.id}
+                                onClick={() => onViewShipment && onViewShipment(shipment)}
+                                className={`transition-colors cursor-pointer group ${isUninvoicedActionable ? 'bg-orange-50/40 dark:bg-orange-900/10 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'hover:bg-slate-50 dark:hover:bg-gray-700/50'}`}
+                              >
+                                <td className="px-6 py-4">
+                                  <div className="font-bold text-slate-700 dark:text-gray-300">
                                     {formatDate(shipment.shipment_date)}
-                                  </td>
-                                  <td className="px-6 py-4 font-mono text-slate-500 dark:text-gray-400">
+                                  </div>
+                                  <div className="text-[10px] font-mono text-slate-400">
                                     {shipment.trackingNumber || '-'}
-                                  </td>
-                                  <td className="px-6 py-4 text-slate-800 dark:text-white">
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-slate-800 dark:text-white font-medium">
                                     {order?.orderNumber || 'Bilinmiyor'}
-                                  </td>
-                                  <td className="px-6 py-4 text-center">
-                                    <span
-                                      className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusClass(shipment.status)}`}
-                                    >
-                                      {shipment.status}
+                                  </div>
+                                  <div className="text-xs text-slate-500 truncate max-w-[150px]">
+                                    {order?.items?.[0]?.productName}{' '}
+                                    {order?.items?.length > 1 && `+${order.items.length - 1} diğer`}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <span
+                                    className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusClass(shipment.status)}`}
+                                  >
+                                    {shipment.status}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  {shipment.isInvoiced ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 text-xs font-bold">
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M5 13l4 4L19 7"
+                                        />
+                                      </svg>
+                                      Kesildi
                                     </span>
-                                  </td>
-                                  <td className="px-6 py-4 text-center">
-                                    {shipment.isInvoiced ? (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-[10px] font-bold uppercase border border-green-100 dark:border-green-800">
-                                        <svg
-                                          className="w-3 h-3"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M5 13l4 4L19 7"
-                                          />
-                                        </svg>
-                                        Kesildi
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px] font-bold uppercase">
-                                        Bekliyor
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
-                    </div>
+                                  ) : shipment.status === 'Teslim Edildi' ? (
+                                    <span className="inline-flex items-center gap-1 text-orange-600 text-xs font-bold animate-pulse">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                      Bekliyor
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 text-xs">-</span>
+                                  )}
+                                </td>
+                                <td
+                                  className="px-6 py-4 text-right"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {isUninvoicedActionable && (
+                                    <button
+                                      onClick={() => {
+                                        if (
+                                          window.confirm(
+                                            'Bu sevkiyatın faturasının kesildiğini onaylıyor musunuz?'
+                                          )
+                                        ) {
+                                          onShipmentUpdate &&
+                                            onShipmentUpdate({
+                                              id: shipment.id,
+                                              isInvoiced: true,
+                                              invoicedAt: new Date().toISOString(),
+                                            });
+                                          toast.success('Fatura işlendi');
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 bg-white border border-slate-200 hover:border-green-500 hover:text-green-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm inline-flex items-center gap-1"
+                                    >
+                                      <svg
+                                        className="w-3 h-3"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                      </svg>
+                                      İşle
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        {shipments.filter((s) => {
+                          const order = orders.find((o) => o.id === s.orderId);
+                          const belongs = order && order.customerId === customer.id && !s.isDeleted;
+                          if (!belongs) return false;
+                          if (shipmentFilter === 'uninvoiced')
+                            return s.status === 'Teslim Edildi' && !s.isInvoiced;
+                          if (shipmentFilter === 'completed') return s.isInvoiced;
+                          return true;
+                        }).length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-12 text-center text-slate-400 italic">
+                              Kayıt bulunamadı.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
