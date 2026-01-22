@@ -4,13 +4,13 @@ import OrderStatusChart from '../charts/OrderStatusChart';
 import CustomerAnalyticsChart from '../charts/CustomerAnalyticsChart';
 import PaymentMethodChart from '../charts/PaymentMethodChart';
 import LossReasonChart from '../charts/LossReasonChart';
-// NEW
-import CompetitorChart from '../charts/CompetitorChart'; // NEW
+import CompetitorChart from '../charts/CompetitorChart';
 import EnhancedDailyReportWithDetails from '../reports/EnhancedDailyReportWithDetails';
+import TonnageAnalyticsModal from '../reports/TonnageAnalyticsModal';
 import Modal from '../common/Modal';
 import { formatCurrency } from '../../utils/formatters';
 import { ChartBarIcon } from '../icons';
-import { REJECTION_REASONS } from '../../constants'; // NEW
+import { REJECTION_REASONS } from '../../constants';
 import type { Order, Customer, Quote, Meeting, Shipment, Product, Payment } from '../../types';
 
 interface CustomerStats {
@@ -31,7 +31,6 @@ interface Stats {
   avgOrderValue: number;
   totalCustomers: number;
   activeCustomers: number;
-  conversionRate: number;
   totalOrders: number;
   totalQuotes: number;
   totalMeetings: number;
@@ -39,31 +38,21 @@ interface Stats {
 }
 
 interface ReportsProps {
-  /** List of orders */
   orders: Order[];
-  /** List of customers */
   customers: Customer[];
-  /** List of quotes (teklifler) */
   teklifler: Quote[];
-  /** List of meetings (gorusmeler) */
   gorusmeler: Meeting[];
-  /** List of shipments */
   shipments: Shipment[];
-  /** List of products */
   products: Product[];
-  /** List of payments */
   payments: Payment[];
-  /** Callback to open user guide */
   onGuideClick?: () => void;
 }
 
-/**
- * Reports component - Analytics and reporting page
- */
 const Reports = memo<ReportsProps>(
   ({ orders, customers, teklifler, gorusmeler, shipments, products, payments, onGuideClick }) => {
-    const [dateRange, setDateRange] = useState<string>('30'); // days
+    const [dateRange, setDateRange] = useState<string>('30');
     const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
+    const [showTonnageModal, setShowTonnageModal] = useState<boolean>(false);
 
     const salesTrendData = useMemo<ChartDataPoint[]>(() => {
       const now = new Date();
@@ -76,7 +65,6 @@ const Reports = memo<ReportsProps>(
         return orderDate >= startDate;
       });
 
-      // Group by date
       const salesByDate: Record<string, number> = {};
       filteredOrders.forEach((order) => {
         const date = order.order_date;
@@ -86,10 +74,9 @@ const Reports = memo<ReportsProps>(
         salesByDate[date] += order.total_amount || 0;
       });
 
-      // Convert to array and sort by actual date
       return Object.entries(salesByDate)
         .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-        .slice(-15) // Last 15 data points
+        .slice(-15)
         .map(([date, sales]) => ({
           date: new Date(date).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
           sales: Math.round(sales),
@@ -128,7 +115,6 @@ const Reports = memo<ReportsProps>(
           customerStats[customerId].count += 1;
         });
 
-      // Get top 10 customers
       return Object.entries(customerStats)
         .map(([customerId, stats]) => {
           const customer = customers.find((c) => c.id === customerId && !c.isDeleted);
@@ -148,7 +134,6 @@ const Reports = memo<ReportsProps>(
       const activeTeklifler = teklifler.filter((t) => !t.isDeleted);
       const activeGorusmeler = gorusmeler.filter((g) => !g.isDeleted);
 
-      // Toplam Tonaj Hesaplama
       let totalKg = 0;
       activeOrders.forEach((order) => {
         if (order.items && Array.isArray(order.items)) {
@@ -170,19 +155,12 @@ const Reports = memo<ReportsProps>(
       const avgOrderValue = activeOrders.length > 0 ? totalRevenue / activeOrders.length : 0;
       const totalCustomers = activeCustomers.length;
       const customersWithOrders = new Set(activeOrders.map((o) => o.customerId)).size;
-      const conversionRate =
-        activeTeklifler.length > 0
-          ? (activeTeklifler.filter((t) => t.status === 'Onaylandı').length /
-              activeTeklifler.length) *
-            100
-          : 0;
 
       return {
         totalRevenue,
         avgOrderValue,
         totalCustomers,
         activeCustomers: customersWithOrders,
-        conversionRate,
         totalOrders: activeOrders.length,
         totalQuotes: activeTeklifler.length,
         totalMeetings: activeGorusmeler.length,
@@ -190,38 +168,25 @@ const Reports = memo<ReportsProps>(
       };
     }, [orders, customers, teklifler, gorusmeler]);
 
-    // KAYIP ANALİZİ (Loss Analysis) - NEW
     const lossAnalysis = useMemo(() => {
       const rejectedQuotes = teklifler.filter((q) => !q.isDeleted && q.status === 'Reddedildi');
-
-      // 1. Red Sebepleri Dağılımı
       const reasonsCount: Record<string, number> = {};
-
-      // 2. Rakip Analizi
       const competitorCount: Record<string, number> = {};
-
-      // 3. Fiyat Farkı Analizi
       let totalPriceGap = 0;
       let gapCount = 0;
 
       rejectedQuotes.forEach((q) => {
-        // Sebepler
         const reasonId = q.rejectionReasonId || 'other';
-        // Find label from constants or use raw ID
         const reasonLabel =
           REJECTION_REASONS.find((r) => r.id === reasonId)?.label ||
           (q.rejection_reason ? '📝 Diğer' : 'Belirtilmemiş');
         reasonsCount[reasonLabel] = (reasonsCount[reasonLabel] || 0) + 1;
 
-        // Rakipler
         if (q.competitorName) {
           competitorCount[q.competitorName] = (competitorCount[q.competitorName] || 0) + 1;
         }
 
-        // Fiyat Farkı
         if (q.targetPrice && q.total_amount > 0) {
-          // (Bizim Fiyat - Hedef Fiyat) / Hedef Fiyat
-          // Örn: Biz 100, Hedef 90. Fark 10. Oran %11.
           const gap = ((q.total_amount - q.targetPrice) / q.targetPrice) * 100;
           totalPriceGap += gap;
           gapCount++;
@@ -235,7 +200,7 @@ const Reports = memo<ReportsProps>(
       const competitorData = Object.entries(competitorCount)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5); // Top 5 competitors
+        .slice(0, 5);
 
       const avgPriceGap = gapCount > 0 ? totalPriceGap / gapCount : 0;
 
@@ -248,10 +213,8 @@ const Reports = memo<ReportsProps>(
       };
     }, [teklifler]);
 
-    // Cari Hesap Özeti
     const cariHesapSummary = useMemo(() => {
       const activeCustomers = customers.filter((c) => !c.isDeleted);
-
       let totalAlacak = 0;
       let totalBorc = 0;
       let dengedeCount = 0;
@@ -260,7 +223,6 @@ const Reports = memo<ReportsProps>(
 
       activeCustomers.forEach((customer) => {
         const customerOrders = orders.filter((o) => o.customerId === customer.id && !o.isDeleted);
-        // Include all payments except cancelled ones (Bekliyor status payments like checks are counted)
         const customerPayments = payments.filter(
           (p) => p.customerId === customer.id && !p.isDeleted && p.status !== 'İptal'
         );
@@ -288,7 +250,6 @@ const Reports = memo<ReportsProps>(
         }, 0);
 
         const balance = totalPayments - totalOrders;
-
         if (Math.abs(balance) < 100) {
           dengedeCount++;
         } else if (balance > 0) {
@@ -310,7 +271,6 @@ const Reports = memo<ReportsProps>(
       };
     }, [customers, orders, payments]);
 
-    // Ödeme İstatistikleri
     const paymentStats = useMemo(() => {
       const activePayments = payments.filter((p) => !p.isDeleted);
       const tahsilEdilen = activePayments.filter((p) => p.status === 'Tahsil Edildi');
@@ -330,7 +290,6 @@ const Reports = memo<ReportsProps>(
         return sum + inTRY;
       }, 0);
 
-      // Çek bilgileri - siparişlerden çek ödeme tipindekileri say
       const cekOrders = orders.filter((o) => !o.isDeleted && o.paymentType === 'Çek');
       const today = new Date();
       const vadesiYaklasanCekler = cekOrders.filter((o) => {
@@ -378,7 +337,6 @@ const Reports = memo<ReportsProps>(
               İşletmenizin performansını ve günlük aktivitelerinizi izleyin.
             </p>
           </div>
-          {/* Tarih Aralığı Seçici */}
           <select
             value={dateRange}
             onChange={handleDateRangeChange}
@@ -391,7 +349,6 @@ const Reports = memo<ReportsProps>(
           </select>
         </div>
 
-        {/* Modal: Günlük Performans Raporu */}
         <Modal
           show={showDailyReportModal}
           onClose={() => setShowDailyReportModal(false)}
@@ -409,7 +366,6 @@ const Reports = memo<ReportsProps>(
           />
         </Modal>
 
-        {/* Quick Access Card for Daily Report */}
         <div
           onClick={() => setShowDailyReportModal(true)}
           className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-6 md:p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] active:scale-[0.99] group"
@@ -422,8 +378,7 @@ const Reports = memo<ReportsProps>(
               <div className="text-white text-center md:text-left">
                 <h3 className="text-xl md:text-2xl font-bold mb-2">Günlük Performans Raporu</h3>
                 <p className="text-white/90 text-sm md:text-base">
-                  Bugünün detaylı satış, teklif ve operasyon metriklerini görüntüleyin. Önceki
-                  günlerle karşılaştırın ve performansınızı takip edin.
+                  Bugünün detaylı satış, teklif ve operasyon metriklerini görüntüleyin.
                 </p>
               </div>
             </div>
@@ -446,50 +401,60 @@ const Reports = memo<ReportsProps>(
           </div>
         </div>
 
-        {/* Summary Cards */}
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">
           Genel Bakış
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Toplam Gelir</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(stats.totalRevenue)}</p>
             <p className="text-sm mt-2 opacity-75">{stats.totalOrders} sipariş</p>
           </div>
-
           <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Ortalama Sipariş</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(stats.avgOrderValue)}</p>
             <p className="text-sm mt-2 opacity-75">Sipariş başına</p>
           </div>
-
-          <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-6 rounded-lg shadow-lg text-white">
-            <h3 className="text-sm font-medium opacity-90">Toplam Satış (Tonaj)</h3>
-            <p className="text-3xl font-bold mt-2">
-              {stats.totalTonnage.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} Ton
-            </p>
-            <p className="text-sm mt-2 opacity-75">Tüm zamanlar</p>
+          <div
+            onClick={() => setShowTonnageModal(true)}
+            className="bg-gradient-to-br from-teal-500 to-teal-600 p-6 rounded-lg shadow-lg text-white cursor-pointer hover:scale-[1.02] transition-transform active:scale-95"
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-sm font-medium opacity-90">Toplam Satış (Tonaj)</h3>
+                <p className="text-3xl font-bold mt-2">
+                  {stats.totalTonnage.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} Ton
+                </p>
+                <p className="text-sm mt-2 opacity-75">Tüm zamanlar</p>
+              </div>
+              <div className="bg-white/20 p-2 rounded-lg">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
-
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Aktif Müşteriler</h3>
             <p className="text-3xl font-bold mt-2">{stats.activeCustomers}</p>
             <p className="text-sm mt-2 opacity-75">{stats.totalCustomers} toplam</p>
           </div>
-
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-lg shadow-lg text-white">
-            <h3 className="text-sm font-medium opacity-90">Dönüşüm Oranı</h3>
-            <p className="text-3xl font-bold mt-2">{stats.conversionRate.toFixed(1)}%</p>
-            <p className="text-sm mt-2 opacity-75">Teklif → Sipariş</p>
-          </div>
         </div>
 
-        {/* KAYIP ANALİZİ (New Section) */}
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8 flex items-center gap-2">
           <span className="text-red-500">📉</span> Kayıp Analizi (Loss Analysis)
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* 1. Özet Kartları */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-red-500">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -502,7 +467,6 @@ const Reports = memo<ReportsProps>(
                 {lossAnalysis.totalLost} adet reddedilen teklif
               </p>
             </div>
-
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Ortalama Fiyat Farkı
@@ -513,19 +477,14 @@ const Reports = memo<ReportsProps>(
               <p className="text-xs text-gray-500 mt-1">Piyasadan ortalama bu kadar pahalıyız</p>
             </div>
           </div>
-
-          {/* 2. Red Sebepleri Grafiği */}
           <div className="lg:col-span-1">
             <LossReasonChart data={lossAnalysis.reasonData} />
           </div>
-
-          {/* 3. Rakip Analizi Grafiği */}
           <div className="lg:col-span-1">
             <CompetitorChart data={lossAnalysis.competitorData} />
           </div>
         </div>
 
-        {/* Cari Hesap Özeti */}
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">
           Cari Hesap Özeti
         </h2>
@@ -537,19 +496,16 @@ const Reports = memo<ReportsProps>(
             </p>
             <p className="text-sm mt-2 opacity-75">{cariHesapSummary.alacakCount} müşteri</p>
           </div>
-
           <div className="bg-gradient-to-br from-red-500 to-red-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Toplam Borç</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(cariHesapSummary.totalBorc)}</p>
             <p className="text-sm mt-2 opacity-75">{cariHesapSummary.borcCount} müşteri</p>
           </div>
-
           <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Net Bakiye</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(cariHesapSummary.netBalance)}</p>
             <p className="text-sm mt-2 opacity-75">Alacak - Borç</p>
           </div>
-
           <div className="bg-gradient-to-br from-gray-500 to-gray-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Dengede</h3>
             <p className="text-3xl font-bold mt-2">{cariHesapSummary.dengedeCount}</p>
@@ -557,7 +513,6 @@ const Reports = memo<ReportsProps>(
           </div>
         </div>
 
-        {/* Ödeme & Tahsilat */}
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">
           Ödeme & Tahsilat
         </h2>
@@ -569,19 +524,16 @@ const Reports = memo<ReportsProps>(
             </p>
             <p className="text-sm mt-2 opacity-75">{paymentStats.tahsilEdilenCount} ödeme</p>
           </div>
-
           <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Bekleyen Tahsilat</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(paymentStats.bekleyenTutar)}</p>
             <p className="text-sm mt-2 opacity-75">{paymentStats.bekleyenCount} ödeme</p>
           </div>
-
           <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Vadesi Yaklaşan Çekler</h3>
             <p className="text-3xl font-bold mt-2">{paymentStats.vadesiYaklasanCekler}</p>
             <p className="text-sm mt-2 opacity-75">30 gün içinde</p>
           </div>
-
           <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Vadesi Geçmiş Çekler</h3>
             <p className="text-3xl font-bold mt-2">{paymentStats.vadesiGecmisCekler}</p>
@@ -589,7 +541,6 @@ const Reports = memo<ReportsProps>(
           </div>
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <SalesChart data={salesTrendData} title={`Satış Trendi (Son ${dateRange} Gün)`} />
           <OrderStatusChart data={orderStatusData} />
@@ -610,7 +561,6 @@ const Reports = memo<ReportsProps>(
           </div>
         </div>
 
-        {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
@@ -627,7 +577,6 @@ const Reports = memo<ReportsProps>(
               ))}
             </div>
           </div>
-
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
               Teklif Durumu
@@ -659,7 +608,6 @@ const Reports = memo<ReportsProps>(
               </div>
             </div>
           </div>
-
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
               Görüşme Aktivitesi
@@ -693,7 +641,20 @@ const Reports = memo<ReportsProps>(
           </div>
         </div>
 
-        {/* User Guide Section */}
+        <Modal
+          show={showTonnageModal}
+          onClose={() => setShowTonnageModal(false)}
+          title=""
+          maxWidth="max-w-6xl"
+        >
+          <TonnageAnalyticsModal
+            orders={orders}
+            products={products}
+            customers={customers}
+            onClose={() => setShowTonnageModal(false)}
+          />
+        </Modal>
+
         {onGuideClick && (
           <div className="mt-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-1 rounded-xl shadow-lg">
             <div className="bg-white dark:bg-gray-800 p-8 rounded-lg">
@@ -740,24 +701,6 @@ const Reports = memo<ReportsProps>(
                   </svg>
                 </button>
               </div>
-
-              <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-                {[
-                  { icon: '🔐', text: 'Giriş' },
-                  { icon: '👥', text: 'Müşteriler' },
-                  { icon: '📦', text: 'Siparişler' },
-                  { icon: '📱', text: 'Mobil' },
-                  { icon: '💡', text: 'İpuçları' },
-                ].map((item) => (
-                  <div
-                    key={item.text}
-                    className="bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg text-center border border-gray-200 dark:border-gray-600"
-                  >
-                    <span className="text-2xl block mb-1">{item.icon}</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400">{item.text}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -767,5 +710,4 @@ const Reports = memo<ReportsProps>(
 );
 
 Reports.displayName = 'Reports';
-
 export default Reports;
