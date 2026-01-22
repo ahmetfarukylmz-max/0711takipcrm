@@ -35,6 +35,7 @@ interface Stats {
   totalOrders: number;
   totalQuotes: number;
   totalMeetings: number;
+  totalTonnage: number;
 }
 
 interface ReportsProps {
@@ -147,6 +148,24 @@ const Reports = memo<ReportsProps>(
       const activeTeklifler = teklifler.filter((t) => !t.isDeleted);
       const activeGorusmeler = gorusmeler.filter((g) => !g.isDeleted);
 
+      // Toplam Tonaj Hesaplama
+      let totalKg = 0;
+      activeOrders.forEach((order) => {
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach((item) => {
+            const qty = parseFloat(item.quantity?.toString() || '0');
+            const unit = item.unit?.toLowerCase() || '';
+
+            if (unit === 'kg') {
+              totalKg += qty;
+            } else if (unit === 'ton') {
+              totalKg += qty * 1000;
+            }
+          });
+        }
+      });
+      const totalTonnage = totalKg / 1000;
+
       const totalRevenue = activeOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
       const avgOrderValue = activeOrders.length > 0 ? totalRevenue / activeOrders.length : 0;
       const totalCustomers = activeCustomers.length;
@@ -167,6 +186,7 @@ const Reports = memo<ReportsProps>(
         totalOrders: activeOrders.length,
         totalQuotes: activeTeklifler.length,
         totalMeetings: activeGorusmeler.length,
+        totalTonnage,
       };
     }, [orders, customers, teklifler, gorusmeler]);
 
@@ -430,7 +450,7 @@ const Reports = memo<ReportsProps>(
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 mt-8">
           Genel Bakış
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
             <h3 className="text-sm font-medium opacity-90">Toplam Gelir</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(stats.totalRevenue)}</p>
@@ -441,6 +461,14 @@ const Reports = memo<ReportsProps>(
             <h3 className="text-sm font-medium opacity-90">Ortalama Sipariş</h3>
             <p className="text-3xl font-bold mt-2">{formatCurrency(stats.avgOrderValue)}</p>
             <p className="text-sm mt-2 opacity-75">Sipariş başına</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-6 rounded-lg shadow-lg text-white">
+            <h3 className="text-sm font-medium opacity-90">Toplam Satış (Tonaj)</h3>
+            <p className="text-3xl font-bold mt-2">
+              {stats.totalTonnage.toLocaleString('tr-TR', { maximumFractionDigits: 2 })} Ton
+            </p>
+            <p className="text-sm mt-2 opacity-75">Tüm zamanlar</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-lg shadow-lg text-white">
