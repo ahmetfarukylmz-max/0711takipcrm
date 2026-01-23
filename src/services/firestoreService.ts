@@ -61,10 +61,17 @@ export const saveDocument = async (userId, collectionName, data) => {
 
     const { id, ...dataToSave } = data;
 
+    // Sanitize data to remove undefined values (Firestore does not support undefined)
+    const sanitizeData = (obj) => {
+      return JSON.parse(JSON.stringify(obj, (key, value) => (value === undefined ? null : value)));
+    };
+
+    const sanitizedData = sanitizeData(dataToSave);
+
     // Special handling for products
     if (collectionName === 'products') {
-      dataToSave.cost_price = parseFloat(dataToSave.cost_price) || 0;
-      dataToSave.selling_price = parseFloat(dataToSave.selling_price) || 0;
+      sanitizedData.cost_price = parseFloat(sanitizedData.cost_price) || 0;
+      sanitizedData.selling_price = parseFloat(sanitizedData.selling_price) || 0;
     }
 
     const collectionPath = `users/${userId}/${collectionName}`;
@@ -72,20 +79,20 @@ export const saveDocument = async (userId, collectionName, data) => {
     if (id) {
       // Update existing document
       try {
-        await updateDoc(doc(db, collectionPath, id), dataToSave);
+        await updateDoc(doc(db, collectionPath, id), sanitizedData);
         return id;
       } catch (error) {
         // If document doesn't exist, create it instead
         if (error.code === 'not-found') {
           logger.warn(`Document ${id} not found, creating new document instead`);
-          const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+          const newDocRef = await addDoc(collection(db, collectionPath), sanitizedData);
           return newDocRef.id;
         }
         throw error; // Re-throw other errors
       }
     } else {
       // Create new document
-      const newDocRef = await addDoc(collection(db, collectionPath), dataToSave);
+      const newDocRef = await addDoc(collection(db, collectionPath), sanitizedData);
       return newDocRef.id;
     }
   } catch (error) {
