@@ -42,19 +42,27 @@ const OrderForm: React.FC<OrderFormProps> = ({
   shipments = [],
   priceOnlyMode = false,
 }) => {
-  // Calculate total shipped quantities per product
+  // Calculate total shipped quantities per product (and per item index)
   const shippedQuantities = React.useMemo(() => {
-    const quantities: Record<string, number> = {};
+    const byIndex: Record<number, number> = {};
+    const byProduct: Record<string, number> = {};
+
     shipments.forEach((shipment) => {
       if (!shipment.isDeleted && shipment.items) {
         shipment.items.forEach((item) => {
-          if (item.productId) {
-            quantities[item.productId] = (quantities[item.productId] || 0) + (item.quantity || 0);
+          // If we have an index, track by index (precise)
+          if (item.orderItemIndex !== undefined && item.orderItemIndex !== null) {
+            byIndex[item.orderItemIndex] =
+              (byIndex[item.orderItemIndex] || 0) + (item.quantity || 0);
+          }
+          // If no index (legacy), track by product ID (fallback)
+          else if (item.productId) {
+            byProduct[item.productId] = (byProduct[item.productId] || 0) + (item.quantity || 0);
           }
         });
       }
     });
-    return quantities;
+    return { byIndex, byProduct };
   }, [shipments]);
 
   const [formData, setFormData] = useState<OrderFormData>({

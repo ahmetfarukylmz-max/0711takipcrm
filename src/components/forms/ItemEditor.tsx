@@ -22,7 +22,10 @@ interface ItemEditorProps {
   /** If true, only allow editing prices (disable add/remove/change products) */
   priceOnlyMode?: boolean;
   /** Map of product IDs to total shipped quantities (to prevent deleting/reducing shipped items) */
-  shippedQuantities?: Record<string, number>;
+  shippedQuantities?: {
+    byIndex: Record<number, number>;
+    byProduct: Record<string, number>;
+  };
 }
 
 /**
@@ -33,7 +36,7 @@ const ItemEditor: React.FC<ItemEditorProps> = ({
   setItems,
   products,
   priceOnlyMode = false,
-  shippedQuantities = {},
+  shippedQuantities = { byIndex: {}, byProduct: {} },
 }) => {
   const { user } = useAuth();
 
@@ -188,7 +191,10 @@ const ItemEditor: React.FC<ItemEditorProps> = ({
 
   const handleItemChange = (index: number, field: keyof OrderItem, value: any) => {
     const item = items[index];
-    const shippedQty = (item.productId && shippedQuantities[item.productId]) || 0;
+    // Calculate shipped quantity using index if available, otherwise fallback to product ID
+    const indexQty = shippedQuantities.byIndex[index];
+    const productQty = item.productId ? shippedQuantities.byProduct[item.productId] : 0;
+    const shippedQty = indexQty !== undefined ? indexQty : productQty || 0;
 
     // Prevent reducing quantity below shipped amount
     if (field === 'quantity' && shippedQty > 0) {
@@ -238,7 +244,10 @@ const ItemEditor: React.FC<ItemEditorProps> = ({
 
   const handleRemoveItem = (index: number) => {
     const item = items[index];
-    const shippedQty = (item.productId && shippedQuantities[item.productId]) || 0;
+    // Calculate shipped quantity using index if available, otherwise fallback to product ID
+    const indexQty = shippedQuantities.byIndex[index];
+    const productQty = item.productId ? shippedQuantities.byProduct[item.productId] : 0;
+    const shippedQty = indexQty !== undefined ? indexQty : productQty || 0;
 
     if (shippedQty > 0) {
       alert(`Bu üründen ${shippedQty} adet sevk edildiği için satırı silemezsiniz.`);
@@ -342,7 +351,10 @@ const ItemEditor: React.FC<ItemEditorProps> = ({
 
               {/* Shipped Lock Indicator */}
               {(() => {
-                const shippedQty = (item.productId && shippedQuantities[item.productId]) || 0;
+                const indexQty = shippedQuantities.byIndex[index];
+                const productQty = item.productId ? shippedQuantities.byProduct[item.productId] : 0;
+                const shippedQty = indexQty !== undefined ? indexQty : productQty || 0;
+
                 if (shippedQty > 0) {
                   return (
                     <div
